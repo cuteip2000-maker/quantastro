@@ -70,7 +70,7 @@ h2{margin:0;font-size:27px;line-height:1.3;font-weight:900}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,265px),1fr));gap:12px}
 .card{position:relative;display:flex;flex-direction:column;min-height:150px;padding:15px 16px 13px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c,var(--accent));border-radius:10px;text-align:left;text-decoration:none;cursor:pointer;width:100%}
 .card:hover{background:var(--panel2)}
-.thumb{margin:-15px -16px 12px;aspect-ratio:16/9;background:#0a0f24;overflow:hidden;border-radius:6px 6px 0 0;position:relative}
+.thumb{margin:-15px -16px 12px;aspect-ratio:16/9;background:radial-gradient(circle at 30% 25%,#34457f,#141c40 70%);overflow:hidden;border-radius:6px 6px 0 0;position:relative}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .play{position:absolute;inset:0;margin:auto;width:48px;height:48px;border-radius:50%;background:rgba(13,20,48,.82);display:grid;place-items:center}.play svg{width:18px;height:18px;fill:#fff;margin-left:3px}
 .kind{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13px;font-weight:500}
@@ -178,14 +178,14 @@ function sky(){let h='',seed=7;const rnd=()=>(seed=seed*16807%2147483647)/214748
 const ISLE=`<svg viewBox="0 0 400 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="280" fill="#a9e2f0"/><circle cx="330" cy="54" r="26" fill="#fff4cf"/><ellipse cx="200" cy="205" rx="186" ry="58" fill="#7fd0e3"/><path d="M52 196c16-44 76-62 148-62s136 20 150 62c-24 30-82 42-150 42S74 226 52 196z" fill="#f6dfae"/><path d="M78 186c16-34 66-50 122-50s108 16 122 50c-24 20-70 30-122 30s-100-10-122-30z" fill="#9bd77c"/><path d="M178 148l24-58 26 58z" fill="#c9b8ff"/><circle cx="203" cy="88" r="9" fill="#fff"/><path d="M286 172v-54l15 22v32z" fill="#fff"/><path d="M286 118l-11 20h22z" fill="#ff8fab"/><circle cx="118" cy="164" r="19" fill="#62b868"/><circle cx="142" cy="172" r="14" fill="#74c776"/><path d="M118 178h6v18h-6z" fill="#9a6a44"/><circle cx="232" cy="186" r="11" fill="#ffe08a"/><circle cx="256" cy="194" r="7" fill="#ffb4c8"/><path d="M160 208a22 16 0 0 1 44 0z" fill="#5d7fa8"/></svg>`;
 
 function features(){const f=ITEMS.filter(i=>i.featured);$('featured').hidden=!f.length;
- $('features').innerHTML=f.map(i=>{const v=ytId(i.youtube),art=i.image?`<img src="${esc(safe(i.image))}" alt="" loading="lazy">`:v?`<img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy">`:ISLE;
+ $('features').innerHTML=f.map(i=>{const v=ytId(i.youtube),art=i.image?`<img src="${esc(safe(i.image))}" alt="" loading="lazy">`:v?`<img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy" onload="if(this.naturalWidth<=120)this.remove()">`:ISLE;
   const body=`<div class="fart">${art}</div><div class="fbody"><span class="kind">${esc(TYPE_NAME[i.type])}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p><span class="go">${v?'播放影片':'開始探索'} →</span></div>`;
   return v?`<button class="feature" style="width:100%;padding:0;text-align:left;cursor:pointer" data-v="${v}" data-t="${esc(i.title)}">${body}</button>`:`<a class="feature" href="${esc(safe(i.url))}" target="_blank" rel="noopener">${body}</a>`;}).join('');}
 
 function match(i){if(state.type!=='all'&&i.type!==state.type)return false;if(state.zone&&i.zone!==state.zone)return false;
  const q=state.q.trim().toLowerCase();return !q||[i.title,i.desc,i.topic].join(' ').toLowerCase().includes(q);}
 
-function card(i){const v=ytId(i.youtube),style=i.color?` style="--c:${esc(i.color)}"`:'',thumb=v?`<div class="thumb"><img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy"><span class="play"><svg viewBox="0 0 16 16"><path d="M2 1l13 7-13 7z"/></svg></span></div>`:i.image?`<div class="thumb"><img src="${esc(safe(i.image))}" alt="" loading="lazy"></div>`:'';
+function card(i){const v=ytId(i.youtube),style=i.color?` style="--c:${esc(i.color)}"`:'',thumb=v?`<div class="thumb"><img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy" onload="if(this.naturalWidth<=120)this.remove()"><span class="play"><svg viewBox="0 0 16 16"><path d="M2 1l13 7-13 7z"/></svg></span></div>`:i.image?`<div class="thumb"><img src="${esc(safe(i.image))}" alt="" loading="lazy"></div>`:'';
  const inner=`${thumb}<span class="kind"><span>${esc(i.topic||TYPE_NAME[i.type])}</span>${i.isNew?'<span class="new">NEW</span>':''}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p>`;
  return v?`<button class="card"${style} data-v="${v}" data-t="${esc(i.title)}">${inner}</button>`:`<a class="card"${style} href="${esc(safe(i.url))}" target="_blank" rel="noopener">${inner}</a>`;}
 
