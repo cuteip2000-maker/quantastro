@@ -1,473 +1,216 @@
 <!doctype html>
+<html lang="zh-Hant">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>星星糖好奇島</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quantastro</title>
+<meta name="description" content="把看不見的科學，變成玩得到的東西。互動遊戲、影片與教學資源。">
+<meta property="og:title" content="Quantastro">
+<meta property="og:description" content="把看不見的科學，變成玩得到的東西。互動遊戲、影片與教學資源。">
+<meta property="og:url" content="https://quantastro.org/">
+<meta name="theme-color" content="#0d1430">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d1430'/%3E%3Cpath d='M16 4l2.6 9.4L28 16l-9.4 2.6L16 28l-2.6-9.4L4 16l9.4-2.6z' fill='%23ffd166'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 <style>
-/* Layout: a sunny low-poly 3D island (drag to spin, click a district) beside a "travel guide" panel listing that district's games; stacks on phones. Single bright look by choice, with an in-scene night toggle. */
-:root{
-  --sea:#8fd8ea;
-  --sea-deep:#5cbfdc;
-  --ink:#27384d;
-  --dim:#5d6f84;
-  --paper:#fffaf0;
-  --line:#e9dcc0;
-  --candy:#ff8fb1;
-  --star:#ffcf4d;
-  --f-disp:"Chiron GoRound TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
-  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
-  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
-  color-scheme:light;
+:root{--bg:#0d1430;--panel:#161f44;--panel2:#1e2954;--line:#303c6c;--text:#f6f1e4;--muted:#b4bcd4;--accent:#ffd166;--ink:#16203f;--gut:max(16px,env(safe-area-inset-left),env(safe-area-inset-right));--wide:1180px;--latin:Lexend,"Noto Sans TC",system-ui,sans-serif}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.7 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif}
+a{color:inherit}button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{width:100%;max-width:calc(var(--wide) + 2*var(--gut));margin:auto;padding-inline:var(--gut)}
+.skip{position:absolute;left:-999px}.skip:focus{left:16px;top:8px;background:var(--accent);color:var(--ink);padding:6px 12px;border-radius:6px;z-index:9}
+
+.top{position:sticky;top:0;z-index:5;background:rgba(13,20,48,.92);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:60px}
+.brand{display:inline-flex;align-items:center;gap:8px;font:700 19px/1 var(--latin);letter-spacing:.01em;text-decoration:none}
+.brand svg{width:20px;height:20px;fill:var(--accent)}
+.nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}
+.nav a{padding:6px 11px;border-radius:7px;color:var(--muted);font-size:15px;font-weight:500;text-decoration:none;white-space:nowrap}
+.nav a:hover{color:var(--text);background:var(--panel2)}
+
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:32px;align-items:center;padding-block:44px 28px}
+.eyebrow{margin:0 0 12px;color:var(--accent);font:700 14px/1.4 var(--latin);letter-spacing:.08em}
+h1{margin:0;font-size:clamp(31px,4.2vw,54px);line-height:1.2;font-weight:900;letter-spacing:.01em}
+.lead{max-width:30em;margin:18px 0 24px;color:var(--muted);font-size:18px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;min-height:44px;padding:8px 20px;border-radius:9px;border:1px solid var(--line);font-weight:700;text-decoration:none;cursor:pointer;background:transparent}
+.btn:hover{background:var(--panel2)}.btn.main{background:var(--accent);border-color:var(--accent);color:var(--ink)}.btn.main:hover{background:#ffdf8e}
+.stats{display:flex;flex-wrap:wrap;gap:6px 26px;margin:26px 0 0;padding:0;list-style:none;color:var(--muted);font-size:15px}
+.stats b{color:var(--text);font:700 21px/1 var(--latin);margin-right:5px}
+.map{position:relative}
+.map svg{display:block;width:100%;height:auto;overflow:visible}
+.map .ln{stroke-width:1;opacity:.42}.map .zn{font-size:15px;font-weight:700;text-anchor:middle}
+.map a{cursor:pointer;outline:none}.map a .hit{fill:transparent}
+.map a .st{transition:r .12s}.map a:hover .st,.map a:focus .st{r:7px}
+.tip{min-height:48px;margin:2px 0 0;color:var(--muted);font-size:14px;line-height:1.5;text-align:center}.tip b{display:block;color:var(--text);font-size:15px}
+
+section{padding-block:30px;scroll-margin-top:60px}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin-bottom:16px}
+h2{margin:0;font-size:27px;line-height:1.3;font-weight:900}
+.head p{margin:0;color:var(--muted);font-size:15px}
+.feature{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px;text-decoration:none}
+.feature+.feature{margin-top:14px}.feature:hover{border-color:var(--accent)}
+.fart{min-height:250px;background:#a9e2f0;display:grid;place-items:center;overflow:hidden}.fart svg{width:100%;height:100%;max-height:300px}.fart img{width:100%;height:100%;object-fit:cover;display:block}
+.fbody{display:flex;flex-direction:column;justify-content:center;padding:26px clamp(20px,4vw,40px)}
+.fbody h3{margin:4px 0 8px;font-size:clamp(25px,3vw,34px);line-height:1.25;font-weight:900}
+.fbody p{margin:0 0 16px;color:var(--muted)}.go{color:var(--accent);font-weight:700}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:38px;padding:4px 13px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:15px;font-weight:500;cursor:pointer}
+.chip:hover{color:var(--text);background:var(--panel2)}.chip[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--ink);font-weight:700}
+.chip small{margin-left:4px;font:500 12px var(--latin);opacity:.75}
+.sub{margin-bottom:14px}.sub .chip{min-height:34px;font-size:14px}.sub .chip[aria-pressed=true]{background:var(--c,var(--text));border-color:var(--c,var(--text))}
+.search{flex:1 1 200px;max-width:320px;margin-left:auto}
+.search input{width:100%;height:40px;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-size:16px}
+.search input::placeholder{color:#98a2c0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,265px),1fr));gap:12px}
+.card{position:relative;display:flex;flex-direction:column;min-height:150px;padding:15px 16px 13px;background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c,var(--accent));border-radius:10px;text-align:left;text-decoration:none;cursor:pointer;width:100%}
+.card:hover{background:var(--panel2)}
+.thumb{margin:-15px -16px 12px;aspect-ratio:16/9;background:#0a0f24;overflow:hidden;border-radius:6px 6px 0 0;position:relative}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.play{position:absolute;inset:0;margin:auto;width:48px;height:48px;border-radius:50%;background:rgba(13,20,48,.82);display:grid;place-items:center}.play svg{width:18px;height:18px;fill:#fff;margin-left:3px}
+.kind{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:13px;font-weight:500}
+.new{color:var(--ink);background:var(--accent);padding:0 7px;border-radius:4px;font:700 11px/19px var(--latin)}
+.card h3{margin:3px 0 4px;font-size:18px;line-height:1.4;font-weight:700}
+.card p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.6}
+.empty{padding:38px 18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.more{display:flex;justify-content:center;margin-top:16px}
+
+footer{margin-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 18px;padding-block:22px calc(22px + env(safe-area-inset-bottom))}
+dialog{width:min(960px,calc(100vw - 24px));padding:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text)}
+dialog::backdrop{background:rgba(5,8,22,.86)}
+.dh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 8px 8px 16px}.dh h3{margin:0;font-size:17px;line-height:1.4}
+.x{flex:none;width:40px;height:40px;border:0;border-radius:8px;background:transparent;font-size:22px;line-height:1;cursor:pointer}.x:hover{background:var(--panel2)}
+.vid{aspect-ratio:16/9;background:#000}.vid iframe{display:block;width:100%;height:100%;border:0}
+
+@media(max-width:860px){
+ .hero .wrap{grid-template-columns:minmax(0,1fr);padding-top:30px;gap:14px}.lead{font-size:17px}
+ .feature{grid-template-columns:minmax(0,1fr)}.fart{min-height:190px}.fart svg{max-height:220px}
+ .search{max-width:none;flex-basis:100%;margin-left:0;order:-1}
 }
-html,body{margin:0}
-body{background:linear-gradient(#bfeaf5,var(--sea) 340px);background-color:var(--sea);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
-*{box-sizing:border-box}
-a{color:inherit}
-button{font:inherit;color:inherit;cursor:pointer}
-:focus-visible{outline:3px solid var(--candy);outline-offset:2px}
-.wrap{max-width:1320px;margin:0 auto;padding-block:18px 28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px;margin-bottom:12px}
-h1{font-family:var(--f-disp);font-weight:900;font-size:clamp(30px,5vw,46px);line-height:1.15;margin:0;color:#fff;text-shadow:0 3px 0 var(--sea-deep);letter-spacing:.04em;text-wrap:balance}
-h1 .sugar{color:var(--star)}
-.sub{margin:4px 0 0;color:#1f4b5e;font-weight:500}
-.pass{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:6px 14px;font-weight:700;display:flex;gap:10px;align-items:center;box-shadow:0 4px 0 var(--ink)}
-.pass b{font-family:var(--f-num);color:#d9467a;font-size:20px}
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
-.map{position:relative;height:min(640px,72vh);min-height:420px;border-radius:24px;overflow:hidden;border:3px solid #fff;box-shadow:0 6px 0 var(--sea-deep);background:#9fdcef;touch-action:none}
-.map canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.lbl{position:absolute;left:0;top:0;transform:translate(-50%,-100%);background:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:2px 12px 3px;font-family:var(--f-disp);font-weight:900;font-size:16px;white-space:nowrap;box-shadow:0 3px 0 var(--ink);display:flex;gap:6px;align-items:center;transition:background .2s}
-.lbl i{font-style:normal;font-family:var(--f-num);font-size:12px;color:#d9467a}
-.lbl:hover{background:#fff3c8}
-.lbl.on{background:var(--star)}
-.lbl.soon{background:#ffffffcc;border-style:dashed;box-shadow:none;font-size:13px;cursor:default}
-.mapbar{position:absolute;right:12px;top:12px;display:flex;gap:6px}
-.mbtn{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:700;font-size:13.5px;box-shadow:0 3px 0 var(--ink)}
-.mbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
-.hint{position:absolute;left:12px;bottom:10px;background:#ffffffd0;border-radius:999px;padding:2px 12px;font-size:12.5px;color:var(--dim);pointer-events:none}
-.nogl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--ink);font-weight:700}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.chip{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:700;font-size:14px}
-.chip[aria-pressed="true"]{background:var(--star)}
-.guide{background:var(--paper);border:3px solid var(--ink);border-radius:22px;padding:16px;box-shadow:0 6px 0 var(--ink);min-width:0}
-.guide h2{font-family:var(--f-disp);font-weight:900;font-size:26px;margin:0;line-height:1.25}
-.guide .tag{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.08em;background:var(--zc,#fff);border-radius:999px;padding:1px 10px;margin-bottom:6px;border:1.5px solid var(--ink)}
-.guide p.intro{margin:6px 0 12px;color:var(--dim)}
-.list{display:flex;flex-direction:column;gap:10px}
-.game{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px 12px;text-decoration:none;transition:transform .15s,border-color .15s}
-.game:hover{border-color:var(--ink);transform:translateY(-2px)}
-.game .t{font-weight:700;font-size:16px}
-.game .d{grid-column:1;font-size:13.5px;color:var(--dim)}
-.game .go{grid-row:1/span 2;grid-column:2;font-family:var(--f-num);font-weight:700;font-size:13px;background:var(--zc,var(--star));border:2px solid var(--ink);border-radius:999px;padding:3px 10px;white-space:nowrap}
-.game .new{font-size:11px;font-weight:700;color:#fff;background:#d9467a;border-radius:6px;padding:0 6px;margin-left:6px;vertical-align:2px}
-.game.seen .go{background:#fff}
-.game.seen .go::before{content:"✔ ";color:#2e9d57}
-.soonbox{border:2px dashed var(--dim);border-radius:16px;padding:10px 12px;color:var(--dim);font-size:13.5px}
-.foot{margin-top:14px;font-size:13px;color:#1f4b5e}
-@media (max-width:900px){
-  .grid{grid-template-columns:1fr}
-  .map{height:62vh;min-height:380px}
-  .lbl{font-size:13px;padding:1px 9px 2px}
-}
+@media(max-width:560px){.top .wrap{gap:8px;min-height:54px}.brand{font-size:17px}.nav a{padding:6px 7px;font-size:14px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.map a .st{transition:none}}
 </style>
+</head>
+<body>
+<a class="skip" href="#library">跳到作品列表</a>
+<header class="top"><div class="wrap">
+  <a class="brand" href="./"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.8 8.2L23 12l-8.2 2.8L12 23l-2.8-8.2L1 12l8.2-2.8z"/></svg>Quantastro</a>
+  <nav class="nav" aria-label="內容分類">
+    <a href="#game">遊戲</a><a href="#video">影片</a><a href="#resource">教學資源</a><a href="#product">作品</a>
+  </nav>
+</div></header>
 
-<div class="wrap">
-  <header>
-    <div>
-      <h1>星星糖<span class="sugar">好奇島</span></h1>
-      <p class="sub">五個小地區，還有一座施工中的小島。拖曳可以轉動小島，點建築或招牌就能出發。</p>
-    </div>
-    <div class="pass" aria-live="polite">🍬 探索護照 <span><b id="seenN">0</b> / <span id="allN">0</span></span></div>
-  </header>
-
-  <div class="grid">
-    <div class="map" id="map">
-      <div class="mapbar">
-        <button class="mbtn" id="night">🌙 晚上</button>
-        <button class="mbtn" id="home">🏝️ 看全島</button>
-      </div>
-      <div class="hint" id="hint">拖曳旋轉・滾輪或雙指縮放</div>
-    </div>
-    <section class="guide" id="guide" aria-live="polite"></section>
+<main>
+<div class="hero"><div class="wrap">
+  <div>
+    <p class="eyebrow">QUANTUM × ASTRO</p>
+    <h1>把看不見的科學，<br>變成玩得到的東西。</h1>
+    <p class="lead">從量子、星空到數學證明，每個作品都能動手試。先猜猜看，再親眼看結果。</p>
+    <div class="cta"><a class="btn main" href="island/" target="_blank" rel="noopener">登上好奇島</a><a class="btn" href="#library">瀏覽全部作品</a></div>
+    <ul class="stats" id="stats"></ul>
   </div>
-  <p class="foot">「探索護照」只記在這台裝置的瀏覽器裡，點過的遊戲會打勾。每個遊戲是獨立的頁面，要給學生玩，記得每一頁也要從 Share 分享出去。</p>
-</div>
+  <div class="map">
+    <svg id="sky" viewBox="0 0 560 470" role="group" aria-label="作品星圖：每顆星是一個互動遊戲"></svg>
+    <p class="tip" id="tip" aria-live="polite"><b>每顆星都是一個遊戲</b>指向星星看名稱，點一下就出發</p>
+  </div>
+</div></div>
 
-<script>const GAME_FILES={"8p8nFHpDCpNAi1PeJvTpPE":"raptor-diamonds.html","UYF7t56f3HGbtk4riHHimw":"iss.html","R9dvPzM3WUkmFzffFvLqjk":"starship-flights.html","TFkwtAXKLZRApKwpk93xzT":"hohmann.html","VX19kF5qU3LyL1S5XrznwG":"lagrange-lab.html","1MsCsSV5qy4WGbMTZB7v8p":"kessler.html","4pF7caMEVHPUY28N2UtEiQ":"zero-g-water.html","X5n3B9sBY1LNLg2v3S3rA9":"voyager-light-day.html","SJrLT5sg781h84QhuSvoYP":"supernova-ia.html","6tgp3mz8iUXDHCga77jz2J":"tunguska.html","2ieJjqjVRsBkVx1aSrQcGC":"telescope-mount.html","NXogCFSwPsi14uehFHZAFd":"mars-jupiter-taichung.html","BEFc1A1wtVw3opc16hnhVi":"light-pollution.html","EJeEEfM7hUPSgMyR9jLb9d":"olbers.html","NHkfB8M5zd5cRzVqrpNfwS":"rayleigh.html","LRo2PuXPNUqc3MiQZJoUv7":"moon-far-side.html","LijPYf1tBhWkXUGV1GnQSV":"galaxy-collision.html","6EdkS7J86v4hkSmZUvbW2F":"fermi.html","HjyVixyTp77Jr1gNju3RGD":"elastic-collision.html","B7cT5pBDWTQNBkqsPB3A7v":"dzhanibekov.html","BVKsPmChDuihBu4ycpf7Ak":"brachistochrone.html","JR91BKWw6oe6eJXN51crha":"wheel-paradox.html","A3fPempLGRtccpkWdFnnuV":"pitch-drop.html","J8Gc1NCGpGt7Sm4856XpGj":"double-slit.html","ECuiikaS86uLxZ5FmT5XM2":"casimir.html","GUxwr6esq5TZarmAanjrVU":"muon.html","EL3hRx8rBp2YBhf6hXv8SG":"loschmidt.html","2gjoUock1bc8xhjkhabctp":"space-temperature.html","M6zMYu9wL418rb8UdJEo8b":"platonic-solids.html","1bxTnyV8Sbj9jdW32US5p2":"riemann-hypothesis.html","7gL3DLexoDCrYwzMd5ZUye":"kaprekar-6174.html","MRfxy44ZdKyurxc36LERLt":"pascal-theorem.html","T31Xhp1UHyQurano2cgSn2":"euler-identity.html","69gCEuAgzGrJQyoVHWxizG":"fermat-last.html","8uiwcU8xdZGWtuswJGFo7D":"basel.html","9UCMNgCXMZ7Han6Xuf71vS":"mersenne.html","4eiBgug1fYX2uuoZjf7Bdo":"einstein-tile.html","XcY47KzDMDUXTG6M1aAQqS":"sierpinski.html","YSohaTTZYqVvs1UEsNg8H2":"banach-tarski.html","8MEvRvcRyCFsH8eLTRV3rr":"pigeonhole.html"};</script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<section id="featured"><div class="wrap">
+  <div class="head"><h2>主打作品</h2></div>
+  <div id="features"></div>
+</div></section>
+
+<section id="library"><div class="wrap">
+  <div class="head"><h2>全部作品</h2><p id="count"></p></div>
+  <div class="tools">
+    <div class="chips" id="types" role="group" aria-label="依類型篩選"></div>
+    <label class="search"><span class="skip">搜尋作品</span><input id="q" type="search" placeholder="搜尋：黑洞、質數、火箭…" autocomplete="off"></label>
+  </div>
+  <div class="chips sub" id="zones" role="group" aria-label="依主題篩選"></div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+  <div class="more"><button class="btn" id="more" hidden>顯示更多</button></div>
+</div></section>
+</main>
+
+<footer><div class="wrap"><span>© <span id="yr"></span> Quantastro</span><a href="https://github.com/cuteip2000-maker/quantastro" rel="noopener">GitHub</a></div></footer>
+
+<dialog id="dlg" aria-labelledby="dt">
+  <div class="dh"><h3 id="dt"></h3><button class="x" id="dx" aria-label="關閉影片">×</button></div>
+  <div class="vid" id="vid"></div>
+</dialog>
+
+<script src="data/island-games.js"></script>
+<script src="data/catalog.js"></script>
 <script>
-/* ============ 島上的地區與遊戲 ============
-   新增遊戲：在對應地區的 games 加一行 {t:'名稱',u:'網址',d:'一句話介紹',isNew:true}
-   新增地區：在 ZONES 加一個物件（x、z 是島上的位置，島的範圍大約 x:-9~9、z:-7~7），並在 build3D 的 LANDMARK 加一個造型 */
-const ZONES=[
- {id:'rocket',name:'火箭碼頭',tag:'太空任務',color:'#ffb4c8',x:7.2,z:0.6,
-  intro:'火箭從這裡出發。算軌道、看太空垃圾、在失重的太空站玩水，最後向最遠的旅行者號打招呼。',
-  games:[
-   {t:'猛禽引擎的鑽石',u:'8p8nFHpDCpNAi1PeJvTpPE',d:'看引擎 8 毫秒點火，火焰裡的震波鑽石怎麼長出來'},
-   {t:'國際太空站',u:'UYF7t56f3HGbtk4riHHimw',d:'為什麼不會掉下來、一天 16 次日出、什麼時候看得到'},
-   {t:'星艦試飛指揮室',u:'R9dvPzM3WUkmFzffFvLqjk',d:'指揮星艦發射、分離、回收'},
-   {t:'霍曼轉移軌道',u:'TFkwtAXKLZRApKwpk93xzT',d:'用最省燃料的路線飛到其他行星'},
-   {t:'拉格朗日點實驗室',u:'VX19kF5qU3LyL1S5XrznwG',d:'找出太空中可以「停車」的五個點'},
-   {t:'凱斯勒效應',u:'1MsCsSV5qy4WGbMTZB7v8p',d:'太空垃圾連環相撞，軌道會不會塞爆'},
-   {t:'失重水球實驗室',u:'4pF7caMEVHPUY28N2UtEiQ',d:'太空站裡的水為什麼變成一顆球'},
-   {t:'為旅行者閃一道光',u:'X5n3B9sBY1LNLg2v3S3rA9',d:'用摩斯密碼向一光日外的旅行者 1 號致敬'},
-  ]},
- {id:'stars',name:'觀星山丘',tag:'天文觀測',color:'#c9b8ff',x:0.4,z:-4.6,
-  intro:'山頂的天文台，晚上最熱鬧（按右上角「晚上」看看）。看行星相會、找被光害偷走的星星，想想夜空為什麼是黑的。',
-  games:[
-   {t:'白矮星的最後一爆',u:'SJrLT5sg781h84QhuSvoYP',d:'Ia 超新星 SN 2026ahvu：吸積、光變曲線、標準燭光'},
-   {t:'通古斯大爆炸',u:'6tgp3mz8iUXDHCga77jz2J',d:'1908 年太空岩石在西伯利亞上空爆炸，吹倒整片森林'},
-   {t:'架起一台望遠鏡',u:'2ieJjqjVRsBkVx1aSrQcGC',d:'組裝赤道儀、平衡兩軸、校正尋星鏡同軸'},
-   {t:'台中火木相會',u:'NXogCFSwPsi14uehFHZAFd',d:'在台中的夜空找火星和木星靠在一起'},
-   {t:'被偷走的星空',u:'BEFc1A1wtVw3opc16hnhVi',d:'光害越嚴重，你還看得到幾顆星'},
-   {t:'夜空為什麼是黑的',u:'EJeEEfM7hUPSgMyR9jLb9d',d:'星星那麼多，夜晚卻是暗的（奧伯斯悖論）'},
-   {t:'太陽真正的顏色',u:'NHkfB8M5zd5cRzVqrpNfwS',d:'天空為什麼是藍的、夕陽為什麼是紅的'},
-   {t:'月球背面的白天',u:'LRo2PuXPNUqc3MiQZJoUv7',d:'月球背面看不到，但不是永遠黑夜'},
-   {t:'星系相撞實驗場',u:'LijPYf1tBhWkXUGV1GnQSV',d:'讓兩個星系撞在一起，看星星怎麼飛'},
-   {t:'大家都在哪裡？',u:'6EdkS7J86v4hkSmZUvbW2F',d:'宇宙這麼大，怎麼還沒遇到外星人（費米悖論）'},
-  ]},
- {id:'forest',name:'怪奇物理森林',tag:'力學怪現象',color:'#bfe9a0',x:-6.4,z:-1.6,
-  intro:'森林裡的東西都不太聽話：螺帽會自己翻面、彎路比直路快、瀝青要等好幾年才滴一滴。',
-  games:[
-   {t:'完全彈性碰撞',u:'HjyVixyTp77Jr1gNju3RGD',d:'鋼球、橡膠、黏土對撞，再把疊球彈到 100 公尺'},
-   {t:'翻跟斗的螺帽',u:'B7cT5pBDWTQNBkqsPB3A7v',d:'轉著轉著突然翻面（賈尼別科夫效應）'},
-   {t:'最速降線大賽',u:'BVKsPmChDuihBu4ycpf7Ak',d:'哪一條下坡路最快？不是直線'},
-   {t:'車輪悖論之謎',u:'JR91BKWw6oe6eJXN51crha',d:'大圈小圈一起滾一圈，怎麼走得一樣遠'},
-   {t:'瀝青滴落實驗',u:'A3fPempLGRtccpkWdFnnuV',d:'看起來是固體，其實是很慢很慢的液體'},
-  ]},
- {id:'cave',name:'看不見的洞窟',tag:'微觀・相對論・熱',color:'#a8e3f0',x:-4.2,z:4.2,
-  intro:'洞裡藏著眼睛看不到的東西：真空的力量、跑得很快的粒子、時間的方向，還有「溫度」到底是什麼。',
-  games:[
-   {t:'雙狹縫實驗',u:'J8Gc1NCGpGt7Sm4856XpGj',d:'電子一顆一顆排出條紋，偷看一眼條紋就消失'},
-   {t:'卡西米爾效應實驗室',u:'ECuiikaS86uLxZ5FmT5XM2',d:'真空裡兩片金屬板竟然會互相吸引'},
-   {t:'μ 子大逃亡',u:'GUxwr6esq5TZarmAanjrVU',d:'短命的 μ 子靠相對論撐到地面'},
-   {t:'時光倒轉實驗室',u:'EL3hRx8rBp2YBhf6hXv8SG',d:'為什麼時間只往前走（洛施密特悖論）'},
-   {t:'太空到底冷不冷',u:'2gjoUock1bc8xhjkhabctp',d:'太空幾乎沒有溫度，東西卻會變冷變熱'},
-  ]},
- {id:'maze',name:'數學迷宮花園',tag:'數學與邏輯',color:'#ffe08a',x:2.6,z:3.4,
-  intro:'花園的小路是用數學鋪的。亂數點出碎形、一顆球切一切變兩顆、鴿子硬要擠進籠子。',
-  games:[
-   {t:'只有五種正多面體',u:'M6zMYu9wL418rb8UdJEo8b',d:'在一個頂點拼多邊形，親手證明為什麼只有 5 種',isNew:true},
-   {t:'黎曼猜想',u:'1bxTnyV8Sbj9jdW32US5p2',d:'用零點的波疊出質數階梯，親手抓住神秘零點'},
-   {t:'6174 數字黑洞',u:'7gL3DLexoDCrYwzMd5ZUye',d:'任選四位數，大減小，最多 7 步都掉進 6174'},
-   {t:'帕斯卡定理',u:'MRfxy44ZdKyurxc36LERLt',d:'圓上六個點怎麼拖，三個交點都排成直線'},
-   {t:'歐拉恆等式',u:'T31Xhp1UHyQurano2cgSn2',d:'乘 i 就是轉彎，一步一步走到 −1'},
-   {t:'費馬最後定理',u:'69gCEuAgzGrJQyoVHWxizG',d:'平方有解、立方永遠差一點：358 年的接力'},
-   {t:'巴賽爾問題',u:'8uiwcU8xdZGWtuswJGFo7D',d:'1＋¼＋⅑＋… 竟然等於 π²/6'},
-   {t:'梅森素數獵人',u:'9UCMNgCXMZ7Han6Xuf71vS',d:'2ⁿ−1 什麼時候是素數？收集、檢驗、追最大紀錄'},
-   {t:'不會重複的拼圖',u:'4eiBgug1fYX2uuoZjf7Bdo',d:'一種「帽子」形狀拼滿平面，卻永遠不重複'},
-   {t:'謝爾賓斯基三角形',u:'XcY47KzDMDUXTG6M1aAQqS',d:'隨機點點點，竟然長出碎形'},
-   {t:'一顆球變兩顆',u:'YSohaTTZYqVvs1UEsNg8H2',d:'巴拿赫-塔斯基悖論：切開再拼，變成兩顆'},
-   {t:'鴿巢原理遊樂場',u:'8MEvRvcRyCFsH8eLTRV3rr',d:'鴿子比籠子多，一定有籠子擠兩隻'},
-  ]},
-];
-const SOON={x:12.5,z:7.5};
+const TYPES=[['all','全部'],['world','互動世界'],['game','遊戲'],['video','影片'],['resource','教學資源'],['product','作品']];
+const TYPE_NAME=Object.fromEntries(TYPES),EMPTY={video:'影片正在製作中，很快就會上架。',resource:'學習單與教材正在整理中。',product:'更多作品正在準備中。',world:'新的互動世界正在建造中。'};
+const PAGE=24,$=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safe=u=>{u=String(u||'');return /^(https?:\/\/|[\w.-]+\/|[\w.-]+$)/i.test(u)&&!/^(javascript|data):/i.test(u)?u:'#';};
+const ytId=v=>/^[\w-]{11}$/.test(v||'')?v:'';
+const ZONES=window.ISLAND_ZONES||[];
+const ITEMS=[...(window.SITE_ITEMS||[]).filter(i=>i&&TYPE_NAME[i.type]&&i.title),
+ ...ZONES.flatMap(z=>z.games.map(g=>({...g,type:'game',topic:z.name,zone:z.id,color:z.color})))];
+const ORDER=i=>(i.isNew?0:1);
+const state={type:'all',zone:'',q:'',shown:PAGE};
 
-/* ============ 探索護照（只存在這台裝置） ============ */
-let seen=new Set();
-try{seen=new Set(JSON.parse(localStorage.getItem('island-seen')||'[]'));}catch(e){}
-function saveSeen(){try{localStorage.setItem('island-seen',JSON.stringify([...seen]));}catch(e){}}
-const ALL=ZONES.flatMap(z=>z.games);
-function updPass(){
-  document.getElementById('seenN').textContent=ALL.filter(g=>seen.has(g.u)).length;
-  document.getElementById('allN').textContent=ALL.length;
+function stats(){const n=t=>ITEMS.filter(i=>i.type===t).length;const a=[[n('game'),'個互動遊戲'],[ZONES.length,'個主題區']];
+ if(n('video'))a.push([n('video'),'部影片']);if(n('resource'))a.push([n('resource'),'份教學資源']);
+ $('stats').innerHTML=a.map(([v,l])=>`<li><b>${v}</b>${l}</li>`).join('');}
+
+function sky(){let h='',seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+ for(let i=0;i<70;i++)h+=`<circle cx="${(rnd()*560).toFixed(1)}" cy="${(rnd()*470).toFixed(1)}" r="${(.5+rnd()*.8).toFixed(2)}" fill="#fff" opacity="${(.14+rnd()*.3).toFixed(2)}"/>`;
+ for(const z of ZONES){const cx=285+z.x*27,cy=240+z.z*36,pts=z.games.map((g,i)=>{const r=11+12.5*Math.sqrt(i+.4),a=i*2.39996+z.x;return[cx+r*Math.cos(a)*1.14,cy+r*Math.sin(a)*.9];});
+  h+=`<polyline class="ln" fill="none" stroke="${z.color}" points="${pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}"/>`;
+  const top=Math.min(...pts.map(p=>p[1]));h+=`<text class="zn" x="${cx.toFixed(1)}" y="${Math.max(16,top-13).toFixed(1)}" fill="${z.color}">${esc(z.name)}</text>`;
+  z.games.forEach((g,i)=>{const[x,y]=pts[i];h+=`<a href="${esc(safe(g.url))}" target="_blank" rel="noopener" aria-label="${esc(g.title)}" data-t="${esc(g.title)}" data-d="${esc(g.desc)}"><circle class="hit" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12"/><circle class="st" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${g.isNew?5.5:3.8}" fill="${g.isNew?'#ffd166':z.color}"/></a>`;});}
+ const svg=$('sky');svg.innerHTML=h;const def=$('tip').innerHTML;
+ const show=e=>{const a=e.target.closest('a');if(a)$('tip').innerHTML=`<b>${esc(a.dataset.t)}</b>${esc(a.dataset.d)}`;};
+ svg.addEventListener('mouseover',show);svg.addEventListener('focusin',show);svg.addEventListener('mouseleave',()=>$('tip').innerHTML=def);svg.addEventListener('focusout',()=>$('tip').innerHTML=def);}
+
+const ISLE=`<svg viewBox="0 0 400 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="400" height="280" fill="#a9e2f0"/><circle cx="330" cy="54" r="26" fill="#fff4cf"/><ellipse cx="200" cy="205" rx="186" ry="58" fill="#7fd0e3"/><path d="M52 196c16-44 76-62 148-62s136 20 150 62c-24 30-82 42-150 42S74 226 52 196z" fill="#f6dfae"/><path d="M78 186c16-34 66-50 122-50s108 16 122 50c-24 20-70 30-122 30s-100-10-122-30z" fill="#9bd77c"/><path d="M178 148l24-58 26 58z" fill="#c9b8ff"/><circle cx="203" cy="88" r="9" fill="#fff"/><path d="M286 172v-54l15 22v32z" fill="#fff"/><path d="M286 118l-11 20h22z" fill="#ff8fab"/><circle cx="118" cy="164" r="19" fill="#62b868"/><circle cx="142" cy="172" r="14" fill="#74c776"/><path d="M118 178h6v18h-6z" fill="#9a6a44"/><circle cx="232" cy="186" r="11" fill="#ffe08a"/><circle cx="256" cy="194" r="7" fill="#ffb4c8"/><path d="M160 208a22 16 0 0 1 44 0z" fill="#5d7fa8"/></svg>`;
+
+function features(){const f=ITEMS.filter(i=>i.featured);$('featured').hidden=!f.length;
+ $('features').innerHTML=f.map(i=>{const v=ytId(i.youtube),art=i.image?`<img src="${esc(safe(i.image))}" alt="" loading="lazy">`:v?`<img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy">`:ISLE;
+  const body=`<div class="fart">${art}</div><div class="fbody"><span class="kind">${esc(TYPE_NAME[i.type])}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p><span class="go">${v?'播放影片':'開始探索'} →</span></div>`;
+  return v?`<button class="feature" style="width:100%;padding:0;text-align:left;cursor:pointer" data-v="${v}" data-t="${esc(i.title)}">${body}</button>`:`<a class="feature" href="${esc(safe(i.url))}" target="_blank" rel="noopener">${body}</a>`;}).join('');}
+
+function match(i){if(state.type!=='all'&&i.type!==state.type)return false;if(state.zone&&i.zone!==state.zone)return false;
+ const q=state.q.trim().toLowerCase();return !q||[i.title,i.desc,i.topic].join(' ').toLowerCase().includes(q);}
+
+function card(i){const v=ytId(i.youtube),style=i.color?` style="--c:${esc(i.color)}"`:'',thumb=v?`<div class="thumb"><img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy"><span class="play"><svg viewBox="0 0 16 16"><path d="M2 1l13 7-13 7z"/></svg></span></div>`:i.image?`<div class="thumb"><img src="${esc(safe(i.image))}" alt="" loading="lazy"></div>`:'';
+ const inner=`${thumb}<span class="kind"><span>${esc(i.topic||TYPE_NAME[i.type])}</span>${i.isNew?'<span class="new">NEW</span>':''}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p>`;
+ return v?`<button class="card"${style} data-v="${v}" data-t="${esc(i.title)}">${inner}</button>`:`<a class="card"${style} href="${esc(safe(i.url))}" target="_blank" rel="noopener">${inner}</a>`;}
+
+function render(){
+ $('types').innerHTML=TYPES.map(([k,l])=>{const n=k==='all'?ITEMS.length:ITEMS.filter(i=>i.type===k).length;return `<button class="chip" data-type="${k}" aria-pressed="${state.type===k}">${l}<small>${n}</small></button>`;}).join('');
+ const showZ=state.type==='game';$('zones').hidden=!showZ;
+ if(showZ)$('zones').innerHTML=`<button class="chip" data-zone="" aria-pressed="${!state.zone}">全部主題</button>`+ZONES.map(z=>`<button class="chip" style="--c:${esc(z.color)}" data-zone="${z.id}" aria-pressed="${state.zone===z.id}">${esc(z.name)}</button>`).join('');
+ const list=ITEMS.filter(match).map((x,n)=>[x,n]).sort((a,b)=>ORDER(a[0])-ORDER(b[0])||a[1]-b[1]).map(a=>a[0]);
+ $('grid').innerHTML=list.slice(0,state.shown).map(card).join('');
+ $('count').textContent=`共 ${list.length} 項`;$('more').hidden=list.length<=state.shown;$('more').textContent=`顯示更多（還有 ${Math.max(0,list.length-state.shown)} 項）`;
+ $('empty').hidden=list.length>0;if(!list.length)$('empty').textContent=state.q?`找不到「${state.q}」，換個關鍵字試試。`:(EMPTY[state.type]||'這裡還沒有內容。');
 }
+function setType(t,scroll){state.type=TYPE_NAME[t]?t:'all';state.zone='';state.shown=PAGE;render();if(scroll)$('library').scrollIntoView();}
 
-/* ============ 導覽面板 ============ */
-const guide=document.getElementById('guide');
-let onZone=()=>{};
-function show(id,opts={}){
-  const z=ZONES.find(z=>z.id===id)||ZONES[0];
-  document.querySelectorAll('.lbl[data-z]').forEach(g=>g.classList.toggle('on',g.dataset.z===z.id));
-  guide.style.setProperty('--zc',z.color);
-  guide.innerHTML=`
-    <div class="chips" role="group" aria-label="地區">${ZONES.map(o=>`<button class="chip" data-z="${o.id}" aria-pressed="${o.id===z.id}">${o.name}</button>`).join('')}</div>
-    <span class="tag">${z.tag}</span>
-    <h2>${z.name}</h2>
-    <p class="intro">${z.intro}</p>
-    <div class="list">${z.games.map(g=>`
-      <a class="game${seen.has(g.u)?' seen':''}" href="games/${GAME_FILES[g.u]}" target="_blank" rel="noopener" data-u="${g.u}">
-        <span class="t">${g.t}${g.isNew?'<span class="new">NEW</span>':''}</span>
-        <span class="go">${seen.has(g.u)?'玩過':'出發 →'}</span>
-        <span class="d">${g.d}</span></a>`).join('')}
-      <div class="soonbox">還有新主題的話，會蓋在這裡或海上那座「施工中」的小島。</div></div>`;
-  guide.querySelectorAll('.chip').forEach(b=>b.onclick=()=>show(b.dataset.z,{fly:true}));
-  guide.querySelectorAll('.game').forEach(a=>a.addEventListener('click',()=>{seen.add(a.dataset.u);saveSeen();updPass();
-    a.classList.add('seen');a.querySelector('.go').textContent='玩過';}));
-  if(location.hash!=='#'+z.id)history.replaceState(null,'','#'+z.id);
-  if(opts.fly)onZone(z);
-  if(opts.scroll&&matchMedia('(max-width:900px)').matches)guide.scrollIntoView({behavior:'smooth',block:'start'});
-}
-updPass();
-
-/* ============ 3D 小島 ============ */
-function build3D(){
-  const T=THREE, box=document.getElementById('map');
-  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  let renderer;
-  try{renderer=new T.WebGLRenderer({antialias:true});}catch(e){return false;}
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
-  renderer.outputEncoding=T.sRGBEncoding;
-  box.prepend(renderer.domElement);
-  const scene=new T.Scene();
-  const DAY={bg:new T.Color('#9fdcef'),fog:new T.Color('#bfe9f5'),sun:new T.Color('#fff4dc'),hemiS:new T.Color('#dff6ff'),hemiG:new T.Color('#8fc46a'),sea:new T.Color('#4fc0dc')};
-  const NIGHT={bg:new T.Color('#141a3a'),fog:new T.Color('#1d2550'),sun:new T.Color('#9fb2ff'),hemiS:new T.Color('#3b4a8a'),hemiG:new T.Color('#1b2a3a'),sea:new T.Color('#1d4f7a')};
-  scene.background=DAY.bg.clone();scene.fog=new T.Fog(DAY.fog.clone(),38,80);
-  const camera=new T.PerspectiveCamera(40,1,0.1,200);
-  const HOME={pos:new T.Vector3(0,14,19),tgt:new T.Vector3(0,0.5,0.8)};
-  camera.position.copy(HOME.pos);
-  const controls=new T.OrbitControls(camera,renderer.domElement);
-  controls.target.copy(HOME.tgt);controls.enableDamping=true;controls.dampingFactor=.08;
-  controls.minDistance=9;controls.maxDistance=42;controls.maxPolarAngle=1.35;controls.minPolarAngle=.35;
-  controls.enablePan=false;controls.autoRotate=!reduce;controls.autoRotateSpeed=.45;
-
-  const hemi=new T.HemisphereLight(DAY.hemiS,DAY.hemiG,.75);scene.add(hemi);
-  const sun=new T.DirectionalLight(DAY.sun,1.1);sun.position.set(12,22,10);sun.castShadow=true;
-  sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-16,right:16,top:16,bottom:-16,near:1,far:60});sun.shadow.bias=-.0008;
-  scene.add(sun);
-
-  const M=(c,o={})=>new T.MeshStandardMaterial(Object.assign({color:c,flatShading:true,roughness:.85,metalness:0},o));
-  const mesh=(geo,mat,x=0,y=0,z=0,parent=scene)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
-  const INK=M('#27384d');
-
-  /* sea */
-  const seaGeo=new T.PlaneGeometry(140,140,70,70);seaGeo.rotateX(-Math.PI/2);
-  const seaMat=M(DAY.sea.clone(),{roughness:.35,metalness:.05,transparent:true,opacity:.95});
-  const sea=new T.Mesh(seaGeo,seaMat);sea.receiveShadow=true;scene.add(sea);
-  const seaBase=seaGeo.attributes.position.array.slice();
-
-  /* island */
-  const rAt=(a,k=1)=>k*(1+.07*Math.sin(3*a+1)+.05*Math.sin(5*a+2.2)+.03*Math.sin(8*a));
-  function blob(rx,rz,k){const s=new T.Shape();for(let i=0;i<=72;i++){const a=i/72*Math.PI*2,r=rAt(a,k);const x=Math.cos(a)*rx*r,z=Math.sin(a)*rz*r;i?s.lineTo(x,-z):s.moveTo(x,-z);}return s;}
-  const sandG=new T.ExtrudeGeometry(blob(10.4,8.2,1),{depth:1.1,bevelEnabled:true,bevelThickness:.5,bevelSize:.8,bevelSegments:3});
-  sandG.rotateX(-Math.PI/2);const sand=mesh(sandG,M('#f6dfa4'),0,-1.1,0);
-  const grassG=new T.ExtrudeGeometry(blob(9,6.9,1),{depth:.35,bevelEnabled:true,bevelThickness:.2,bevelSize:.35,bevelSegments:2});
-  grassG.rotateX(-Math.PI/2);const grass=mesh(grassG,M('#9fd877'),0,.35,0);
-  grassG.computeBoundingBox();const G=.35+grassG.boundingBox.max.y; // ground height
-  // foam ring
-  const foam=new T.Mesh(new T.RingGeometry(1,1.12,72),new T.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.6}));
-  foam.rotation.x=-Math.PI/2;foam.scale.set(11.6,9.3,1);foam.position.y=.08;scene.add(foam);
-
-  /* stepping-stone paths */
-  const stoneG=new T.CylinderGeometry(.28,.32,.12,7),stoneM=M('#f4e6c4');
-  ZONES.forEach(z=>{const n=Math.floor(Math.hypot(z.x,z.z)/0.9);for(let i=1;i<n-1;i++){const f=i/n;mesh(stoneG,stoneM,z.x*f+Math.sin(i*1.7)*.12,G+.02,z.z*f);}});
-
-  /* helpers */
-  function tree(p,x,z,s=1,top='#5fae4e'){const g=new T.Group();g.position.set(x,G,z);g.scale.setScalar(s);p.add(g);
-    mesh(new T.CylinderGeometry(.14,.2,.8,6),M('#a0683c'),0,.4,0,g);
-    mesh(new T.IcosahedronGeometry(.75,0),M(top),0,1.25,0,g);
-    mesh(new T.SphereGeometry(.12,6,5),M('#ff8fb1'),.42,1.4,.38,g);return g;}
-  function palm(x,z,rot){const g=new T.Group();g.position.set(x,G-.15,z);g.rotation.y=rot;scene.add(g);
-    for(let i=0;i<5;i++)mesh(new T.CylinderGeometry(.11,.13,.42,6),M('#c48a52'),i*.06,.2+i*.4,0,g).rotation.z=-.08;
-    for(let i=0;i<5;i++){const l=mesh(new T.ConeGeometry(.22,1.6,4),M('#4fa85a'),.3,2.1,0,g);l.rotation.set(0,i/5*Math.PI*2,1.9);l.position.x=.3+Math.cos(i/5*Math.PI*2)*.5;l.position.z=Math.sin(i/5*Math.PI*2)*.5;}
-    return g;}
-  function star5(r1,r2,d){const s=new T.Shape();for(let i=0;i<10;i++){const r=i%2?r2:r1,a=i/10*Math.PI*2+Math.PI/2;i?s.lineTo(Math.cos(a)*r,Math.sin(a)*r):s.moveTo(Math.cos(a)*r,Math.sin(a)*r);}
-    return new T.ExtrudeGeometry(s,{depth:d,bevelEnabled:true,bevelThickness:.05,bevelSize:.05,bevelSegments:1});}
-  function textTex(txt,bg='#ffffff',fg='#27384d'){const c=document.createElement('canvas');c.width=256;c.height=128;const x=c.getContext('2d');
-    x.fillStyle=bg;x.fillRect(0,0,256,128);x.fillStyle=fg;x.font='bold 54px "Noto Sans TC",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(txt,128,66);
-    const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;return t;}
-
-  const anim=[]; // per-frame callbacks
-  const glow=[]; // night-lit materials
-  const picks=[]; // meshes for raycast
-  const groups={};
-
-  /* ---------- landmarks ---------- */
-  const LANDMARK={
-    rocket(g){
-      // pier into sea
-      const plank=M('#c58b55');
-      mesh(new T.BoxGeometry(4.2,.18,1.4),plank,1.4,G-.25,0,g);
-      [[3.2,.6],[3.2,-.6],[1.8,.6],[1.8,-.6]].forEach(([x,z])=>mesh(new T.CylinderGeometry(.1,.1,1.4,6),plank,x,G-.8,z,g));
-      mesh(new T.CylinderGeometry(1.3,1.45,.3,10),M('#d7dbe6'),0,G+.15,0,g);
-      const r=new T.Group();r.position.y=G+.3;g.add(r);
-      mesh(new T.CylinderGeometry(.55,.62,2.6,14),M('#ffffff',{flatShading:false}),0,1.6,0,r);
-      mesh(new T.ConeGeometry(.55,1.1,14),M('#ff8fb1',{flatShading:false}),0,3.45,0,r);
-      const win=mesh(new T.CylinderGeometry(.24,.24,.1,14),M('#8fd8ea',{emissive:'#000000'}),0,2.2,.56,r);win.rotation.x=Math.PI/2;glow.push([win.material,'#8fe6ff']);
-      for(let i=0;i<3;i++){const f=mesh(new T.BoxGeometry(.12,.9,.7),M('#ff8fb1'),0,.6,0,r);f.rotation.y=i/3*Math.PI*2;f.translateZ(.62);}
-      const flame=mesh(new T.ConeGeometry(.35,.9,10),new T.MeshBasicMaterial({color:'#ffcf4d',transparent:true,opacity:.9}),0,-.05,0,r);flame.rotation.x=Math.PI;
-      anim.push(t=>{const k=g.userData.hot?1:0;r.position.y=G+.3+(reduce?0:Math.sin(t*1.6)*.06)+k*.25;flame.scale.y=.6+k*.8+Math.sin(t*20)*.1*k;});
-      // little satellite dish
-      const d=new T.Group();d.position.set(-1.6,G,1.1);g.add(d);
-      mesh(new T.CylinderGeometry(.06,.06,.8,6),INK,0,.4,0,d);
-      const dish=mesh(new T.SphereGeometry(.45,12,6,0,Math.PI*2,0,1.1),M('#ffffff',{side:T.DoubleSide}),0,.85,0,d);dish.rotation.x=-.9;
-      anim.push(t=>{d.rotation.y=reduce?0:t*.6;});
-      return 4.4;
-    },
-    stars(g){
-      const hill=mesh(new T.SphereGeometry(3,14,10),M('#7cc35c'),0,G-.6,0,g);hill.scale.set(1.15,.62,1);
-      const top=G-.6+3*.62-.1;
-      mesh(new T.CylinderGeometry(.95,.95,1.1,14),M('#ffffff'),0,top+.55,0,g);
-      mesh(new T.SphereGeometry(1,16,8,0,Math.PI*2,0,Math.PI/2),M('#c9b8ff',{flatShading:false}),0,top+1.1,0,g);
-      const scope=mesh(new T.CylinderGeometry(.14,.2,1.4,10),INK,.4,top+1.7,0,g);scope.rotation.z=-.8;
-      const door=mesh(new T.BoxGeometry(.45,.7,.05),M('#ffe08a',{emissive:'#000000'}),0,top+.35,.95,g);glow.push([door.material,'#ffd96a']);
-      const sm=M('#ffcf4d',{emissive:'#ffcf4d',emissiveIntensity:.25});glow.push([sm,'#ffcf4d']);
-      [[-1.8,top+2.2,.4,.45],[1.9,top+2.8,-.3,.35],[.2,top+3.3,.6,.3]].forEach(([x,y,z,s],i)=>{
-        const st=mesh(star5(s,s*.45,.12),sm,x,y,z,g);anim.push(t=>{st.rotation.y=t*(.8+i*.2);st.position.y=y+(reduce?0:Math.sin(t*1.3+i)*.12);});});
-      return top+2.4;
-    },
-    forest(g){
-      [[-1.2,-.8,1.15],[.6,-1.3,1.35],[1.4,.3,1],[-.4,.9,.9],[-1.9,.6,.8],[.4,1.9,.75],[2.2,-1.2,.85]].forEach(([x,z,s],i)=>tree(g,x,z,s,i%3?'#5fae4e':'#4f9e48'));
-      // floating spinning wing-nut (Dzhanibekov)
-      const nut=new T.Group();nut.position.set(.1,G+3,0);g.add(nut);
-      mesh(new T.CylinderGeometry(.35,.35,.3,6),M('#ffcf4d',{metalness:.3,roughness:.4}),0,0,0,nut);
-      [-1,1].forEach(s=>{const w=mesh(new T.BoxGeometry(.75,.25,.12),M('#ffcf4d',{metalness:.3,roughness:.4}),s*.65,0,0,nut);});
-      anim.push(t=>{nut.rotation.y=t*2.4;nut.rotation.x=reduce?0:Math.PI*Math.round(Math.sin(t*.6)*0.5+.5)*1+Math.sin(t*.6)*.4;});
-      // mushroom
-      mesh(new T.CylinderGeometry(.08,.1,.35,6),M('#fffaf0'),-.9,G+.17,-2,g);
-      mesh(new T.SphereGeometry(.28,8,5,0,Math.PI*2,0,Math.PI/2),M('#ff6b7a'),-.9,G+.33,-2,g);
-      return 3.8;
-    },
-    cave(g){
-      const rock=mesh(new T.DodecahedronGeometry(2.2,1),M('#b8a48e'),0,G+.2,0,g);rock.scale.set(1.25,.85,1);
-      mesh(new T.DodecahedronGeometry(1,0),M('#a8937d'),1.9,G+.2,-1,g);
-      const arch=new T.Mesh(new T.CircleGeometry(.9,16,0,Math.PI),new T.MeshBasicMaterial({color:'#1b2433'}));arch.position.set(0,G+.02,1.98);arch.rotation.x=-.25;g.add(arch);
-      const cols=['#8fe6ff','#ffcf4d','#ff8fb1','#b9ff9a'];
-      cols.forEach((c,i)=>{const m=new T.MeshBasicMaterial({color:c});const o=new T.Mesh(new T.SphereGeometry(.13,10,8),m);g.add(o);
-        anim.push(t=>{const a=t*(1+i*.3)+i*1.6;o.position.set(Math.cos(a)*.6,G+.5+Math.sin(a*1.3)*.3+(i*.1),2.2+Math.sin(a)*.4);});});
-      return 3.2;
-    },
-    maze(g){
-      mesh(new T.BoxGeometry(4,.15,3.2),M('#eadbb5'),0,G+.07,0,g);
-      const hedge=M('#4f9e48');
-      [[0,-1.5,4,.3],[0,1.5,4,.3],[-1.9,0,.3,3.2],[1.9,.4,.3,2.4],[-.6,-.6,2.4,.3],[.6,.4,2.4,.3],[-.9,1,.3,1]].forEach(([x,z,w,d])=>mesh(new T.BoxGeometry(w,.55,d),hedge,x,G+.42,z,g));
-      // floating Sierpinski tetrahedron
-      const sp=new T.Group();sp.position.set(0,G+2.4,0);g.add(sp);
-      const tg=new T.TetrahedronGeometry(.42,0),tm=M('#ffcf4d',{emissive:'#000000'});glow.push([tm,'#ffb347']);
-      const V=[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]];
-      V.forEach(a=>V.forEach(b=>{const m=new T.Mesh(tg,tm);m.position.set((a[0]+b[0]*.5)*.42,(a[1]+b[1]*.5)*.42,(a[2]+b[2]*.5)*.42);m.castShadow=true;sp.add(m);}));
-      sp.rotation.set(.6,0,.8);
-      anim.push(t=>{sp.rotation.y=t*.5;sp.position.y=G+2.4+(reduce?0:Math.sin(t*1.1)*.15);});
-      return 3.4;
-    },
-  };
-
-  ZONES.forEach(z=>{
-    const g=new T.Group();g.position.set(z.x,0,z.z);g.userData.zone=z.id;scene.add(g);
-    const fn=LANDMARK[z.id]||(gg=>{mesh(new T.BoxGeometry(1.2,1.2,1.2),M(z.color),0,G+.6,0,gg);return 2;});
-    z.h=fn(g);groups[z.id]=g;
-    g.traverse(o=>{if(o.isMesh){o.userData.zone=z.id;picks.push(o);}});
-  });
-  // dock: the rocket zone's pier should point to sea (rotate whole group outward)
-  groups.rocket.rotation.y=-Math.atan2(ZONES[0].z,ZONES[0].x);
-
-  /* decorations */
-  [[-2.6,-6.2,.4],[5.6,-5.2,1.3],[8.4,-2.8,2],[-8.4,2.8,-1],[-1,6.4,0],[5.4,5.4,2.4],[-7.6,-4.4,.8]].forEach(([x,z,r])=>palm(x,z,r));
-  [[3.6,-1.6,.8],[-2.2,2.0,.7],[-2.6,-2.8,.9],[4.6,1.4,.6]].forEach(([x,z,s])=>tree(scene,x,z,s,'#6dbb5c'));
-  // center fountain / plaza
-  mesh(new T.CylinderGeometry(1,1.1,.25,14),M('#f4e6c4'),0,G+.1,0);
-  const fountain=mesh(new T.CylinderGeometry(.5,.6,.5,14),M('#8fd8ea',{flatShading:false}),0,G+.4,0);
-  const jet=mesh(new T.SphereGeometry(.22,10,8),M('#dff6ff',{transparent:true,opacity:.85}),0,G+.9,0);
-  anim.push(t=>{jet.position.y=G+.85+(reduce?0:Math.abs(Math.sin(t*2))*.35);});
-  // candy signpost at plaza
-  const post=mesh(new T.CylinderGeometry(.06,.06,1.6,8),M('#ff8fb1'),-1.4,G+.8,.6);
-  // soon islet
-  const soon=new T.Group();soon.position.set(SOON.x,0,SOON.z);scene.add(soon);
-  const isl=mesh(new T.SphereGeometry(1.8,12,8),M('#f6dfa4'),0,-.9,0,soon);isl.scale.set(1.3,.5,1);
-  mesh(new T.CylinderGeometry(.07,.07,1.6,6),M('#a0683c'),0,.5,0,soon);
-  const sign=mesh(new T.BoxGeometry(1.5,.75,.08),new T.MeshStandardMaterial({map:textTex('施工中')}),0,1.15,.05,soon);
-  [[.6,.0,.5],[-.7,0,-.3]].forEach(([x,y,z],i)=>{const c=mesh(new T.ConeGeometry(.16,.4,8),M(i?'#ff8fb1':'#ffa24d'),x,.15,z,soon);});
-  soon.rotation.y=-.6;
-  // sailboat
-  const boat=new T.Group();scene.add(boat);
-  mesh(new T.BoxGeometry(1.4,.35,.6),M('#ff8fb1'),0,.15,0,boat);
-  const sail=new T.Shape();sail.moveTo(0,0);sail.lineTo(0,1.4);sail.lineTo(.9,0);sail.lineTo(0,0);
-  const sm2=mesh(new T.ShapeGeometry(sail),new T.MeshStandardMaterial({color:'#ffffff',side:T.DoubleSide}),-.2,.35,0,boat);
-  mesh(new T.CylinderGeometry(.04,.04,1.5,5),INK,-.2,1.05,0,boat);
-  anim.push(t=>{const a=(reduce?1:t*.07)+2;boat.position.set(Math.cos(a)*15.5,.05+Math.sin(t*1.5)*.06,Math.sin(a)*12.5);boat.rotation.y=-a;boat.rotation.z=Math.sin(t*1.3)*.05;});
-  // clouds
-  const cloudM=new T.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:1,transparent:true,opacity:.95});
-  const clouds=[[-16,15,-16],[13,16,-18],[2,18,-24],[-24,14,4],[26,15,-4]].map(([x,y,z],i)=>{const c=new T.Group();c.position.set(x,y,z);scene.add(c);
-    [[0,0,0,1.2],[1.1,-.2,.2,.9],[-1.1,-.25,0,.85],[.4,.5,-.2,.8]].forEach(([a,b,d,s])=>{const m=new T.Mesh(new T.IcosahedronGeometry(s,0),cloudM);m.position.set(a,b,d);c.add(m);});
-    anim.push(t=>{c.position.x=x+(reduce?0:Math.sin(t*.05+i)*2.5);});return c;});
-  // night stars
-  const sp=new Float32Array(600*3);for(let i=0;i<600;i++){const th=Math.random()*Math.PI*2,ph=Math.random()*1.25,R=90;sp[i*3]=R*Math.sin(ph)*Math.cos(th);sp[i*3+1]=R*Math.cos(ph)*.8+5;sp[i*3+2]=R*Math.sin(ph)*Math.sin(th);}
-  const sg=new T.BufferGeometry();sg.setAttribute('position',new T.BufferAttribute(sp,3));
-  const starMat=new T.PointsMaterial({color:'#ffffff',size:.6,transparent:true,opacity:0,fog:false});scene.add(new T.Points(sg,starMat));
-  const moon=new T.Mesh(new T.SphereGeometry(2,16,12),new T.MeshBasicMaterial({color:'#fff6d6',transparent:true,opacity:0,fog:false}));moon.position.set(-30,30,-50);scene.add(moon);
-
-  /* labels */
-  const labels=ZONES.map(z=>{const b=document.createElement('button');b.className='lbl';b.dataset.z=z.id;
-    b.innerHTML=`${z.name}<i>${z.games.length}</i>`;b.setAttribute('aria-label',`${z.name}，${z.games.length} 個遊戲`);
-    b.onclick=()=>show(z.id,{fly:true,scroll:true});box.appendChild(b);return{el:b,p:new T.Vector3(z.x,z.h+.3,z.z)};});
-  const sl=document.createElement('div');sl.className='lbl soon';sl.textContent='下一座小島';box.appendChild(sl);
-  labels.push({el:sl,p:new T.Vector3(SOON.x,2.4,SOON.z)});
-
-  /* picking */
-  const ray=new T.Raycaster(),mv=new T.Vector2();let hot=null,downAt=null;
-  function pick(e){const r=renderer.domElement.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);
-    ray.setFromCamera(mv,camera);const h=ray.intersectObjects(picks,false)[0];return h?h.object.userData.zone:null;}
-  renderer.domElement.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const z=pick(e);if(z!==hot){if(hot)groups[hot].userData.hot=false;hot=z;if(z)groups[z].userData.hot=true;renderer.domElement.style.cursor=z?'pointer':'grab';}});
-  renderer.domElement.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];stopAuto();});
-  renderer.domElement.addEventListener('pointerup',e=>{if(!downAt)return;const moved=Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1]);downAt=null;
-    if(moved<6){const z=pick(e);if(z)show(z,{fly:true,scroll:true});}});
-  let autoT=0;function stopAuto(){controls.autoRotate=false;clearTimeout(autoT);autoT=setTimeout(()=>{if(!reduce)controls.autoRotate=true;},12000);document.getElementById('hint').hidden=true;}
-
-  /* camera fly */
-  let fly=null;
-  function flyTo(tgt,pos){fly={t0:performance.now(),ft:controls.target.clone(),fp:camera.position.clone(),tt:tgt,tp:pos};}
-  onZone=z=>{stopAuto();const tgt=new T.Vector3(z.x*.8,1.5,z.z*.8);
-    const dir=new T.Vector3(z.x,0,z.z).normalize();if(!isFinite(dir.x))dir.set(0,0,1);
-    const side=new T.Vector3(-dir.z,0,dir.x).multiplyScalar(2.5);
-    const pos=tgt.clone().add(dir.clone().multiplyScalar(12)).add(side).add(new T.Vector3(0,10,0));
-    flyTo(tgt,pos);};
-  document.getElementById('home').onclick=()=>{flyTo(HOME.tgt.clone(),HOME.pos.clone());};
-
-  /* night */
-  let night=0,nightTo=0,nightFrom=0,nightT0=0;
-  document.getElementById('night').onclick=e=>{nightFrom=night;nightT0=performance.now();nightTo=nightTo?0:1;e.currentTarget.textContent=nightTo?'☀️ 白天':'🌙 晚上';};
-
-  /* resize */
-  function fit(){const w=box.clientWidth,h=box.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
-    camera.fov=40;camera.updateProjectionMatrix();
-    const k=Math.min(1.75,Math.max(1,1.25/camera.aspect));HOME.pos.copy(HOME0).multiplyScalar(k);
-    if(!touched&&!fly)camera.position.copy(HOME.pos);}
-  const HOME0=HOME.pos.clone();let touched=false;
-  renderer.domElement.addEventListener('pointerdown',()=>{touched=true;});
-  new ResizeObserver(fit).observe(box);fit();
-
-  /* loop */
-  const clock=new T.Clock(),v=new T.Vector3(),pos=seaGeo.attributes.position;
-  function frame(){
-    const t=clock.getElapsedTime();
-    // waves
-    const A=reduce?0:.12;
-    for(let i=0;i<pos.count;i++){const x=seaBase[i*3],z=seaBase[i*3+2];pos.array[i*3+1]=A*(Math.sin(x*.35+t*1.2)+Math.cos(z*.3+t*.9))-.05;}
-    pos.needsUpdate=true;seaGeo.computeVertexNormals();
-    foam.scale.set(11.6+Math.sin(t*1.2)*.15,9.3+Math.sin(t*1.2)*.12,1);
-    anim.forEach(f=>f(t));
-    // hover lift
-    ZONES.forEach(z=>{const g=groups[z.id],k=g.userData.hot?1.06:1;g.scale.lerp(v.set(k,k,k),.15);});
-    // night lerp
-    {const f=Math.min(1,(performance.now()-nightT0)/1200);night=nightFrom+(nightTo-nightFrom)*f;}
-    scene.background.copy(DAY.bg).lerp(NIGHT.bg,night);scene.fog.color.copy(DAY.fog).lerp(NIGHT.fog,night);
-    sun.color.copy(DAY.sun).lerp(NIGHT.sun,night);sun.intensity=1.1-.75*night;
-    hemi.color.copy(DAY.hemiS).lerp(NIGHT.hemiS,night);hemi.groundColor.copy(DAY.hemiG).lerp(NIGHT.hemiG,night);hemi.intensity=.75-.3*night;
-    seaMat.color.copy(DAY.sea).lerp(NIGHT.sea,night);
-    starMat.opacity=night;moon.material.opacity=night;cloudM.opacity=.95-.6*night;
-    glow.forEach(([m,c])=>{m.emissive.set(c);m.emissiveIntensity=night*1.2+(m===glow[0]?0:0);});
-    // fly
-    if(fly){const f=Math.min(1,(performance.now()-fly.t0)/1100),e=f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2;
-      controls.target.lerpVectors(fly.ft,fly.tt,e);camera.position.lerpVectors(fly.fp,fly.tp,e);if(f>=1)fly=null;}
-    controls.update();
-    renderer.render(scene,camera);
-    // labels
-    const w=box.clientWidth,h=box.clientHeight;
-    labels.forEach(l=>{v.copy(l.p).project(camera);const vis=v.z<1&&v.x>-1.1&&v.x<1.1&&v.y>-1.1&&v.y<1.1;
-      l.el.style.visibility=vis?'visible':'hidden';l.el.style.transform=`translate(${(v.x*.5+.5)*w}px,${(-v.y*.5+.5)*h}px) translate(-50%,-100%)`;});
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-  return true;
-}
-
-let ok=false;
-try{ok=!!window.THREE&&build3D();}catch(e){console.error(e);ok=false;}
-if(!ok){const n=document.createElement('div');n.className='nogl';n.textContent='這台裝置沒辦法顯示 3D 小島，請直接用右邊（或下方）的地區按鈕逛島。';document.getElementById('map').appendChild(n);}
-show(location.hash.slice(1)||'rocket');
-addEventListener('hashchange',()=>show(location.hash.slice(1)));
+function openVideo(id,title){$('dt').textContent=title;$('vid').innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="${esc(title)}" allow="autoplay;encrypted-media;picture-in-picture;fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;$('dlg').showModal();}
+const closeVideo=()=>{$('vid').innerHTML='';if($('dlg').open)$('dlg').close();};$('dx').onclick=closeVideo;$('dlg').addEventListener('close',()=>$('vid').innerHTML='');$('dlg').addEventListener('cancel',()=>$('vid').innerHTML='');
+$('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))closeVideo();});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)openVideo(b.dataset.v,b.dataset.t);});
+$('types').addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(b){history.replaceState(null,'',b.dataset.type==='all'?location.pathname:'#'+b.dataset.type);setType(b.dataset.type);}});
+$('zones').addEventListener('click',e=>{const b=e.target.closest('[data-zone]');if(b){state.zone=b.dataset.zone;state.shown=PAGE;render();}});
+$('q').addEventListener('input',e=>{state.q=e.target.value;state.shown=PAGE;render();});
+$('more').onclick=()=>{state.shown+=PAGE;render();};
+addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(TYPE_NAME[t])setType(t,true);});
+$('yr').textContent=new Date().getFullYear();
+stats();sky();features();const h0=location.hash.slice(1);if(TYPE_NAME[h0])setType(h0,true);else render();
 </script>
+</body>
+</html>
