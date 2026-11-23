@@ -1,0 +1,518 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>卡西米爾效應實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: quantum-vacuum stage with mode tabs left, step-by-step explainer rail right; stacks on phones */
+:root{
+  --void:#0b0d1f;
+  --deck:#12152b;
+  --deck2:#1a1e3a;
+  --rule:#2a2f55;
+  --ink:#eef0ff;
+  --dim:#9ea4cc;
+  --plate:#c8ccd8;
+  --pull:#ff6fa8;
+  --good:#6ee7a8;
+  --bad:#ff7a6b;
+  --warn:#ffd166;
+  --f-disp:"Fredoka","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--void);display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));flex-wrap:wrap}
+.tabs button{background:var(--deck);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:9px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--deck2);color:var(--ink);box-shadow:inset 0 3px 0 var(--warn)}
+.tabs button small{display:block;font-weight:500;font-size:11px;color:var(--dim)}
+.view{position:relative;flex:1;min-height:0;background:var(--deck2);border-top:1px solid var(--rule)}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+
+.read{position:absolute;top:12px;left:max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:2px;pointer-events:none;text-shadow:0 1px 4px #000;max-width:min(60%,420px)}
+.read .big{font-family:var(--f-disp);font-weight:700;font-size:28px;line-height:1.1}
+.read .big small{font-size:15px;color:var(--dim);font-weight:500;margin-left:4px}
+.read .line{font-size:14px;color:var(--ink)}
+.read .line b{color:var(--pull)}
+.read .sub{font-size:13px;color:var(--dim)}
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;
+  padding-block:10px max(12px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:linear-gradient(transparent,rgba(11,13,31,.92) 35%)}
+.dock button{background:var(--deck);border:1px solid var(--rule);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:500}
+.dock button:hover{border-color:#4a518a}
+.dock button.pri{background:var(--warn);border-color:var(--warn);color:#2a1d00;font-weight:700}
+.dock button.on{background:var(--pull);border-color:var(--pull);color:#2a0016}
+.dock .sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 260px;max-width:520px}
+.dock .sl input{flex:1;min-width:0;accent-color:var(--warn)}
+.dock .sl output{font-family:var(--f-mono);color:var(--ink);min-width:72px;text-align:right}
+.toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--void);font-weight:700;border-radius:10px;padding:8px 16px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80%;text-align:center}
+.toast.show{opacity:1}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-disp);font-weight:600;font-size:13px;letter-spacing:.16em;color:var(--warn);text-transform:uppercase}
+h1{margin:2px 0 0;font-size:28px;font-weight:900;letter-spacing:.03em;line-height:1.25;text-wrap:balance}
+.lede{margin:8px 0 0;color:var(--dim);font-size:14px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:12px 14px 12px 50px;position:relative;font-size:14px;color:#d8dbf5}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--warn);color:#2a1d00;font-family:var(--f-disp);font-weight:700;display:grid;place-items:center;font-size:15px}
+.steps b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px}
+.formula{background:var(--deck2);border:1px dashed var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#d8dbf5}
+.formula .eq{font-family:var(--f-mono);font-size:16px;color:var(--ink);margin:6px 0;text-align:center}
+.formula b{color:var(--pull)}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:52px 1fr;gap:10px;font-size:13.5px;color:#d8dbf5}
+.tl time{font-family:var(--f-disp);font-weight:700;color:var(--warn)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:82vh;min-height:560px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .read .big{font-size:22px}
+  .read{max-width:92%}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="see" aria-pressed="true">看見真空<small>拖動金屬板</small></button>
+      <button data-t="quiz" aria-pressed="false">哪些波進得去<small>小測驗</small></button>
+      <button data-t="mems" aria-pressed="false">別讓零件黏住<small>挑戰關卡</small></button>
+    </div>
+    <div class="view" id="view">
+      <canvas id="cv" aria-label="卡西米爾效應模擬畫面"></canvas>
+      <div class="read" id="read"></div>
+      <div class="toast" id="toast"></div>
+      <div class="dock" id="dock"></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">Casimir Effect</div>
+      <h1>卡西米爾效應：真空裡的神祕拉力</h1>
+      <p class="lede">把兩片不帶電的金屬板靠得非常非常近，在完全的真空中，它們竟然會自己互相靠攏。推動它們的，是量子力學裡「真空並不空」的秘密。</p>
+    </div>
+
+    <section>
+      <h2>三步驟看懂</h2>
+      <ol class="steps">
+        <li><b>真空不是空的</b>量子力學告訴我們，就算把空氣全部抽光，真空裡還是不停冒出又消失的「能量小漣漪」，叫做量子漲落。畫面上的彩色小波浪就是它們的示意圖。</li>
+        <li><b>板子之間只住得下「剛剛好」的波</b>就像吉他弦兩端被固定，只能發出特定的音。兩片金屬板之間，只有「半個波長的整數倍剛好等於間距」的波才住得下。</li>
+        <li><b>外面推得比裡面用力</b>板子外側被各種波推，內側只有少數幾種波在推。外面的推力比較大，兩片板子就被推向彼此。</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>力氣有多大？</h2>
+      <div class="formula">
+        壓力只跟間距 d 有關：
+        <div class="eq">P = π²ħc ⁄ (240 d⁴)</div>
+        ħ 是普朗克常數，c 是光速。重點在 <b>d⁴</b>：間距縮小一半，力就變成 <b>16 倍</b>；縮小到十分之一，力變成 <b>一萬倍</b>。間距 1 微米時，壓力只有約 0.0013 帕；縮到 10 奈米，大約 1.3 個大氣壓，比我們身邊的空氣壓力還大！
+      </div>
+    </section>
+
+    <section>
+      <h2>科學家怎麼發現的</h2>
+      <ul class="tl">
+        <li><time>1948</time><span>荷蘭物理學家卡西米爾（Hendrik Casimir）在理論上預測了這股力。</span></li>
+        <li><time>1958</time><span>斯帕奈（Sparnaay）第一次嘗試測量，但誤差太大，只能說「和預測不矛盾」。</span></li>
+        <li><time>1997</time><span>拉莫羅（Steve Lamoreaux）用金屬球和平板精確量到，和理論只差約 5%。</span></li>
+        <li><time>1998</time><span>莫希丁（Mohideen）與羅伊（Roy）用原子力顯微鏡量測，誤差縮小到約 1%。</span></li>
+        <li><time>今天</time><span>手機裡的微機電零件（加速度計、陀螺儀）只有幾微米大，工程師必須小心，別讓卡西米爾力把零件「黏」在一起。</span></li>
+      </ul>
+    </section>
+    <p class="note">畫面裡的彩色波浪是方便理解的比喻，顏色代表波長（紫色最短、紅色最長）。真正的計算要用到量子場論。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, tab = 'see';
+const C_P = Math.PI*Math.PI*1.0546e-34*2.9979e8/240;   // Pa·m⁴
+const pressure = dnm => C_P/Math.pow(dnm*1e-9, 4);
+function fmtP(p){
+  if (p >= 1e5) return (p/101325).toFixed(p >= 1e6 ? 0 : 1) + ' 大氣壓';
+  if (p >= 1000) return (p/1000).toFixed(1) + ' 千帕';
+  if (p >= 1) return p.toFixed(p >= 100 ? 0 : 1) + ' 帕';
+  const e = Math.floor(Math.log10(p)), m = p/Math.pow(10, e);
+  return `${m.toFixed(1)}×10<sup>${e}</sup> 帕`;
+}
+function compareP(p){
+  const paper = 0.78; // one sheet of printer paper lying flat
+  if (p >= 101325) return `比我們周圍的大氣壓力還大（約 ${(p/101325).toFixed(1)} 倍）！`;
+  if (p >= 1000) return `約是大氣壓力的 ${(p/1013.25).toFixed(0)}%`;
+  if (p >= paper) return `約等於 ${Math.round(p/paper)} 張影印紙疊起來平放的壓力`;
+  return `只有一張影印紙平放壓力的 1/${Math.round(paper/p).toLocaleString()}`;
+}
+function fmtD(d){ return d >= 1000 ? (d/1000).toFixed(d >= 10000 ? 0 : 2) + ' 微米' : Math.round(d) + ' 奈米'; }
+const hue = (lam, lo, hi) => 270 - Math.max(0, Math.min(1, (Math.log(lam) - Math.log(lo))/(Math.log(hi) - Math.log(lo))))*270;
+let toastT; function toast(m){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 2800); }
+
+// =================== MODE 1: see the vacuum ===================
+const S = {d:500, gpx:200, waves:[], modes:[], release:null, drag:false};
+const DMIN = 10, DMAX = 2000;
+function gapPxFromD(d){ const f = (Math.log(d) - Math.log(DMIN))/(Math.log(DMAX) - Math.log(DMIN)); return 34 + f*(Math.min(W*.5, 520) - 34); }
+function dFromGapPx(g){ const f = (g - 34)/(Math.min(W*.5, 520) - 34); return Math.exp(Math.log(DMIN) + Math.max(0, Math.min(1, f))*(Math.log(DMAX) - Math.log(DMIN))); }
+const LMIN = 9, LMAX = 170;
+function plateGeom(){
+  const cx = W/2, g = S.release ? S.release.g : gapPxFromD(S.d);
+  const top = Math.max(185, H*.24), ph = Math.max(110, H - 120 - top);
+  return {cx, g, xl:cx - g/2, xr:cx + g/2, top, ph, th:14};
+}
+function setupSee(){
+  $('#dock').innerHTML = `<div class="sl"><span>間距</span><input id="dS" type="range" min="0" max="1000" step="1"><output id="dO"></output></div>
+    <button id="bRel" class="pri">放開兩片板子</button>`;
+  const sl = $('#dS');
+  sl.value = Math.round((Math.log(S.d) - Math.log(DMIN))/(Math.log(DMAX) - Math.log(DMIN))*1000);
+  sl.oninput = () => { S.release = null; S.d = Math.exp(Math.log(DMIN) + sl.value/1000*(Math.log(DMAX) - Math.log(DMIN))); S.modes = []; relLabel(); };
+  $('#bRel').onclick = () => {
+    if (S.release && S.release.stuck){ S.release = null; S.modes = []; relLabel(); return; }
+    if (S.release) return;
+    S.release = {g:gapPxFromD(S.d), v:0, stuck:false}; relLabel();
+  };
+  relLabel();
+}
+function relLabel(){ const b = $('#bRel'); if (b) b.textContent = S.release && S.release.stuck ? '重來' : '放開兩片板子'; }
+function seeAllowedN(g){ return Math.max(1, Math.min(14, Math.floor(2*g/LMIN))); }
+function updateSee(dt, now){
+  const P = plateGeom();
+  // release animation: accelerate together, faster and faster
+  if (S.release && !S.release.stuck){
+    const r = S.release, d = dFromGapPx(r.g);
+    const a = 30 + 900*Math.min(1, Math.log10(pressure(d)/1e-4)/9);
+    r.v += a*dt; r.g -= r.v*dt;
+    if (r.g <= 0){ r.g = 0; r.stuck = true; relLabel(); toast('啪！兩片板子黏在一起了'); flash = 1; }
+  }
+  // outside fluctuations
+  const rate = 70;
+  if (Math.random() < rate*dt && S.waves.length < 170){
+    const lam = Math.exp(Math.log(LMIN) + Math.random()*(Math.log(LMAX) - Math.log(LMIN)));
+    const len = lam*(1.2 + Math.random()*1.6), y = 40 + Math.random()*(H - 150);
+    let x = Math.random()*W;
+    const inPlateY = y > P.top - 6 && y < P.top + P.ph + 6;
+    if (inPlateY && x + len/2 > P.xl - 8 && x - len/2 < P.xr + 8){
+      // nudge it outside the gap
+      x = Math.random() < .5 ? P.xl - 12 - len/2 - Math.random()*W*.3 : P.xr + 12 + len/2 + Math.random()*W*.3;
+    }
+    S.waves.push({x, y, lam, len, amp:4 + Math.random()*5, t:0, life:1.2 + Math.random()*1.4, ph:Math.random()*6, sp:(Math.random() - .5)*40});
+  }
+  S.waves.forEach(w => { w.t += dt; w.x += w.sp*dt; });
+  S.waves = S.waves.filter(w => w.t < w.life);
+  // inside: only standing waves that fit
+  const N = seeAllowedN(P.g);
+  if (P.g > 6 && S.modes.length < Math.min(7, N + 1) && Math.random() < 6*dt){
+    S.modes.push({n:1 + Math.floor(Math.random()*N), y:P.top + 14 + Math.random()*(P.ph - 28), t:0, life:1.4 + Math.random()*1.2, ph:Math.random()*6});
+  }
+  S.modes.forEach(m => m.t += dt);
+  S.modes = S.modes.filter(m => m.t < m.life && m.n <= seeAllowedN(P.g));
+  // readout
+  const d = S.release ? dFromGapPx(S.release.g) : S.d, p = pressure(Math.max(d, 1));
+  const out = $('#dO'); if (out) out.textContent = fmtD(d);
+  $('#read').innerHTML = `<div class="big">${S.release && S.release.stuck ? '黏住了！' : fmtD(d)}<small>${S.release && S.release.stuck ? '' : '兩片板子的間距'}</small></div>
+    <div class="line">往內的拉力：<b>${fmtP(p)}</b></div>
+    <div class="sub">${compareP(p)}</div>
+    <div class="sub">板子之間住得下的波：只有 ${N} 種；外面：無數種</div>`;
+}
+let flash = 0;
+function drawWave(x0, x1, y, lam, amp, alpha, h, phase){
+  ctx.strokeStyle = `hsla(${h},90%,65%,${alpha})`; ctx.lineWidth = 2; ctx.beginPath();
+  for (let x = x0; x <= x1; x += 2){ const yy = y + Math.sin((x - x0)/lam*Math.PI*2 + phase)*amp; x === x0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); }
+  ctx.stroke();
+}
+function drawPlate(x, top, ph, th, side){
+  const g = ctx.createLinearGradient(x - th/2, 0, x + th/2, 0);
+  g.addColorStop(0, '#8a8fa3'); g.addColorStop(.45, '#e6e9f2'); g.addColorStop(1, '#7c8196');
+  ctx.fillStyle = g; ctx.fillRect(x - th/2, top, th, ph);
+  ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x - th/2 + 2, top, 2, ph);
+}
+function arrow(x, y, dx, col, w = 3){
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx, y); ctx.stroke();
+  const s = Math.sign(dx); ctx.beginPath(); ctx.moveTo(x + dx, y); ctx.lineTo(x + dx - s*9, y - 6); ctx.lineTo(x + dx - s*9, y + 6); ctx.closePath(); ctx.fill();
+}
+function drawSee(now){
+  const P = plateGeom(), t = now/1000;
+  // outside waves (fade in and out)
+  for (const w of S.waves){
+    const a = Math.sin(Math.PI*w.t/w.life)*.85;
+    let x0 = w.x - w.len/2, x1 = w.x + w.len/2;
+    if (w.y > P.top - 6 && w.y < P.top + P.ph + 6){ // keep out of the gap
+      if (x1 > P.xl - P.th/2 && x0 < P.xr + P.th/2){ if (w.x < P.cx) x1 = Math.min(x1, P.xl - P.th/2 - 2); else x0 = Math.max(x0, P.xr + P.th/2 + 2); }
+    }
+    if (x1 - x0 > 4) drawWave(x0, x1, w.y, w.lam, w.amp*a, a, hue(w.lam, LMIN, LMAX), w.ph + t*4);
+  }
+  // inside standing waves: nodes on both plates
+  for (const m of S.modes){
+    const a = Math.sin(Math.PI*m.t/m.life), lam = 2*P.g/m.n, h = hue(lam, LMIN, LMAX);
+    ctx.strokeStyle = `hsla(${h},90%,68%,${a})`; ctx.lineWidth = 2.2; ctx.beginPath();
+    const amp = Math.min(10, P.g*.25)*a*Math.sin(t*6 + m.ph);
+    for (let x = P.xl; x <= P.xr; x += 1.5){ const yy = m.y + Math.sin((x - P.xl)/P.g*Math.PI*m.n)*amp; x === P.xl ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); }
+    ctx.stroke();
+  }
+  drawPlate(P.xl, P.top, P.ph, P.th); drawPlate(P.xr, P.top, P.ph, P.th);
+  // pushes: many from outside, few from inside
+  const nIn = Math.min(4, Math.max(1, Math.round(seeAllowedN(P.g)/3)));
+  for (let i = 0; i < 5; i++){
+    const y = P.top + P.ph*(i + .5)/5, wob = Math.sin(t*5 + i)*3;
+    arrow(P.xl - P.th/2 - 48 + wob, y, 36, 'rgba(255,111,168,.85)');
+    arrow(P.xr + P.th/2 + 48 - wob, y, -36, 'rgba(255,111,168,.85)');
+  }
+  if (P.g > 40) for (let i = 0; i < nIn; i++){
+    const y = P.top + P.ph*(i + .5)/nIn;
+    arrow(P.xl + P.th/2 + 6, y + 10, Math.min(18, P.g*.25), 'rgba(110,231,168,.7)', 2);
+    arrow(P.xr - P.th/2 - 6, y + 10, -Math.min(18, P.g*.25), 'rgba(110,231,168,.7)', 2);
+  }
+  ctx.font = '600 13px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,111,168,.95)'; ctx.fillText('外面的波推進來', P.xl - 70, P.top - 12); ctx.fillText('外面的波推進來', P.xr + 70, P.top - 12);
+  ctx.fillStyle = 'rgba(110,231,168,.95)'; if (P.g > 60) ctx.fillText('裡面的波推出去', P.cx, P.top + P.ph + 22);
+  ctx.textAlign = 'start';
+  if (flash > 0){ ctx.fillStyle = `rgba(255,255,255,${flash*.6})`; ctx.fillRect(0, 0, W, H); flash = Math.max(0, flash - .04); }
+  // drag hint
+  if (!S.release){ ctx.fillStyle = 'rgba(238,240,255,.55)'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('← 拖我 →', P.xr + 12, P.top + P.ph + 40); }
+}
+
+// =================== MODE 2: which waves fit ===================
+const Q = {round:0, score:0, gap:12, opts:[], picked:new Set(), checked:false, anim:0, total:5, done:false};
+const GAPS = [12, 10, 15, 8, 18, 9, 14, 16];
+function newRound(){
+  const g = GAPS[(Q.round + Math.floor(Math.random()*3)) % GAPS.length];
+  Q.gap = g; Q.picked = new Set(); Q.checked = false; Q.anim = 0;
+  const fits = [], non = [];
+  for (let n = 1; n <= 8; n++){ const l = 2*g/n; if (Number.isInteger(l) && l >= 3) fits.push(l); }
+  for (let l = 3; l <= 2*g + 4; l++) if ((2*g) % l !== 0) non.push(l);
+  const shuffle = a => a.sort(() => Math.random() - .5);
+  const nf = Math.min(fits.length, 2 + Math.floor(Math.random()*2));
+  Q.opts = shuffle([...shuffle(fits).slice(0, nf), ...shuffle(non).slice(0, 6 - nf)]).map(l => ({l, fit:(2*g) % l === 0}));
+}
+function setupQuiz(){
+  $('#dock').innerHTML = `<button id="qHint">提示</button><button id="qGo" class="pri">送進去檢查</button><button id="qNext" hidden>下一題 →</button>`;
+  $('#qHint').onclick = () => toast(`把間距 ${Q.gap} 格 × 2 = ${Q.gap*2}，能被波長整除的就進得去`);
+  $('#qGo').onclick = checkQuiz;
+  $('#qNext').onclick = () => { if (Q.done){ Q.round = 0; Q.score = 0; Q.done = false; } newRound(); $('#qGo').hidden = false; $('#qNext').hidden = true; };
+  if (!Q.opts.length) newRound();
+}
+function checkQuiz(){
+  if (Q.checked) return;
+  if (!Q.picked.size){ toast('先點選你覺得進得去的波'); return; }
+  Q.checked = true; Q.anim = 0;
+  let gain = 0, perfect = true;
+  Q.opts.forEach((o, i) => { const p = Q.picked.has(i); if (p && o.fit) gain++; else if (p && !o.fit){ gain--; perfect = false; } else if (!p && o.fit) perfect = false; });
+  if (perfect) gain += 2;
+  Q.score += Math.max(0, gain); Q.round++;
+  toast(perfect ? '全對！+' + gain + ' 分' : '看看哪些波留下、哪些被抵消了');
+  $('#qGo').hidden = true; $('#qNext').hidden = false;
+  if (Q.round >= Q.total){ Q.done = true; $('#qNext').textContent = '再玩一次'; } else $('#qNext').textContent = '下一題 →';
+}
+function quizLayout(){
+  const unit = Math.min((W*.62)/Q.gap, 34), g = Q.gap*unit, cx = W/2, xl = cx - g/2, xr = cx + g/2, top = 112, ph = Math.max(140, H*.36);
+  const cw = Math.min(150, (W - 40)/3 - 10), ch = 70, cols = W < 620 ? 3 : 6, rowsY = top + ph + 30;
+  const cards = Q.opts.map((o, i) => { const c = i % cols, r = Math.floor(i/cols), tw = cols*cw + (cols - 1)*10;
+    return {x:(W - tw)/2 + c*(cw + 10), y:rowsY + r*(ch + 10), w:cw, h:ch}; });
+  return {unit, g, cx, xl, xr, top, ph, cards};
+}
+function drawQuiz(now){
+  const L = quizLayout(), t = now/1000;
+  ctx.fillStyle = '#eef0ff'; ctx.font = '700 16px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(Q.done ? `測驗結束！總分 ${Q.score} 分` : `第 ${Math.min(Q.round + (Q.checked ? 0 : 1), Q.total)} / ${Q.total} 題 · 目前 ${Q.score} 分`, W/2, 30);
+  ctx.font = '14px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#9ea4cc';
+  ctx.fillText(`兩片板子相距 ${Q.gap} 格。點選所有「進得去」的波，再按「送進去檢查」。`, W/2, 54);
+  ctx.textAlign = 'start';
+  // ruler
+  ctx.strokeStyle = 'rgba(255,209,102,.6)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= Q.gap; i++){ const x = L.xl + i*L.unit; ctx.beginPath(); ctx.moveTo(x, L.top - 14); ctx.lineTo(x, L.top - (i % 5 === 0 ? 26 : 20)); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(L.xl, L.top - 14); ctx.lineTo(L.xr, L.top - 14); ctx.stroke();
+  ctx.fillStyle = '#ffd166'; ctx.font = '600 13px "Fredoka", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`${Q.gap} 格`, L.cx, L.top - 32); ctx.textAlign = 'start';
+  // checked waves inside
+  if (Q.checked){
+    Q.anim += 1/60;
+    const sel = [...Q.picked]; const rowH = (L.ph - 20)/Math.max(1, sel.length);
+    sel.forEach((i, k) => {
+      const o = Q.opts[i], y = L.top + 10 + rowH*(k + .5), lam = o.l*L.unit, h = hue(o.l, 3, 36);
+      if (o.fit){
+        const n = 2*Q.gap/o.l, amp = Math.min(rowH*.35, 14)*Math.sin(t*5);
+        ctx.strokeStyle = `hsl(${h},90%,68%)`; ctx.lineWidth = 2.4; ctx.beginPath();
+        for (let x = L.xl; x <= L.xr; x += 1.5){ const yy = y + Math.sin((x - L.xl)/L.g*Math.PI*n)*amp; x === L.xl ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy); } ctx.stroke();
+        ctx.fillStyle = '#6ee7a8'; ctx.font = '700 13px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`✓ 波長 ${o.l}：剛好 ${n} 個半波`, L.cx, y - Math.min(rowH*.35, 14) - 6); ctx.textAlign = 'start';
+      } else {
+        const fade = Math.max(0, 1 - Q.anim/1.6);
+        drawWave(L.xl, L.xr, y, lam, Math.min(rowH*.35, 12)*fade, .25 + .75*fade, h, t*9);
+        drawWave(L.xl, L.xr, y, lam, Math.min(rowH*.35, 12)*fade, .25 + .75*fade, h, -t*9 + 1);
+        ctx.fillStyle = '#ff7a6b'; ctx.font = '700 13px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(`✕ 波長 ${o.l}：來回反射後互相抵消`, L.cx, y - Math.min(rowH*.35, 12) - 6); ctx.textAlign = 'start';
+      }
+    });
+  }
+  drawPlate(L.xl, L.top, L.ph, 14); drawPlate(L.xr, L.top, L.ph, 14);
+  // cards
+  L.cards.forEach((c, i) => {
+    const o = Q.opts[i], picked = Q.picked.has(i);
+    let border = picked ? '#ffd166' : '#2a2f55';
+    if (Q.checked) border = o.fit ? '#6ee7a8' : picked ? '#ff7a6b' : '#2a2f55';
+    ctx.fillStyle = picked ? '#262b55' : '#12152b'; ctx.strokeStyle = border; ctx.lineWidth = picked || (Q.checked && o.fit) ? 2.5 : 1;
+    if (Q.checked && o.fit && !picked) ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(c.x, c.y, c.w, c.h, 10) : ctx.rect(c.x, c.y, c.w, c.h); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+    const lam = Math.min(c.w*.9, o.l*6);
+    ctx.save(); ctx.beginPath(); ctx.rect(c.x + 6, c.y, c.w - 12, c.h); ctx.clip();
+    drawWave(c.x + 6, c.x + c.w - 6, c.y + 26, lam, 9, 1, hue(o.l, 3, 36), t*3);
+    ctx.restore();
+    ctx.fillStyle = '#eef0ff'; ctx.font = '700 14px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`波長 ${o.l} 格`, c.x + c.w/2, c.y + c.h - 12);
+    if (Q.checked && o.fit && !picked){ ctx.fillStyle = '#6ee7a8'; ctx.font = '700 11px "Noto Sans TC", sans-serif'; ctx.textAlign = 'right'; ctx.fillText('漏掉了', c.x + c.w - 8, c.y + 14); }
+    else if (Q.checked && picked){ ctx.fillStyle = o.fit ? '#6ee7a8' : '#ff7a6b'; ctx.font = '700 11px "Noto Sans TC", sans-serif'; ctx.textAlign = 'right'; ctx.fillText(o.fit ? '答對' : '進不去', c.x + c.w - 8, c.y + 14); }
+    ctx.textAlign = 'start';
+  });
+}
+
+// =================== MODE 3: keep the micro-machine apart ===================
+const AREA = 1e-10; // 10 µm × 10 µm plate
+const LEVELS = [
+  {k:0.01, name:'軟彈簧', target:160, tip:'軟彈簧拉不住太近的板子。慢慢來，間距縮到 160 奈米左右就停。'},
+  {k:0.1, name:'中彈簧', target:100, tip:'彈簧硬了 10 倍，可以挑戰 100 奈米。'},
+  {k:1, name:'硬彈簧', target:60, tip:'最硬的彈簧，目標 60 奈米。越近力越大，記得用「微調」！'}
+];
+const M = {lv:0, a:300, d:300, v:0, stuck:false, hold:0, won:false, dir:0, fine:false};
+let best = {}; try { best = JSON.parse(localStorage.getItem('casimir-mems') || '{}') || {}; } catch (e) {}
+const Fcas = dnm => C_P*AREA/Math.pow(dnm*1e-9, 4);
+function dStar(k){ return Math.pow(4*C_P*AREA/k, .2)*1e9; }
+function equilibrium(a, k){
+  const ds = dStar(k), g = d => k*(a - d)*1e-9 - Fcas(d);
+  if (a <= ds || g(ds) <= 0) return null;
+  let lo = ds, hi = a;
+  for (let i = 0; i < 60; i++){ const m = (lo + hi)/2; if (g(m) > 0) lo = m; else hi = m; }
+  return (lo + hi)/2;
+}
+function setupMems(){
+  $('#dock').innerHTML = `${LEVELS.map((l, i) => `<button data-lv="${i}" class="${i === M.lv ? 'on' : ''}">第 ${i + 1} 關${best[i] ? ' ★' : ''}</button>`).join('')}
+    <button id="mL" aria-label="把彈簧往左推">◀ 推近</button><button id="mR" aria-label="把彈簧往右拉">拉遠 ▶</button>
+    <button id="mFine">微調：關</button><button id="mReset">重來</button>`;
+  document.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { M.lv = +b.dataset.lv; resetMems(); setupMems(); });
+  const hold = (el, d) => { el.addEventListener('pointerdown', e => { e.preventDefault(); M.dir = d; }); ['pointerup','pointerleave','pointercancel'].forEach(ev => el.addEventListener(ev, () => { if (M.dir === d) M.dir = 0; })); };
+  hold($('#mL'), -1); hold($('#mR'), 1);
+  $('#mFine').onclick = () => { M.fine = !M.fine; $('#mFine').textContent = '微調：' + (M.fine ? '開' : '關'); $('#mFine').classList.toggle('on', M.fine); };
+  $('#mReset').onclick = resetMems;
+  $('#mFine').classList.toggle('on', M.fine); $('#mFine').textContent = '微調：' + (M.fine ? '開' : '關');
+}
+function resetMems(){ Object.assign(M, {a:300, d:300, v:0, stuck:false, hold:0, won:false}); const eq = equilibrium(M.a, LEVELS[M.lv].k); if (eq) M.d = eq; toast(LEVELS[M.lv].tip); }
+function updateMems(dt){
+  const L = LEVELS[M.lv];
+  if (!M.stuck){
+    M.a = Math.max(0, Math.min(400, M.a + M.dir*(M.fine ? 4 : 30)*dt));
+    const eq = equilibrium(M.a, L.k);
+    if (eq){ M.d += (eq - M.d)*Math.min(1, dt*10); M.v = 0; }
+    else { M.v += 2000*dt; M.d -= M.v*dt; if (M.d <= 0){ M.d = 0; M.stuck = true; M.hold = 0; toast('黏住了！這就是微機電工程師最怕的「靜摩擦黏著」'); } }
+    const inWin = Math.abs(M.d - L.target) <= L.target*.08 && eq;
+    M.hold = inWin ? M.hold + dt : 0;
+    if (M.hold >= 2 && !M.won){ M.won = true; best[M.lv] = 1; try { localStorage.setItem('casimir-mems', JSON.stringify(best)); } catch (e) {} toast(`第 ${M.lv + 1} 關過關！`); setupMems(); }
+  }
+  const F = M.d > 0 ? Fcas(M.d) : Infinity, Fs = L.k*(M.a - M.d)*1e-9;
+  const ant = 3e-5; // weight of an ant (≈3 mg), N
+  const danger = M.stuck ? 1 : Math.min(1, 1.25*dStar(L.k)/Math.max(M.a, 1));
+  $('#read').innerHTML = `<div class="big">${M.stuck ? '黏住了！' : fmtD(M.d)}<small>${M.stuck ? '按「重來」再試' : '零件間距'}</small></div>
+    <div class="line">目標：${L.target} 奈米（±8%）停住 2 秒 · ${L.name}</div>
+    <div class="line">卡西米爾拉力：<b>${M.stuck ? '—' : (F*1e9).toFixed(F*1e9 < 1 ? 3 : 1) + ' 奈牛頓'}</b></div>
+    <div class="sub">${M.stuck ? '' : `約一隻螞蟻體重的 1/${Math.round(ant/F).toLocaleString()}`}</div>
+    <div class="sub">危險度 ${'■'.repeat(Math.round(danger*10))}${'□'.repeat(10 - Math.round(danger*10))}${M.hold > 0 ? ` · 保持住 ${M.hold.toFixed(1)} 秒` : ''}</div>`;
+}
+function drawMems(now){
+  const L = LEVELS[M.lv];
+  const base = H*.74, top = H*.3, ph = base - top;
+  const x0 = Math.max(60, W*.12), maxPx = Math.min(W*.45, 520), sc = maxPx/400;
+  const xp = x0 + 16 + M.d*sc, xa = x0 + 16 + M.a*sc + 140 + (M.a - M.d)*sc*2.2;
+  // substrate
+  ctx.fillStyle = '#1f2448'; ctx.fillRect(0, base, W, H - base);
+  ctx.fillStyle = '#9ea4cc'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('矽晶片基板（放大約十萬倍的示意圖）', 14, base + 20);
+  // target zone
+  const tz0 = x0 + 16 + L.target*.92*sc, tz1 = x0 + 16 + L.target*1.08*sc;
+  ctx.fillStyle = 'rgba(110,231,168,.15)'; ctx.fillRect(tz0, top - 30, tz1 - tz0, ph + 30);
+  ctx.fillStyle = '#6ee7a8'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillText('目標區', tz0, top - 36);
+  // fixed plate
+  drawPlate(x0, top, ph, 16);
+  // moving plate
+  ctx.save(); if (M.stuck){ ctx.translate((Math.random() - .5)*1.5, 0); }
+  drawPlate(xp + 8, top + 10, ph - 20, 16);
+  ctx.restore();
+  // spring (zigzag)
+  const sx0 = xp + 16, sx1 = xa, sy = top + ph/2, coils = 12;
+  ctx.strokeStyle = '#ffd166'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(sx0, sy);
+  for (let i = 1; i < coils*2; i++){ const x = sx0 + (sx1 - sx0)*i/(coils*2); ctx.lineTo(x, sy + (i % 2 ? -14 : 14)); }
+  ctx.lineTo(sx1, sy); ctx.stroke();
+  // anchor block
+  ctx.fillStyle = '#3a4080'; ctx.fillRect(sx1, sy - 40, 46, 80); ctx.fillStyle = '#9ea4cc'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillText('固定座', sx1 + 2, sy + 58);
+  ctx.fillText(L.name, (sx0 + sx1)/2 - 18, sy - 24);
+  // force arrows on the moving plate
+  if (!M.stuck && M.d > 0){
+    const F = Fcas(M.d), len = Math.min(120, 10 + Math.log10(F/1e-13)*14);
+    arrow(xp + 2, top - 10, -len, '#ff6fa8', 3);
+    ctx.fillStyle = '#ff6fa8'; ctx.fillText('卡西米爾拉力', xp - len, top - 20);
+  }
+  // gap ruler
+  ctx.strokeStyle = 'rgba(238,240,255,.4)'; ctx.lineWidth = 1;
+  for (let n = 0; n <= 400; n += 50){ const x = x0 + 8 + n*sc; ctx.beginPath(); ctx.moveTo(x, base + 30); ctx.lineTo(x, base + 38); ctx.stroke(); if (n % 100 === 0){ ctx.fillStyle = 'rgba(238,240,255,.55)'; ctx.fillText(n + ' nm', x - 14, base + 52); } }
+}
+
+// =================== shell ===================
+function setTab(t){
+  tab = t; document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  if (t === 'see') setupSee(); else if (t === 'quiz') setupQuiz(); else { setupMems(); resetMems(); }
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+
+// pointer: drag plate (see) / pick cards (quiz)
+cv.addEventListener('pointerdown', e => {
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (tab === 'see'){ const P = plateGeom(); if (Math.abs(x - P.xr) < 40 || Math.abs(x - P.xl) < 40){ S.drag = true; S.release = null; relLabel(); cv.setPointerCapture(e.pointerId); } }
+  if (tab === 'quiz' && !Q.checked){ quizLayout().cards.forEach((c, i) => { if (x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h){ Q.picked.has(i) ? Q.picked.delete(i) : Q.picked.add(i); } }); }
+});
+cv.addEventListener('pointermove', e => {
+  if (!(tab === 'see' && S.drag)) return;
+  const r = cv.getBoundingClientRect(), x = e.clientX - r.left, g = Math.max(34, Math.abs(x - W/2)*2);
+  S.d = dFromGapPx(g); S.modes = [];
+  const sl = $('#dS'); if (sl) sl.value = Math.round((Math.log(S.d) - Math.log(DMIN))/(Math.log(DMAX) - Math.log(DMIN))*1000);
+});
+const endDrag = () => S.drag = false;
+cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+addEventListener('keydown', e => { if (tab !== 'mems') return; if (e.key === 'ArrowLeft'){ M.dir = -1; e.preventDefault(); } if (e.key === 'ArrowRight'){ M.dir = 1; e.preventDefault(); } if (e.key === 'Shift') M.fine = true; });
+addEventListener('keyup', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') M.dir = 0; });
+cv.style.cursor = 'ew-resize';
+
+const view = $('#view');
+function resize(){ const r = view.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); }
+new ResizeObserver(resize).observe(view); resize();
+setTab('see');
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const bg = ctx.createRadialGradient(W/2, H*.45, 20, W/2, H*.45, Math.max(W, H)*.8);
+  bg.addColorStop(0, '#1d2148'); bg.addColorStop(1, '#0b0d1f'); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  if (tab === 'see'){ updateSee(dt, now); drawSee(now); }
+  else if (tab === 'quiz'){ $('#read').innerHTML = ''; drawQuiz(now); }
+  else { updateMems(dt); drawMems(now); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

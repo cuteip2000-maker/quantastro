@@ -1,0 +1,228 @@
+<!doctype html>
+<title>黎曼猜想</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,500;0,700;1,500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* Layout: a night-time music score. The critical line ½ runs through the page like a single held note. */
+:root{color-scheme:dark;
+  --night:#1c1730;--panel:#2a2343;--raise:#393058;--line:#55497c;
+  --text:#f4effb;--mute:#c0b6d8;--line12:#8fdcff;--peach:#ffb08a;--gold:#ffd76a;--red:#ff6f7d;
+  --serif:"Noto Serif TC","Songti TC",serif;--sans:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;--math:"STIX Two Text","Times New Roman",serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0;background:var(--night);color:var(--text);font:400 16px/1.7 var(--sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.top{max-width:1240px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px}
+h1{margin:0;font:900 clamp(32px,5vw,46px)/1.15 var(--serif)}
+.thesis{font:500 clamp(18px,2.4vw,24px)/1.3 var(--math);color:var(--line12)}
+.thesis i{color:var(--peach)}
+.lead{flex-basis:100%;margin:0;color:var(--mute);font-size:15.5px}
+.tabs{max-width:1240px;margin:0 auto 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tabs button{min-width:0;padding:10px 5px;border:1px solid var(--line);background:var(--panel);border-radius:6px;font-weight:700;font-size:15px;line-height:1.3}
+.tabs button[aria-selected=true]{background:var(--line12);color:var(--night);border-color:var(--line12)}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:clamp(12px,2vw,18px);display:grid;gap:11px;min-width:0}
+.hint{margin:0;color:var(--mute);font-size:15px}
+canvas{display:block;width:100%;background:#151126;border-radius:5px}
+#stair{height:clamp(245px,36vw,350px)}
+#spike{height:118px}
+#strip{height:clamp(130px,17vw,180px);touch-action:none;cursor:grab}
+#curve{height:clamp(240px,32vw,330px)}
+#err{height:clamp(280px,40vw,400px)}
+.legend{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:13.5px;color:var(--mute)}
+.legend i{display:inline-block;width:18px;height:3px;margin-right:5px;vertical-align:middle}
+.cap{font-size:13.5px;color:var(--mute);margin-bottom:-6px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:42px;padding:6px 13px;border:1px solid var(--line);border-radius:6px;background:var(--raise);font-weight:700;font-size:15px}
+.btn.go{background:var(--peach);border-color:var(--peach);color:var(--night)}
+.btn.on{background:var(--line12);border-color:var(--line12);color:var(--night)}
+.btn:disabled{opacity:.42;cursor:default}
+.sl{flex:1 1 210px;min-width:0;font-size:14px}
+.sl b{font-family:var(--math);font-size:16px;color:var(--gold)}
+input[type=range]{display:block;width:100%;accent-color:var(--peach)}
+.toast{min-height:50px;padding:9px 13px;border-radius:6px;background:var(--night);font-size:15.5px;line-height:1.55}
+.toast b{color:var(--gold)}
+.chips{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.chips span{padding:4px 0;border-radius:4px;background:var(--night);color:var(--mute);text-align:center;font:500 clamp(10.5px,1.5vw,14px)/1.3 var(--math)}
+.chips span.got{background:var(--line12);color:var(--night);font-weight:700}
+.rail{display:grid;gap:12px;min-width:0}
+.rail article{background:var(--raise);border-radius:8px;padding:14px 15px}
+.rail article.news{background:#4a3355;box-shadow:inset 0 0 0 1px var(--peach)}
+.rail h2{margin:0 0 5px;font:900 18px/1.4 var(--serif);color:var(--peach);text-wrap:balance}
+.rail p{margin:0 0 7px;font-size:15.5px}
+.rail p:last-child{margin:0}
+.eq{font:500 17px/1.5 var(--math);color:var(--line12);overflow-wrap:anywhere}
+.small{font-size:13.5px!important;color:var(--mute)}
+.rail a{color:var(--line12)}
+@media(max-width:980px){.wrap{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.tabs button{font-size:14px}.chips{grid-template-columns:repeat(5,minmax(0,1fr))}.btn{padding:6px 10px;font-size:14.5px}}
+</style>
+
+<header class="top">
+  <h1>黎曼猜想</h1>
+  <div class="thesis">ζ(<i>s</i>) = 0 的神秘零點，實部都是 ½</div>
+  <p class="lead">質數看起來毫無規律，它們的節奏卻藏在一排零點裡。</p>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tabA" aria-selected="true">① 零點合奏</button>
+  <button role="tab" id="tabB" aria-selected="false">② 零點捕手</button>
+  <button role="tab" id="tabC" aria-selected="false">③ 推離中線</button>
+</nav>
+
+<div class="wrap">
+<main>
+  <section class="pane" id="paneA">
+    <p class="hint">每個零點都是一條波。從一條平滑的斜線開始，把波一條一條加上去，看質數階梯怎麼浮現。</p>
+    <div class="legend"><span><i style="background:var(--gold)"></i>真正的質數階梯</span><span><i style="background:var(--peach)"></i>波疊出來的線</span><span><i style="background:var(--line12)"></i>最新加入的波</span></div>
+    <canvas id="stair" aria-label="質數階梯與零點波的疊加"></canvas>
+    <div class="cap">零點合奏的尖峰：尖峰站在質數和質數次方上（金色刻度是質數）</div>
+    <canvas id="spike" aria-label="零點疊加產生的尖峰"></canvas>
+    <div class="ctl">
+      <label class="sl" for="nz">用了 <b id="nzv">30</b> 個零點<input type="range" id="nz" min="0" max="100" value="30"></label>
+      <button class="btn go" id="aPlay">從 0 疊到 100</button>
+      <button class="btn" id="aOne">加一條波</button>
+      <button class="btn" id="aSound">聽前 12 個零點</button>
+    </div>
+    <div class="ctl" id="xr"><span style="font-size:14px;color:var(--mute)">看到</span><button class="btn on" data-x="30">30</button><button class="btn" data-x="60">60</button><button class="btn" data-x="100">100</button></div>
+    <div class="toast" id="tA"></div>
+  </section>
+
+  <section class="pane" id="paneB" hidden>
+    <p class="hint">下面是臨界帶，越黑代表 ζ 越接近 0。拖動圓圈去找黑洞。上面的曲線碰到正中央的靶心，就抓到一個零點。</p>
+    <canvas id="curve" aria-label="ζ 的值在複數平面上走出的曲線"></canvas>
+    <canvas id="strip" aria-label="臨界帶地圖，可拖曳探針"></canvas>
+    <div class="ctl">
+      <label class="sl" for="tg">虛部 t = <b id="tv">10.00</b><input type="range" id="tg" min="0" max="50" step="0.01" value="10"></label>
+      <label class="sl" for="sg">實部 σ = <b id="sv">0.50</b><input type="range" id="sg" min="0.1" max="0.9" step="0.05" value="0.5"></label>
+    </div>
+    <div class="ctl"><button class="btn" data-n="-1">t −1</button><button class="btn" data-n="-0.1">t −0.1</button><button class="btn" data-n="0.1">t +0.1</button><button class="btn" data-n="1">t +1</button><button class="btn" id="bReset">重新抓</button></div>
+    <div class="chips" id="chips"></div>
+    <div class="toast" id="tB"></div>
+  </section>
+
+  <section class="pane" id="paneC" hidden>
+    <p class="hint">這是假想實驗。把第一個零點推離中線，它的鏡像會跟著出現在另一邊。質數的誤差只要衝出藍色安全帶，黎曼猜想就不可能成立。</p>
+    <div class="ctl" id="lv"></div>
+    <canvas id="err" aria-label="質數誤差與安全帶"></canvas>
+    <div class="ctl">
+      <label class="sl" for="beta">零點的實部 β = <b id="bv">0.500</b><input type="range" id="beta" min="0.5" max="0.95" step="0.005" value="0.5"></label>
+      <button class="btn go" id="cCheck">檢驗</button>
+      <button class="btn" id="cNext" disabled>下一關</button>
+    </div>
+    <div class="toast" id="tC"></div>
+  </section>
+</main>
+
+<aside class="rail">
+  <article><h2>猜想只有一句話</h2><p class="eq">ζ(s) 的非平凡零點，實部都等於 ½</p><p>黎曼在 1859 年一篇只有 8 頁的論文裡提出。把這些零點畫在平面上，它們全都應該排在同一條直線上。</p></article>
+  <article><h2>ζ 函數是什麼</h2><p class="eq">ζ(s) = 1 + 1/2<sup>s</sup> + 1/3<sup>s</sup> + 1/4<sup>s</sup> + …</p><p>s = 2 時就是巴賽爾問題，答案是 π²/6。s 可以是複數，也就是帶有 i 的數。當實部不大於 1，這串加法不會收斂，黎曼用「解析延拓」把函數接到整個平面，零點就住在延拓出來的地方。</p></article>
+  <article><h2>它怎麼跟質數扯上關係</h2><p>歐拉發現，同一個函數也能只用質數寫成連乘：</p><p class="eq">ζ(s) = 1/(1−2<sup>−s</sup>) · 1/(1−3<sup>−s</sup>) · 1/(1−5<sup>−s</sup>) · …</p><p>每個正整數都能唯一分解成質數，所以左右兩邊相等。</p></article>
+  <article><h2>第一關的階梯是什麼</h2><p>這條階梯叫切比雪夫函數 ψ(x)。走到質數 p 時往上跳 ln p，走到 4、8、9 這種質數次方時也會跳一小階。</p><p>黎曼的公式說，階梯 = 斜線 − 所有零點的波。零點越多，轉角越銳利。</p></article>
+  <article><h2>平凡零點</h2><p>−2、−4、−6 這些負偶數也會讓 ζ 等於 0，但原因很簡單，所以叫「平凡零點」。猜想談的是其他藏在 0 &lt; 實部 &lt; 1 這條帶子裡的零點。</p></article>
+  <article><h2>為什麼中線這麼重要</h2><p>零點的實部 β 決定它的波有多大，大約是 x<sup>β</sup>。全部在 ½ 上，質數分布的誤差就小到大約 √x，這是最整齊的情況。只要有一個零點偏離，誤差遲早會變大。</p><p>第三關的安全帶是舍恩費爾德 1976 年的結果：猜想成立時，x ≥ 73.2 的誤差不超過 √x·(ln x)²/(8π)。</p></article>
+  <article class="news"><h2>2026 年 11 月的最新消息</h2><p>11 月 20 日，Anthropic 的數學家 Levent Alpöge 宣布他和 AI 模型 Claude 找到證明，並寫成電腦能逐步檢查的 Lean 程式。MIT 的 Andrew Sutherland 等人重新編譯通過，《科學人》也報導 Lean 社群發表聲明，認可敘述和證明。</p><p>目前還沒有公開給人閱讀的完整說明，報導中也沒有期刊審查或克雷百萬美元獎金頒發的消息。各報導對證明的是原猜想還是涵蓋它的「廣義黎曼猜想」，說法不完全一致。史丹佛博士後 Alessandro Masullo 也有一份不用 AI 的廣義猜想證明草稿，還在等待檢驗。</p><p class="small">資料截至 2026 年 11 月 22 日，這件事還在發展。<a href="https://www.scientificamerican.com/article/the-ai-riemann-hypothesis-proof-is-almost-certainly-true-independent-mathematicians-attest/" target="_blank" rel="noopener">《科學人》報導</a> · <a href="https://techcrunch.com/2026/11/20/ai-claimed-a-solution-to-the-167-year-old-riemann-hypothesis-and-a-human-did-too/" target="_blank" rel="noopener">TechCrunch 報導</a></p></article>
+  <article><h2>檢查再多也不等於證明</h2><p>電腦已經確認超過 12 兆個零點都在中線上，可是零點有無限多個。所以數學家要的是能涵蓋全部零點的論證，這也是 Lean 檢查受到關注的原因。</p></article>
+</aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Z=[14.134725,21.022040,25.010858,30.424876,32.935062,37.586178,40.918719,43.327073,48.005151,49.773832,52.970321,56.446248,59.347044,60.831779,65.112544,67.079811,69.546402,72.067158,75.704691,77.144840,79.337375,82.910381,84.735493,87.425275,88.809111,92.491899,94.651344,95.870634,98.831194,101.317851,103.725538,105.446623,107.168611,111.029536,111.874659,114.320221,116.226680,118.790783,121.370125,122.946829,124.256819,127.516684,129.578704,131.087689,133.497737,134.756510,138.116042,139.736209,141.123707,143.111846,146.000982,147.422765,150.053520,150.925258,153.024694,156.112909,157.597592,158.849988,161.188964,163.030710,165.537069,167.184440,169.094515,169.911976,173.411537,174.754192,176.441434,178.377408,179.916484,182.207078,184.874468,185.598784,187.228923,189.416159,192.026656,193.079727,195.265397,196.876482,198.015310,201.264752,202.493595,204.189672,205.394697,207.906259,209.576510,211.690863,213.347919,214.547045,216.169539,219.067596,220.714919,221.430706,224.007000,224.983325,227.421444,229.337413,231.250189,231.987235,233.693404,236.524230];
+const COL={grid:'#3a3158',axis:'#c0b6d8',gold:'#ffd76a',peach:'#ffb08a',ice:'#8fdcff',red:'#ff6f7d',text:'#f4effb'};
+function fit(cv){const d=Math.min(devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return null;const W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);g.font='12px "STIX Two Text",serif';return{g,w,h};}
+
+/* tabs */
+const TABS=[['#tabA','#paneA'],['#tabB','#paneB'],['#tabC','#paneC']];
+TABS.forEach(([t,p])=>$(t).onclick=()=>{TABS.forEach(([x,y])=>{$(x).setAttribute('aria-selected',x===t);$(y).hidden=y!==p;});drawAll();});
+function drawAll(){if(!$('#paneA').hidden)drawA();if(!$('#paneB').hidden)drawB();if(!$('#paneC').hidden)drawC();}
+
+/* ① zeros build the prime staircase */
+const isP=n=>{if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true;};
+const PRIMES=[];for(let n=2;n<=100;n++)if(isP(n))PRIMES.push(n);
+const PP=[];PRIMES.forEach(p=>{for(let q=p;q<=100;q*=p)PP.push([q,Math.log(p)]);});PP.sort((a,b)=>a[0]-b[0]);
+const psi=x=>{let s=0;for(const[q,l]of PP){if(q>x)break;s+=l;}return s;};
+const wave=(x,g)=>{const L=Math.log(x);return 2*Math.sqrt(x)*(.5*Math.cos(g*L)+g*Math.sin(g*L))/(.25+g*g);};
+const explicit=(x,n)=>{let s=x-Math.log(2*Math.PI)-.5*Math.log(1-1/(x*x));for(let k=0;k<n;k++)s-=wave(x,Z[k]);return s;};
+const A={n:30,X:30,timer:0};
+function drawA(){const n=A.n,X=A.X;$('#nzv').textContent=n;$('#nz').value=n;
+  let f=fit($('#stair'));if(f){const{g,w,h}=f,l=34,r=8,t=8,b=24,Y=psi(X)*1.15+2,px=x=>l+(x-1)/(X-1)*(w-l-r),py=y=>h-b-y/Y*(h-t-b);
+    g.strokeStyle=COL.grid;g.fillStyle=COL.axis;g.lineWidth=1;const st=X<=30?5:X<=60?10:20;g.textAlign='center';for(let x=st;x<=X;x+=st){g.beginPath();g.moveTo(px(x),t);g.lineTo(px(x),h-b);g.stroke();g.fillText(x,px(x),h-7);}g.textAlign='right';for(let y=st;y<Y;y+=st){g.beginPath();g.moveTo(l,py(y));g.lineTo(w-r,py(y));g.stroke();g.fillText(y,l-5,py(y)+4);}
+    g.save();g.beginPath();g.rect(l,t,w-l-r,h-t-b);g.clip();
+    g.setLineDash([4,4]);g.strokeStyle='#8a7fac';g.beginPath();g.moveTo(px(1),py(1));g.lineTo(px(X),py(X));g.stroke();g.setLineDash([]);
+    g.strokeStyle=COL.gold;g.lineWidth=2.2;g.beginPath();g.moveTo(px(1),py(0));let c=0;for(const[q,v]of PP){if(q>X)break;g.lineTo(px(q),py(c));c+=v;g.lineTo(px(q),py(c));}g.lineTo(px(X),py(c));g.stroke();
+    const S=Math.min(900,Math.round((w-l-r)*2));
+    if(n>0){g.strokeStyle=COL.ice;g.lineWidth=1;g.globalAlpha=.75;g.beginPath();for(let i=0;i<=S;i++){const x=1.02+(X-1.02)*i/S,y=x-wave(x,Z[n-1])*Math.min(6,1+n/8);i?g.lineTo(px(x),py(y)):g.moveTo(px(x),py(y));}g.stroke();g.globalAlpha=1;}
+    g.strokeStyle=COL.peach;g.lineWidth=1.8;g.beginPath();let err=0;for(let i=0;i<=S;i++){const x=1.02+(X-1.02)*i/S,y=explicit(x,n);err+=Math.abs(y-psi(x));i?g.lineTo(px(x),py(y)):g.moveTo(px(x),py(y));}g.stroke();g.restore();A.err=err/(S+1);}
+  f=fit($('#spike'));if(f){const{g,w,h}=f,l=34,r=8,t=5,b=8,px=x=>l+(x-1)/(X-1)*(w-l-r);g.strokeStyle=COL.gold;g.globalAlpha=.6;for(const p of PRIMES){if(p>X)break;g.beginPath();g.moveTo(px(p),h-b);g.lineTo(px(p),h-b-9);g.stroke();}g.globalAlpha=1;
+    if(n>0){const S=Math.round((w-l-r)*2),v=new Float64Array(S+1),GN=Z[n-1];let mx=1e-9;for(let i=0;i<=S;i++){const x=1.2+(X-1.2)*i/S,L=Math.log(x);let s=0;for(let k=0;k<n;k++){const q=Z[k]/GN;s-=Math.exp(-2*q*q)*Math.cos(Z[k]*L);}v[i]=s;mx=Math.max(mx,Math.abs(s));}const mid=h-b-(h-t-b)*.28,sc=(mid-t)/mx;g.strokeStyle=COL.peach;g.lineWidth=1.3;g.beginPath();for(let i=0;i<=S;i++){const x=1.2+(X-1.2)*i/S,y=mid-v[i]*sc;i?g.lineTo(px(x),y):g.moveTo(px(x),y);}g.stroke();}}
+  $('#tA').innerHTML=n===0?'只有一條斜線，完全看不出質數在哪裡。按「加一條波」。':`第 ${n} 個零點的高度是 <b>${Z[n-1].toFixed(3)}</b>，它的波越高頻，補上的細節越小。現在和真階梯平均相差 <b>${A.err.toFixed(2)}</b>。${n>=60?' 轉角已經對準質數了。':''}`;}
+function stopA(){clearInterval(A.timer);A.timer=0;$('#aPlay').textContent='從 0 疊到 100';}
+$('#nz').oninput=e=>{stopA();A.n=+e.target.value;drawA();};
+$('#aOne').onclick=()=>{stopA();A.n=Math.min(100,A.n+1);drawA();};
+$('#aPlay').onclick=()=>{if(A.timer){stopA();return;}if(reduce){A.n=100;drawA();return;}A.n=0;drawA();$('#aPlay').textContent='暫停';A.timer=setInterval(()=>{A.n+=A.n<20?1:2;if(A.n>=100){A.n=100;stopA();}drawA();},A.n<20?170:110);};
+$$('#xr button').forEach(b=>b.onclick=()=>{A.X=+b.dataset.x;$$('#xr button').forEach(x=>x.classList.toggle('on',x===b));drawA();});
+let AC=null;$('#aSound').onclick=()=>{try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume();const t0=AC.currentTime+.05;for(let k=0;k<12;k++){const o=AC.createOscillator(),v=AC.createGain(),t=t0+k*.17;o.type='sine';o.frequency.value=110*Z[k]/Z[0];v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(.055,t+.04);v.gain.setValueAtTime(.055,t0+2.4);v.gain.linearRampToValueAtTime(0,t0+3.1);o.connect(v).connect(AC.destination);o.start(t);o.stop(t0+3.2);}$('#tA').innerHTML='每個音的頻率都和一個零點的高度成正比。這 12 個音沒有整齊的倍數關係。';}catch(e){$('#tA').textContent='這個瀏覽器無法播放聲音。';}};
+
+/* ② zeta via Euler-Maclaurin */
+const LOG=new Float64Array(140);for(let n=1;n<140;n++)LOG[n]=Math.log(n);
+const BC=[1/12,-1/720,1/30240,-1/1209600,1/47900160,-691/1307674368000];
+function zeta(sg,t){const N=Math.min(120,Math.max(12,Math.ceil(Math.abs(t)*.7)+12));let re=0,im=0;for(let n=1;n<N;n++){const m=Math.exp(-sg*LOG[n]),a=t*LOG[n];re+=m*Math.cos(a);im-=m*Math.sin(a);}
+  const m=Math.exp(-sg*LOG[N]),a=t*LOG[N],Ar=m*Math.cos(a),Ai=-m*Math.sin(a),dr=sg-1,di=t,D=dr*dr+di*di;
+  re+=N*(Ar*dr+Ai*di)/D+Ar/2;im+=N*(Ai*dr-Ar*di)/D+Ai/2;
+  let pr=sg,pi=t,qr=Ar/N,qi=Ai/N;for(let k=0;k<BC.length;k++){re+=BC[k]*(pr*qr-pi*qi);im+=BC[k]*(pr*qi+pi*qr);const ar=sg+2*k+1,br=sg+2*k+2,xr=ar*br-t*t,xi=t*(ar+br),nr=pr*xr-pi*xi,ni=pr*xi+pi*xr;pr=nr;pi=ni;qr/=N*N;qi/=N*N;}return[re,im];}
+const TZ=Z.filter(z=>z<50),B={s:.5,t:10,found:new Set(),off:null,cs:null,cv:null};
+$('#chips').innerHTML=TZ.map((_,i)=>`<span id="ch${i}">第 ${i+1} 個</span>`).join('');
+function buildStrip(){const C=document.createElement('canvas'),W=C.width=500,H=C.height=81,g=C.getContext('2d'),I=g.createImageData(W,H),st=[[10,7,20],[52,35,105],[160,84,150],[255,176,138],[255,232,190]];for(let y=0;y<H;y++){const sg=1-y/(H-1);for(let x=0;x<W;x++){const t=.05+x/(W-1)*49.95,[a,b]=zeta(sg===1?1.0001:sg,t),v=clamp((Math.log(Math.hypot(a,b)+1e-4)+3.2)/4.4,0,.999)*4,k=Math.floor(v),f=v-k,i=(y*W+x)*4;for(let c=0;c<3;c++)I.data[i+c]=st[k][c]+(st[k+1][c]-st[k][c])*f;I.data[i+3]=255;}}g.putImageData(I,0,0);B.off=C;}
+function curveData(){if(B.cs===B.s&&B.cv)return B.cv;const n=1251,v=new Float32Array(n*2);for(let i=0;i<n;i++){const[a,b]=zeta(B.s,i*.04);v[i*2]=a;v[i*2+1]=b;}B.cs=B.s;B.cv=v;return v;}
+const SM={l:10,r:10,t:6,b:21};
+function drawB(){if(!B.off)buildStrip();const[zr,zi]=zeta(B.s,B.t),abs=Math.hypot(zr,zi);$('#tv').textContent=B.t.toFixed(2);$('#sv').textContent=B.s.toFixed(2);$('#tg').value=B.t;$('#sg').value=B.s;
+  let f=fit($('#curve'));if(f){const{g,w,h}=f,sc=Math.min(w/6.6,h/4.5),cx=w/2-sc*.9,cy=h/2,X=a=>cx+a*sc,Y=b=>cy-b*sc,v=curveData();g.strokeStyle=COL.grid;g.beginPath();g.moveTo(0,cy);g.lineTo(w,cy);g.moveTo(cx,0);g.lineTo(cx,h);g.stroke();g.fillStyle=COL.axis;g.fillText('實部',w-28,cy-5);g.fillText('虛部',cx+5,13);
+    const m=Math.min(1250,Math.floor(B.t/.04));g.strokeStyle=COL.peach;g.globalAlpha=.8;g.lineWidth=1.3;g.beginPath();for(let i=0;i<=m;i++){i?g.lineTo(X(v[i*2]),Y(v[i*2+1])):g.moveTo(X(v[0]),Y(v[1]));}g.lineTo(X(zr),Y(zi));g.stroke();g.globalAlpha=1;
+    g.strokeStyle=COL.ice;g.lineWidth=2;for(const r of[7,14]){g.beginPath();g.arc(cx,cy,r,0,7);g.stroke();}g.fillStyle=COL.ice;g.beginPath();g.arc(cx,cy,2.5,0,7);g.fill();
+    g.strokeStyle=COL.gold;g.lineWidth=2;g.beginPath();g.moveTo(cx,cy);g.lineTo(X(zr),Y(zi));g.stroke();g.fillStyle=COL.gold;g.beginPath();g.arc(X(zr),Y(zi),5.5,0,7);g.fill();g.fillStyle=COL.text;g.font='14px "STIX Two Text",serif';g.fillText(`|ζ| = ${abs.toFixed(3)}`,10,20);}
+  f=fit($('#strip'));if(f){const{g,w,h}=f,{l,r,t,b}=SM,iw=w-l-r,ih=h-t-b,tx=x=>l+x/50*iw,sy=s=>t+(1-s)*ih;g.imageSmoothingEnabled=true;g.drawImage(B.off,l,t,iw,ih);g.setLineDash([5,4]);g.strokeStyle=COL.ice;g.lineWidth=1.2;g.beginPath();g.moveTo(l,sy(.5));g.lineTo(w-r,sy(.5));g.stroke();g.setLineDash([]);g.fillStyle=COL.axis;g.textAlign='center';for(let x=0;x<=50;x+=10)g.fillText('t='+x,clamp(tx(x),l+12,w-r-14),h-6);g.textAlign='left';g.strokeStyle=COL.ice;TZ.forEach((z,i)=>{if(B.found.has(i)){g.beginPath();g.arc(tx(z),sy(.5),5,0,7);g.stroke();}});g.strokeStyle='#fff';g.lineWidth=2.4;g.beginPath();g.arc(tx(B.t),sy(B.s),8,0,7);g.stroke();g.strokeStyle='#151126';g.lineWidth=1;g.beginPath();g.arc(tx(B.t),sy(B.s),10,0,7);g.stroke();}
+  return abs;}
+function setB(sg,t){B.s=Math.round(clamp(sg,.1,.9)*20)/20;B.t=clamp(t,0,50);let hit=-1,near=-1;TZ.forEach((z,i)=>{if(Math.abs(B.t-z)<.12)near=i;});if(near>=0&&B.s===.5){hit=near;B.t=TZ[near];}const abs=drawB();
+  if(hit>=0){if(!B.found.has(hit)){B.found.add(hit);$('#ch'+hit).textContent=TZ[hit].toFixed(2);$('#ch'+hit).classList.add('got');drawB();const c=B.found.size;$('#tB').innerHTML=c===TZ.length?'<b>10 個全抓到了！</b>它們全部排在 σ = ½ 這條線上。':`抓到第 ${hit+1} 個零點：<b>½ + ${TZ[hit].toFixed(3)} i</b>。已抓 ${c} / 10。`;}else $('#tB').innerHTML=`這是第 ${hit+1} 個零點，已經抓過了。`;}
+  else if(near>=0)$('#tB').innerHTML=`高度對了，但 σ = ${B.s.toFixed(2)} 不在中線上，|ζ| 還有 <b>${abs.toFixed(3)}</b>，碰不到靶心。把 σ 拉回 0.50。`;
+  else $('#tB').innerHTML=`|ζ| = <b>${abs.toFixed(3)}</b>。沿著中線找黑點，用 t ±0.1 微調，讓金點碰到靶心。`;}
+function stripPick(e){const r=$('#strip').getBoundingClientRect(),t=(e.clientX-r.left-SM.l)/(r.width-SM.l-SM.r)*50,s=1-(e.clientY-r.top-SM.t)/(r.height-SM.t-SM.b);setB(s,t);}
+$('#strip').addEventListener('pointerdown',e=>{$('#strip').setPointerCapture(e.pointerId);B.drag=true;stripPick(e);});
+$('#strip').addEventListener('pointermove',e=>{if(B.drag)stripPick(e);});
+['pointerup','pointercancel'].forEach(n=>$('#strip').addEventListener(n,()=>B.drag=false));
+$('#tg').oninput=e=>setB(B.s,+e.target.value);$('#sg').oninput=e=>setB(+e.target.value,B.t);
+$$('[data-n]').forEach(b=>b.onclick=()=>setB(B.s,Math.round((B.t+ +b.dataset.n)*100)/100));
+$('#bReset').onclick=()=>{B.found.clear();TZ.forEach((_,i)=>{$('#ch'+i).textContent=`第 ${i+1} 個`;$('#ch'+i).classList.remove('got');});setB(.5,10);};
+
+/* ③ push a zero off the line */
+const M=3000,LA=Math.log(100),LB=30*Math.LN10,LS=new Float64Array(M),BASE=new Float64Array(M),BAND=new Float64Array(M);
+for(let i=0;i<M;i++){const L=LA+(LB-LA)*i/(M-1);LS[i]=L;BAND[i]=L*L/(8*Math.PI);let s=0;for(let k=1;k<30;k++){const g=Z[k];s+=2*(.5*Math.cos(g*L)+g*Math.sin(g*L))/(.25+g*g);}BASE[i]=s;}
+const G0=Z[0],CG=new Float64Array(M),SG=new Float64Array(M);for(let i=0;i<M;i++){CG[i]=Math.cos(G0*LS[i]);SG[i]=Math.sin(G0*LS[i]);}
+const one=(b,i)=>2*Math.exp((b-.5)*LS[i])*(b*CG[i]+G0*SG[i])/(b*b+G0*G0);
+const E=(b,i)=>-(BASE[i]+(Math.abs(b-.5)<1e-9?one(.5,i):one(b,i)+one(1-b,i)));
+const firstOut=b=>{for(let i=0;i<M;i++)if(Math.abs(E(b,i))>BAND[i])return LS[i]/Math.LN10;return null;};
+const LV=[30,20,10],MINB=LV.map(lim=>{for(let b=.505;b<.955;b+=.005){const o=firstOut(b);if(o!==null&&o<=lim)return Math.round(b*1000)/1000;}return .95;});
+const C={b:.5,lv:0,stars:[0,0,0]};
+function lvUI(){$('#lv').innerHTML=LV.map((l,i)=>`<button class="btn ${i===C.lv?'on':''}" data-l="${i}">10<sup>${l}</sup> 前衝出 ${'★'.repeat(C.stars[i])}</button>`).join('');$$('#lv button').forEach(x=>x.onclick=()=>{C.lv=+x.dataset.l;C.b=.5;$('#beta').value=.5;$('#cNext').disabled=true;lvUI();drawC();intro();});}
+function intro(){$('#tC').innerHTML=`任務：把 β 推到<b>剛好夠遠</b>，讓誤差在 x = 10<sup>${LV[C.lv]}</sup> 之前衝出安全帶。推得越少，星星越多。`;}
+const asinhY=v=>Math.asinh(v)/Math.asinh(1e5);
+function drawC(){$('#bv').textContent=C.b.toFixed(3);const f=fit($('#err'));if(!f)return;const{g,w,h}=f,l=46,r=8,t=8,b=24,px=L=>l+(L-LA)/(LB-LA)*(w-l-r),py=v=>t+(h-t-b)*(.5-asinhY(clamp(v,-1e5,1e5))/2);
+  g.fillStyle='rgba(143,220,255,.18)';g.beginPath();for(let i=0;i<M;i+=6)g.lineTo(px(LS[i]),py(BAND[i]));for(let i=M-1;i>=0;i-=6)g.lineTo(px(LS[i]),py(-BAND[i]));g.fill();
+  g.strokeStyle=COL.grid;g.fillStyle=COL.axis;g.lineWidth=1;g.textAlign='right';for(const v of[0,1,10,100,1000,10000])for(const q of v?[v,-v]:[0]){g.beginPath();g.moveTo(l,py(q));g.lineTo(w-r,py(q));g.stroke();g.fillText(q===0?'0':(q<0?'−':'')+Math.abs(q),l-5,py(q)+4);}g.textAlign='center';for(let k=w<520?10:5;k<=30;k+=w<520?10:5){const x=px(k*Math.LN10);g.fillText('10^'+k,clamp(x,l+16,w-r-20),h-7);}
+  g.strokeStyle=COL.gold;g.setLineDash([5,4]);const lim=px(LV[C.lv]*Math.LN10);g.beginPath();g.moveTo(lim,t);g.lineTo(lim,h-b);g.stroke();g.setLineDash([]);
+  const cols=Math.round(w-l-r),per=M/cols;for(let c=0;c<cols;c++){let a=1e12,z=-1e12,out=false;for(let i=Math.floor(c*per);i<Math.floor((c+1)*per)&&i<M;i++){const v=E(C.b,i);a=Math.min(a,v);z=Math.max(z,v);if(Math.abs(v)>BAND[i])out=true;}g.strokeStyle=out?COL.red:COL.peach;g.beginPath();g.moveTo(l+c+.5,py(a));g.lineTo(l+c+.5,Math.min(py(a)-1,py(z)));g.stroke();}
+  const bx=w-r-86,by=t+5,bw=78,bh=48;g.fillStyle='#2a2343';g.fillRect(bx,by,bw,bh);g.strokeStyle=COL.axis;g.strokeRect(bx,by,bw,bh);g.strokeStyle=COL.ice;g.setLineDash([3,3]);g.beginPath();g.moveTo(bx+bw/2,by);g.lineTo(bx+bw/2,by+bh);g.stroke();g.setLineDash([]);g.fillStyle=COL.gold;for(const q of[C.b,1-C.b]){g.beginPath();g.arc(bx+q*bw,by+bh/2,4,0,7);g.fill();}g.fillStyle=COL.axis;g.textAlign='left';g.font='11px "Noto Sans TC",sans-serif';g.fillText('實部 0 → 1',bx+11,by+bh-5);}
+$('#beta').oninput=e=>{C.b=+e.target.value;drawC();const o=firstOut(C.b);$('#tC').innerHTML=o===null?`β = ${C.b.toFixed(3)}：到 10<sup>30</sup> 為止都還在安全帶內。`:`β = ${C.b.toFixed(3)}：誤差在 x ≈ 10<sup>${o.toFixed(1)}</sup> 衝出安全帶。`;};
+$('#cCheck').onclick=()=>{const o=firstOut(C.b),lim=LV[C.lv];if(o===null||o>lim){$('#tC').innerHTML=`還不夠。${o===null?'到 10<sup>30</sup> 都沒衝出':`要到 10<sup>${o.toFixed(1)}</sup> 才衝出`}，把 β 再推遠一點。`;return;}const d=C.b-MINB[C.lv],st=d<=.0101?3:d<=.0301?2:1;C.stars[C.lv]=Math.max(C.stars[C.lv],st);$('#cNext').disabled=C.lv>=2;lvUI();$('#tC').innerHTML=`${'★'.repeat(st)} 在 10<sup>${o.toFixed(1)}</sup> 衝出。這一關最少只要 β = <b>${MINB[C.lv].toFixed(3)}</b>。${C.lv===2?' 要越早破壞質數的秩序，零點就得離中線越遠。':''}`;};
+$('#cNext').onclick=()=>{C.lv=Math.min(2,C.lv+1);C.b=.5;$('#beta').value=.5;$('#cNext').disabled=true;lvUI();drawC();intro();};
+
+lvUI();intro();setB(.5,10);$('#tB').innerHTML='|ζ| 還很大。第一個黑洞在 t = 14 附近，把圓圈拖過去。';drawAll();
+new ResizeObserver(drawAll).observe(document.querySelector('main'));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(drawAll);
+</script>

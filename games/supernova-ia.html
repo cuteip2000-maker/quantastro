@@ -1,0 +1,385 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>白矮星的最後一爆</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: observatory console — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#07070d;
+  --panel:#11111b;
+  --panel2:#191a26;
+  --rule:#2c2d40;
+  --ink:#eeeef6;
+  --dim:#9e9fb6;
+  --wd:#9fd8ff;
+  --boom:#ffcf6a;
+  --ni:#ff8a5c;
+  --co:#c79bff;
+  --fe:#8fa3b8;
+  --ok:#6fd38f;
+  --bad:#ff7a6a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--boom);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--boom)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#04040a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(7,7,13,.86);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(340px,calc(100% - 24px))}
+.ro b{color:var(--boom);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .ok{color:var(--ok)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--boom);color:#2a1d00;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5}
+.toast.on{opacity:1}
+.toast.bad{background:var(--bad);color:#2a0606}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--boom);border-color:var(--boom);color:#2a1d00;font-weight:700}
+.btn.sel{border-color:var(--boom);color:var(--boom);box-shadow:inset 0 0 0 1px var(--boom);font-weight:700}
+.btn.done{border-color:var(--ok);color:var(--ok)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--boom);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:5.4em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.ni{color:var(--ni);font-weight:700}.co{color:var(--co);font-weight:700}.fe{color:var(--fe);font-weight:700}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:62vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(290px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 白矮星吃到爆<small>1.44 倍太陽質量</small></button>
+      <button data-tab="B" aria-pressed="false">② 每晚去觀測<small>畫出光變曲線</small></button>
+      <button data-tab="C" aria-pressed="false">③ 標準燭光<small>量出星系多遠</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">劇本</span>
+            <button class="btn sel" data-mode="acc">白矮星＋紅巨星（吸積）</button>
+            <button class="btn" data-mode="merge">兩顆白矮星（合併）</button>
+          </div>
+          <div class="row" id="rowAcc">
+            <button class="btn pri" id="aPlay">▶ 開始吸積</button>
+            <span class="lab">吸得多快</span>
+            <button class="btn" data-rate="0">慢</button><button class="btn sel" data-rate="1">中</button><button class="btn" data-rate="2">快</button>
+          </div>
+          <div class="row" id="rowMerge" hidden>
+            <label class="sl">白矮星甲<input id="m1" type="range" min="0.5" max="1.1" step="0.01" value="0.8"><b id="m1V"></b></label>
+            <label class="sl">白矮星乙<input id="m2" type="range" min="0.5" max="1.1" step="0.01" value="0.6"><b id="m2V"></b></label>
+            <button class="btn pri" id="mPlay">▶ 讓它們靠近</button>
+          </div>
+          <div class="row"><button class="btn" id="aReset">↺ 重來</button><span class="note">白矮星是太陽這類恆星死後留下的核心：和地球差不多大，卻和太陽差不多重。</span></div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="bObs">🔭 觀測今晚</button>
+            <button class="btn" id="bAuto">⏩ 每晚自動觀測</button>
+            <button class="btn" id="bReset">↺ 回到爆炸那天</button>
+          </div>
+          <div class="note">每按一次就過一晚。陰天沒辦法觀測，點就會少一個。星等數字越<b>大</b>代表越<b>暗</b>，所以圖上越往上越亮。</div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">星系</span><span class="row" id="gals"></span></div>
+          <div class="row">
+            <label class="sl">把標準燭光放到<input id="dist" type="range" min="6.5" max="9.6" step="0.002" value="7"><b id="distV"></b></label>
+          </div>
+          <div class="note">移動距離，讓右邊「標準燭光」看起來的亮度，和左邊真的超新星一樣，就量出星系有多遠了。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>5000 萬光年外，一顆白矮星爆炸了</h1>
+    <p class="lede">2026 年 11 月，ATLAS（小行星撞擊地球最後警報系統）在螺旋星系 NGC 1433 發現了超新星 SN 2026ahvu。它是 Ia 型超新星：被炸毀的是一顆白矮星。</p>
+
+    <div class="card">
+      <h2>為什麼這次很難得？</h2>
+      <p>5000 萬光年聽起來很遠，但對超新星來說已經算「近」，可以看得很清楚。</p>
+      <p>更難得的是發現得很早：剛被發現時約 <b>17 等</b>，幾天後就變亮到約 <b>13.5 等</b>。天文學家因此有機會看到它變亮、到最亮、再慢慢變暗的完整過程。</p>
+    </div>
+
+    <div class="card">
+      <h2>白矮星為什麼會爆炸？</h2>
+      <p>白矮星不會自己爆炸。它通常有個伴星，會一直從伴星「偷」氣體，越吃越重。</p>
+      <div class="fx">錢德拉塞卡極限 ≈ 1.44 倍太陽質量</div>
+      <p>重到接近這個極限時，內部撐不住，碳和氧開始失控地核融合，整顆白矮星在幾秒內被炸得粉碎，什麼都不剩。</p>
+      <p>另一條路是兩顆白矮星互相繞轉、越靠越近，最後撞在一起合併而爆炸。</p>
+      <p>奇怪的是：白矮星越重，反而<b>越小</b>，因為重力把它壓得更緊。</p>
+    </div>
+
+    <div class="card">
+      <h2>爆炸後的光從哪裡來？</h2>
+      <p>爆炸會製造大量放射性的<span class="ni">鎳-56</span>，它衰變成<span class="co">鈷-56</span>，鈷-56 再衰變成穩定的<span class="fe">鐵-56</span>。</p>
+      <div class="fx"><span class="ni">鎳-56</span>（半衰期 6 天）→ <span class="co">鈷-56</span>（77 天）→ <span class="fe">鐵-56</span></div>
+      <p>前幾週主要靠鎳的衰變發光，所以亮度衝得很快；之後換鈷接手，亮度就慢慢地、規律地變暗。</p>
+      <p>大約兩、三個月後，爆炸噴出的物質變得夠稀薄，天文學家就能用光譜看出裡面有哪些元素。</p>
+    </div>
+
+    <div class="card">
+      <h2>標準燭光：宇宙的量尺</h2>
+      <p>Ia 型超新星最亮的時候，真正的亮度都差不多（經過校正後），大約是太陽的 50 億倍。</p>
+      <p>就像同一款蠟燭，放得越遠看起來越暗：距離變成 2 倍，亮度只剩 1/4。只要量出它「看起來」有多亮，就能算出它有多遠。</p>
+      <div class="fx">星等差 5 等 ＝ 亮度差 100 倍</div>
+      <p>1998 年，天文學家用許多遙遠的 Ia 型超新星，發現宇宙不只在膨脹，還<b>越脹越快</b>，因此獲得 2011 年諾貝爾物理獎。</p>
+    </div>
+
+    <div class="card">
+      <h2>關於這個模擬</h2>
+      <p>光變曲線是「典型 Ia 型超新星」的簡化模型，套用 5000 萬光年的距離。SN 2026ahvu 實際會到幾等，要看天文學家的觀測，也會受到星系裡塵埃遮擋的影響。</p>
+      <p>③ 的距離用的是星等公式，沒有修正宇宙膨脹，越遠的星系誤差越大。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,bad=false,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.toggle('bad',bad);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const fmt=(x,d=0)=>x.toLocaleString('zh-TW',{maximumFractionDigits:d,minimumFractionDigits:d});
+let TAB='A';
+const STARS=Array.from({length:260},()=>[Math.random(),Math.random(),Math.random()]);
+function stars(a,w,h){a.fillStyle='#fff';for(const s of STARS){a.globalAlpha=0.12+0.5*s[2];a.fillRect(s[0]*w,s[1]*h,1.2,1.2);}a.globalAlpha=1;}
+function glow(a,x,y,r,c0,c1){const g=a.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c0);g.addColorStop(1,c1);a.fillStyle=g;a.beginPath();a.arc(x,y,r,0,7);a.fill();}
+
+/* ================= A: white dwarf ================= */
+const MCH=1.44;
+const RATES=[{k:0.04,yr:1e-7,n:'慢'},{k:0.08,yr:3e-7,n:'中'},{k:0.16,yr:1e-6,n:'快'}];
+const A={mode:'acc',M:1.0,rate:1,play:false,years:0,boom:null,m1:0.8,m2:0.6,sep:1,ph:0,merged:null,parts:[]};
+// white-dwarf radius (Earth radii): heavier → smaller, shrinking to zero at the limit (simplified)
+const wdR=M=>1.4*Math.pow(M,-1/3)*Math.sqrt(Math.max(0.0004,1-Math.pow(M/MCH,4/3)));
+$$('[data-mode]').forEach(b=>b.onclick=()=>{A.mode=b.dataset.mode;$$('[data-mode]').forEach(x=>x.classList.toggle('sel',x===b));$('#rowAcc').hidden=A.mode!=='acc';$('#rowMerge').hidden=A.mode!=='merge';resetA();});
+$$('[data-rate]').forEach(b=>b.onclick=()=>{A.rate=+b.dataset.rate;$$('[data-rate]').forEach(x=>x.classList.toggle('sel',x===b));});
+$('#aPlay').onclick=()=>{if(A.boom)return;A.play=!A.play;$('#aPlay').textContent=A.play?'⏸ 暫停':'▶ 繼續吸積';};
+$('#m1').oninput=e=>{A.m1=+e.target.value;syncA();};$('#m2').oninput=e=>{A.m2=+e.target.value;syncA();};
+$('#mPlay').onclick=()=>{if(A.boom||A.merged)return;A.play=!A.play;$('#mPlay').textContent=A.play?'⏸ 暫停':'▶ 讓它們靠近';};
+function resetA(){Object.assign(A,{M:1.0,play:false,years:0,boom:null,sep:1,ph:0,merged:null,parts:[]});$('#aPlay').textContent='▶ 開始吸積';$('#mPlay').textContent='▶ 讓它們靠近';syncA();}
+$('#aReset').onclick=resetA;
+function syncA(){$('#m1V').textContent=A.m1.toFixed(2)+' 倍';$('#m2V').textContent=A.m2.toFixed(2)+' 倍';
+  let s;
+  if(A.boom)s=`<span class="big">💥 Ia 型超新星！</span><span class="st">白矮星被整個炸毀，什麼都沒留下。</span><span class="st">接下來幾週，它會比整個星系還亮。到「② 每晚去觀測」看它怎麼變亮、變暗。</span>`;
+  else if(A.mode==='acc')s=`<span class="big">白矮星質量 <b>${A.M.toFixed(3)}</b> 倍太陽</span><span class="st">大小約地球的 <b>${wdR(A.M).toFixed(2)}</b> 倍${A.M>1.05?'（越重越小！）':''}</span><span class="st">已經吸積了約 <b>${fmt(A.years/1e6,1)}</b> 百萬年</span><span class="st">極限：${MCH} 倍太陽質量</span>`;
+  else if(A.merged)s=`<span class="big">合併成一顆白矮星</span><span class="st">總質量 <b>${A.merged.toFixed(2)}</b> 倍太陽，沒有超過 ${MCH}，所以沒有爆炸，只是變成一顆更重、更小的白矮星。</span><span class="st">把兩顆調重一點再試試。</span>`;
+  else s=`<span class="big">兩顆白矮星互相繞轉</span><span class="st">加起來 <b>${(A.m1+A.m2).toFixed(2)}</b> 倍太陽質量 ${A.m1+A.m2>=MCH?'（超過極限！）':'（沒超過極限）'}</span><span class="st">它們會放出「重力波」失去能量，越轉越近、越轉越快。</span>`;
+  $('#roA').innerHTML=s;}
+function boom(x,y){A.boom={t:performance.now(),x,y};A.play=false;$('#aPlay').textContent='💥 爆炸了（按重來）';$('#mPlay').textContent='💥 爆炸了（按重來）';A.parts=Array.from({length:160},()=>{const an=Math.random()*6.283,v=0.4+Math.random()*1.2;return{an,v,c:Math.random()<0.5?'#ffcf6a':Math.random()<0.5?'#ff8a5c':'#c79bff'};});
+  syncA();setTimeout(()=>toast('#tA','砰！白矮星在幾秒內被炸毀，產生大量放射性的鎳-56。下一步：到「② 每晚去觀測」。',false,6500),900);}
+let lastA=performance.now();
+function drawA(a,w,h,now){
+  const dt=Math.min(0.05,(now-lastA)/1000);lastA=now;
+  a.fillStyle='#04040a';a.fillRect(0,0,w,h);stars(a,w,h);
+  const S=Math.min(w,h),cy=h*0.55;
+  if(A.mode==='acc'){
+    if(A.play&&!A.boom){const r=RATES[A.rate],dM=r.k*dt*(1+3*Math.max(0,A.M-1.35));A.M=Math.min(MCH,A.M+dM);A.years+=dM/r.yr;syncA();
+      if(A.M>=MCH)boom(w*0.68,cy);}
+    // red giant + stream
+    const gx=w*0.27,gr=S*0.17,wx=w*0.68;
+    if(!A.boom||now-A.boom.t<300){glow(a,gx,cy,gr*1.5,'rgba(255,120,70,.35)','rgba(255,90,50,0)');
+      const g=a.createRadialGradient(gx-gr*0.3,cy-gr*0.3,gr*0.1,gx,cy,gr);g.addColorStop(0,'#ffb27a');g.addColorStop(1,'#c3402a');a.fillStyle=g;a.beginPath();a.arc(gx,cy,gr,0,7);a.fill();}
+    else{const t=(now-A.boom.t)/1000;const gg=a.createRadialGradient(gx,cy,gr*0.1,gx,cy,gr);gg.addColorStop(0,'#ffb27a');gg.addColorStop(1,'#c3402a');a.fillStyle=gg;a.beginPath();a.arc(gx-t*8,cy,gr*(1-Math.min(0.25,t*0.05)),0,7);a.fill();}
+    a.fillStyle='#ffd2b8';a.font='600 13px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText('紅巨星（伴星）',gx,cy+gr+22);
+    if(!A.boom){
+      // accretion disk
+      const dr=S*0.09;a.save();a.translate(wx,cy);a.scale(1,0.32);glow(a,0,0,dr,'rgba(255,230,160,.85)','rgba(255,140,60,0)');a.restore();
+      // stream particles
+      const l1x=gx+gr*0.95;
+      for(let i=0;i<26;i++){const u=((now*0.00025*(A.play?2.5:0.6)+i/26)%1),x=l1x+(wx-dr*0.8-l1x)*u,y=cy-Math.sin(u*Math.PI)*S*0.06-u*u*S*0.01;
+        a.fillStyle=`rgba(255,${150+u*80|0},${90+u*80|0},${0.25+0.6*(1-u*0.5)})`;a.beginPath();a.arc(x,y,2.2-u,0,7);a.fill();}
+      const r=Math.max(2.5,S*0.035*wdR(A.M)/wdR(1.0));glow(a,wx,cy,r*4,'rgba(170,220,255,.55)','rgba(120,180,255,0)');a.fillStyle='#e8f6ff';a.beginPath();a.arc(wx,cy,r,0,7);a.fill();
+      a.fillStyle='#bfe6ff';a.fillText('白矮星',wx,cy+S*0.12);
+      // mass gauge
+      const bx=w*0.68-S*0.18,by=cy-S*0.3,bw=S*0.36;a.fillStyle='#191a26';a.fillRect(bx,by,bw,10);
+      const f=(A.M-1.0)/(MCH-1.0);a.fillStyle=f>0.85?'#ff7a6a':'#9fd8ff';a.fillRect(bx,by,bw*f,10);
+      a.strokeStyle='#ffcf6a';a.beginPath();a.moveTo(bx+bw,by-4);a.lineTo(bx+bw,by+14);a.stroke();
+      a.fillStyle='#9e9fb6';a.font='11px Lexend,"Noto Sans TC",sans-serif';a.textAlign='left';a.fillText('1.0',bx,by-6);a.textAlign='right';a.fillStyle='#ffcf6a';a.fillText('1.44 極限',bx+bw,by-6);
+    }
+  }else{
+    const cx=w*0.5;
+    if(A.play&&!A.boom&&!A.merged){A.sep=Math.max(0,A.sep-dt*0.05/(A.sep**3+0.05));A.ph+=dt*(1.2/Math.pow(Math.max(0.05,A.sep),1.5));
+      if(A.sep<=0.04){const tot=A.m1+A.m2;if(tot>=MCH)boom(cx,cy);else{A.merged=tot>MCH?MCH:tot;A.play=false;$('#mPlay').textContent='已合併（按重來）';toast('#tA','它們合併了，但總質量沒超過 1.44 倍太陽質量，沒有爆炸。');syncA();}}}
+    if(!A.boom){
+      const R=S*0.28*A.sep,tot=A.m1+A.m2,r1=R*A.m2/tot,r2=R*A.m1/tot;
+      a.strokeStyle='rgba(159,216,255,.15)';a.beginPath();a.ellipse(cx,cy,Math.max(1,r1),Math.max(1,r1*0.45),0,0,7);a.stroke();a.beginPath();a.ellipse(cx,cy,Math.max(1,r2),Math.max(1,r2*0.45),0,0,7);a.stroke();
+      // gravitational-wave ripples
+      if(A.play){a.strokeStyle='rgba(159,216,255,.12)';for(let i=0;i<5;i++){const rr=((now*0.06+i*60)%300);a.beginPath();a.ellipse(cx,cy,rr,rr*0.45,0,0,7);a.stroke();}}
+      if(A.merged){const r=Math.max(3,S*0.035*wdR(A.merged)/wdR(1.0));glow(a,cx,cy,r*4,'rgba(170,220,255,.55)','rgba(120,180,255,0)');a.fillStyle='#e8f6ff';a.beginPath();a.arc(cx,cy,r,0,7);a.fill();}
+      else for(const[m,rr,off]of[[A.m1,r1,0],[A.m2,r2,Math.PI]]){const x=cx+Math.cos(A.ph+off)*rr,y=cy+Math.sin(A.ph+off)*rr*0.45,r=Math.max(2.5,S*0.035*wdR(m)/wdR(1.0));
+        glow(a,x,y,r*4,'rgba(170,220,255,.5)','rgba(120,180,255,0)');a.fillStyle='#e8f6ff';a.beginPath();a.arc(x,y,r,0,7);a.fill();}
+    }
+  }
+  if(A.boom){const t=(now-A.boom.t)/1000,{x,y}=A.boom;
+    if(t<1.6){a.fillStyle=`rgba(255,250,235,${clamp(1-t/1.6,0,1)*0.8})`;a.fillRect(0,0,w,h);}
+    const R=S*0.05+t*S*0.12;glow(a,x,y,Math.max(4,R*1.4),`rgba(255,240,200,${clamp(1-t/6,0.15,1)})`,'rgba(255,120,60,0)');
+    a.strokeStyle=`rgba(255,207,106,${clamp(0.9-t/8,0.1,0.9)})`;a.lineWidth=3;a.beginPath();a.arc(x,y,R,0,7);a.stroke();
+    for(const p of A.parts){const d=R*p.v;a.fillStyle=p.c;a.globalAlpha=clamp(1-t/10,0.2,1);a.fillRect(x+Math.cos(p.an)*d,y+Math.sin(p.an)*d,2,2);}a.globalAlpha=1;}
+}
+
+/* ================= B: light curve ================= */
+const MP=11.6,TP=18,TNI=6.08,TCO=77.2;
+const DEC=[[18,0],[33,1.1],[48,2.5],[60,2.85],[130,3.9]];
+function magAt(t){if(t<=0)return 30;if(t<TP){const x=t/TP,f=x*x*Math.exp(1-x*x);return MP-2.5*Math.log10(f);}
+  for(let i=0;i<DEC.length-1;i++){const[t0,m0]=DEC[i],[t1,m1]=DEC[i+1];if(t<=t1){const u=(t-t0)/(t1-t0),s=u*u*(3-2*u)*0.35+u*0.65;return MP+m0+(m1-m0)*s;}}return MP+3.9+(t-130)*0.015;}
+function isotopes(t){const l1=Math.LN2/TNI,l2=Math.LN2/TCO,ni=Math.exp(-l1*t),co=l1/(l2-l1)*(Math.exp(-l1*t)-Math.exp(-l2*t));return{ni,co,fe:Math.max(0,1-ni-co)};}
+const B={day:0,obs:[],auto:false,last:0,found:false,disc:false,peakTold:false};
+let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+function observe(){if(B.day>=120){B.auto=false;$('#bAuto').textContent='⏩ 每晚自動觀測';toast('#tB','觀測了 4 個月！超新星已經暗到小望遠鏡很難看到了。');return;}
+  B.day++;const cloudy=rnd()<0.22;
+  if(cloudy){if(!B.auto)toast('#tB',`第 ${B.day} 晚：陰天 ☁️ 沒辦法觀測。`,false,1600);}
+  else{const m=magAt(B.day)+(rnd()-0.5)*0.16;B.obs.push([B.day,m]);
+    if(!B.disc&&m<18){B.disc=true;toast('#tB',`第 ${B.day} 晚：發現了！大約 ${m.toFixed(1)} 等。ATLAS 發現 SN 2026ahvu 時，它只有約 17 等那麼暗。`,false,5000);}
+    if(!B.peakTold&&B.day>TP+6&&B.obs.length>4){B.peakTold=true;const best=B.obs.reduce((p,q)=>q[1]<p[1]?q:p);toast('#tB',`已經過了最亮的時候：你測到最亮的是第 ${best[0]} 天，約 ${best[1].toFixed(1)} 等。記下這個數字，③ 會用到！`,false,6500);}}
+  roB();}
+$('#bObs').onclick=()=>{B.auto=false;$('#bAuto').textContent='⏩ 每晚自動觀測';observe();};
+$('#bAuto').onclick=()=>{B.auto=!B.auto;$('#bAuto').textContent=B.auto?'⏸ 暫停':'⏩ 每晚自動觀測';};
+$('#bReset').onclick=()=>{Object.assign(B,{day:0,obs:[],auto:false,disc:false,peakTold:false});$('#bAuto').textContent='⏩ 每晚自動觀測';roB();};
+function roB(){const iso=isotopes(B.day),m=magAt(B.day);
+  const best=B.obs.length?B.obs.reduce((p,q)=>q[1]<p[1]?q:p):null;
+  $('#roB').innerHTML=`<span class="big">爆炸後第 ${B.day} 天</span><span class="st">${B.day?`今晚亮度約 <b>${m>25?'太暗':m.toFixed(1)+' 等'}</b>`:'按「🔭 觀測今晚」開始'}</span>`
+   +(best?`<span class="st">你測到最亮：第 <b>${best[0]}</b> 天，<b>${best[1].toFixed(1)}</b> 等</span>`:'')
+   +(B.day>=60?`<span class="st">噴出物已經變稀薄，可以用光譜看裡面的元素了</span>`:'');}
+function drawGalaxy(a,cx,cy,R,now){
+  a.save();a.translate(cx,cy);a.rotate(-0.5);
+  glow(a,0,0,R*1.1,'rgba(200,190,170,.25)','rgba(120,120,160,0)');
+  // bar + ring + arms (NGC 1433 is a barred spiral with rings)
+  a.save();a.scale(1,0.55);
+  a.strokeStyle='rgba(190,200,235,.35)';a.lineWidth=R*0.06;a.beginPath();a.arc(0,0,R*0.62,0,7);a.stroke();
+  for(let s=0;s<2;s++){a.beginPath();for(let i=0;i<=60;i++){const t=i/60,an=s*Math.PI+t*3.4,r=R*(0.25+t*0.75);const x=Math.cos(an)*r,y=Math.sin(an)*r;i?a.lineTo(x,y):a.moveTo(x,y);}a.strokeStyle='rgba(170,190,240,.22)';a.lineWidth=R*0.08;a.stroke();}
+  a.restore();
+  a.fillStyle='rgba(255,235,200,.55)';a.beginPath();a.ellipse(0,0,R*0.42,R*0.08,0,0,7);a.fill();
+  glow(a,0,0,R*0.2,'rgba(255,245,220,.95)','rgba(255,220,170,0)');
+  a.restore();
+}
+function drawB(a,w,h,now){
+  a.fillStyle='#04040a';a.fillRect(0,0,w,h);
+  if(B.auto&&now-B.last>140){B.last=now;observe();}
+  const top=$('#roB').offsetHeight+16,wide=w>=640;
+  // telescope view
+  const vw=wide?w*0.38:w,vh=wide?h-top:(h-top)*0.42,R=Math.min(vw,vh)*0.42,vx=vw/2,vy=top+vh/2;
+  a.save();a.beginPath();a.arc(vx,vy,R,0,7);a.clip();a.fillStyle='#020205';a.fillRect(vx-R,vy-R,2*R,2*R);stars(a,w,h);drawGalaxy(a,vx,vy,R*0.62,now);
+  if(B.day>0){const m=magAt(B.day),b=Math.pow(10,-0.4*(m-11.6));const sx=vx+R*0.36,sy=vy-R*0.12;const rr=Math.max(1.5,R*0.11*Math.pow(b,0.35));
+    glow(a,sx,sy,rr*3,'rgba(255,255,240,.9)','rgba(255,220,160,0)');a.fillStyle='#fff';a.beginPath();a.arc(sx,sy,Math.max(1,rr*0.5),0,7);a.fill();
+}
+  a.restore();
+  if(B.disc){const sx=vx+R*0.36,sy=vy-R*0.12;a.strokeStyle='rgba(255,207,106,.7)';a.lineWidth=1.2;a.beginPath();a.moveTo(sx+8,sy-8);a.lineTo(sx+R*0.3,sy-R*0.5);a.stroke();a.fillStyle='#ffcf6a';a.font='11px Lexend,sans-serif';a.textAlign='center';a.fillText('SN 2026ahvu',sx+R*0.3,sy-R*0.5-6);}a.strokeStyle='#2c2d40';a.lineWidth=2;a.beginPath();a.arc(vx,vy,R,0,7);a.stroke();
+  a.fillStyle='#9e9fb6';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText('螺旋星系 NGC 1433',vx,vy+R+16);
+  // light curve
+  const gx=wide?vw+10:12,gy=wide?top:top+vh+16,gw=wide?w-vw-24:w-24,gh=wide?(h-top)*0.66:(h-gy)*0.62;
+  const pl=gx+40,pr=gx+gw-8,pt=gy+14,pb=gy+gh-24,X=t=>pl+t/120*(pr-pl),Y=m=>pt+(m-10.5)/(18.5-10.5)*(pb-pt);
+  a.fillStyle='#11111b';a.strokeStyle='#2c2d40';a.lineWidth=1;a.beginPath();a.roundRect(gx,gy,gw,gh,8);a.fill();a.stroke();
+  a.font='10.5px Lexend,sans-serif';a.fillStyle='#9e9fb6';a.textAlign='right';a.textBaseline='middle';
+  for(let m=11;m<=18;m++){a.strokeStyle='rgba(255,255,255,.05)';a.beginPath();a.moveTo(pl,Y(m));a.lineTo(pr,Y(m));a.stroke();a.fillText(m+' 等',pl-4,Y(m));}
+  a.textAlign='center';a.textBaseline='top';for(let t=0;t<=120;t+=20){a.beginPath();a.moveTo(X(t),pt);a.lineTo(X(t),pb);a.stroke();a.fillText(t+' 天',X(t),pb+4);}
+  a.textBaseline='alphabetic';a.textAlign='left';a.fillStyle='#eeeef6';a.font='600 12px "Noto Sans TC",sans-serif';a.fillText('光變曲線（越上面越亮）',pl,pt-2);
+  if(B.obs.length>=10){a.strokeStyle='rgba(255,207,106,.35)';a.lineWidth=2;a.beginPath();for(let t=1;t<=B.day;t+=0.5){const y=Y(clamp(magAt(t),10.5,18.5));t===1?a.moveTo(X(t),y):a.lineTo(X(t),y);}a.stroke();}
+  for(const[t,m]of B.obs){if(m>18.5)continue;a.fillStyle='#ffcf6a';a.beginPath();a.arc(X(t),Y(m),3,0,7);a.fill();}
+  if(B.day){a.strokeStyle='rgba(255,255,255,.3)';a.setLineDash([3,3]);a.beginPath();a.moveTo(X(B.day),pt);a.lineTo(X(B.day),pb);a.stroke();a.setLineDash([]);}
+  // isotope bars
+  const iy=gy+gh+10,ih=(wide?h-10:h-10)-iy;
+  if(ih>40){const iso=isotopes(B.day),items=[['鎳-56',iso.ni,'#ff8a5c'],['鈷-56',iso.co,'#c79bff'],['鐵-56',iso.fe,'#8fa3b8']];
+    a.fillStyle='#eeeef6';a.font='600 12px "Noto Sans TC",sans-serif';a.fillText('爆炸做出來的鎳，現在變成了…',gx+4,iy+12);
+    const bh=Math.min(16,(ih-24)/3-4);items.forEach(([n,v,c],i)=>{const y=iy+22+i*(bh+5);a.fillStyle='#191a26';a.fillRect(gx+60,y,gw-110,bh);a.fillStyle=c;a.fillRect(gx+60,y,(gw-110)*v,bh);
+      a.fillStyle=c;a.font='12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='middle';a.fillText(n,gx+4,y+bh/2);a.textAlign='right';a.fillStyle='#eeeef6';a.font='11px Lexend,sans-serif';a.fillText(Math.round(v*100)+'%',gx+gw-6,y+bh/2);a.textBaseline='alphabetic';});}
+}
+
+/* ================= C: standard candle ================= */
+const MABS=-19.3;
+const GALS=[{n:'M101 風車星系',sn:'SN 2011fe',m:9.9},{n:'NGC 1433',sn:'SN 2026ahvu（模型）',m:11.6},{n:'神秘星系 X',sn:'某顆 Ia 超新星',m:16.0},{n:'神秘星系 Y',sn:'某顆 Ia 超新星',m:19.5}];
+const C={g:1,lg:7,solved:{}};
+const lyOf=lg=>10**lg,mOf=ly=>MABS+5*Math.log10(ly/3.2616)-5;
+function distText(ly){return ly>=1e8?`${fmt(ly/1e8,ly>=1e9?1:2)} 億光年`:`${fmt(ly/1e4,0)} 萬光年`;}
+function pastText(ly){const y=ly;
+  if(y<3e7)return '那時地球上已經有猿類，但人類的祖先還要再過一千多萬年才出現。';
+  if(y<6.6e7)return `恐龍已經滅絕了大約 ${fmt((6.6e7-y)/1e4,0)} 萬年，最早的鯨魚祖先還用四隻腳在陸地上走。`;
+  if(y<2.5e8)return '恐龍正統治著地球。';
+  if(y<4.2e8)return '魚類正嘗試爬上陸地，陸地上才剛開始出現森林。';
+  if(y<1e9)return '地球上的生物還都住在海裡。';
+  return '地球上幾乎只有單細胞生物。';}
+function buildGals(){const box=$('#gals');box.innerHTML='';GALS.forEach((g,i)=>{const b=document.createElement('button');b.className='btn'+(i===C.g?' sel':'')+(C.solved[i]?' done':'');b.textContent=g.n;
+  b.onclick=()=>{C.g=i;buildGals();roC();};box.appendChild(b);});}
+$('#dist').oninput=e=>{C.lg=+e.target.value;roC();};
+function roC(){const g=GALS[C.g],ly=lyOf(C.lg),mc=mOf(ly),dm=mc-g.m;
+  $('#distV').textContent=distText(ly);
+  const ok=Math.abs(dm)<0.15;
+  if(ok&&!C.solved[C.g]){C.solved[C.g]=true;buildGals();
+    toast('#tC',`📏 ${g.n} 距離約 <b>${distText(ly)}</b>！這道光出發的時候，${pastText(ly)}`,false,8000);}
+  $('#roC').innerHTML=`<span class="big">${g.n}</span><span class="st">${g.sn} 最亮時：<b>${g.m.toFixed(1)}</b> 等</span>`
+   +`<span class="st">標準燭光放在 ${distText(ly)}：看起來 <b>${mc.toFixed(1)}</b> 等</span>`
+   +`<span class="st">${ok?'<span class="ok">亮度一樣！量出距離了 ✅</span>':dm>0?'燭光太暗了 → 拉近一點':'燭光太亮了 → 推遠一點'}</span>`;}
+function drawC(a,w,h){
+  a.fillStyle='#04040a';a.fillRect(0,0,w,h);stars(a,w,h);
+  const top=$('#roC').offsetHeight+18,g=GALS[C.g],ly=lyOf(C.lg),mc=mOf(ly);
+  const R=Math.min(w/4.6,(h-top-90)/2.3),y=top+R+14;
+  const show=(x,m,lab,sub)=>{a.fillStyle='#020205';a.strokeStyle='#2c2d40';a.lineWidth=2;a.beginPath();a.arc(x,y,R,0,7);a.fill();a.stroke();
+    const b=Math.pow(10,-0.4*(m-9.5)),rr=Math.max(1.2,R*0.3*Math.pow(b,0.33));glow(a,x,y,rr*3,`rgba(255,250,235,${clamp(0.25+0.75*Math.pow(b,0.15),0.12,1)})`,'rgba(255,220,160,0)');
+    a.fillStyle='#fff';a.beginPath();a.arc(x,y,Math.max(0.8,rr*0.45),0,7);a.fill();
+    a.fillStyle='#eeeef6';a.font='600 13px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText(lab,x,y+R+20);a.fillStyle='#9e9fb6';a.font='12px Lexend,"Noto Sans TC",sans-serif';a.fillText(sub,x,y+R+38);};
+  show(w*0.27,g.m,'望遠鏡看到的超新星',`${g.m.toFixed(1)} 等`);show(w*0.73,mc,'標準燭光',`${mc.toFixed(1)} 等`);
+  const ok=Math.abs(mc-g.m)<0.15;a.fillStyle=ok?'#6fd38f':'#9e9fb6';a.font='700 22px Lexend,sans-serif';a.textAlign='center';a.fillText(ok?'＝':mc>g.m?'<':'>',w/2,y+8);
+  // distance ruler
+  const ry=h-34,rl=24,rr=w-24,X=lg=>rl+(lg-6.5)/(9.6-6.5)*(rr-rl);
+  a.strokeStyle='#2c2d40';a.lineWidth=2;a.beginPath();a.moveTo(rl,ry);a.lineTo(rr,ry);a.stroke();
+  a.font='10.5px "Noto Sans TC",sans-serif';a.fillStyle='#9e9fb6';a.textAlign='center';
+  for(const[lg,t]of[[7,'1000 萬'],[8,'1 億'],[9,'10 億']]){a.beginPath();a.moveTo(X(lg),ry-4);a.lineTo(X(lg),ry+4);a.stroke();a.fillText(t+'光年',X(lg),ry+16);}
+  GALS.forEach((gg,i)=>{if(!C.solved[i])return;const lg=Math.log10(3.2616*10**((gg.m-MABS+5)/5));a.fillStyle='#6fd38f';a.beginPath();a.arc(X(lg),ry,4,0,7);a.fill();a.font='10.5px "Noto Sans TC",sans-serif';a.fillText(gg.n.split(' ')[0],X(lg),ry-10);});
+  a.fillStyle='#ffcf6a';a.beginPath();a.moveTo(X(C.lg),ry-6);a.lineTo(X(C.lg)-5,ry-14);a.lineTo(X(C.lg)+5,ry-14);a.closePath();a.fill();
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else drawC(a,w,h);requestAnimationFrame(loop);}
+syncA();roB();buildGals();roC();requestAnimationFrame(loop);
+})();
+</script>

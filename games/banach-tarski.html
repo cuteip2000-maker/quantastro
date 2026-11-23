@@ -1,0 +1,403 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>一顆球變兩顆</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: magic-show stage — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#14112a;
+  --panel:#1d1938;
+  --panel2:#26214a;
+  --rule:#3a3468;
+  --ink:#eeeaf8;
+  --dim:#a39fc0;
+  --gold:#f5c451;
+  --pa:#ff6b6b;   /* a       */
+  --pai:#5aa9ff;  /* a⁻¹     */
+  --pb:#5fd38d;   /* b       */
+  --pbi:#ffa94d;  /* b⁻¹     */
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 14px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--gold)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#2b2456 0,#14112a 70%)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(20,17,42,.85);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(430px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--gold)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--gold);color:#1b1500;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.warn{position:absolute;right:12px;top:10px;background:rgba(20,17,42,.88);border:1px dashed var(--gold);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--gold);max-width:220px;pointer-events:none}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:#1b1500;font-weight:700}
+.btn.done{border-color:var(--pb);color:var(--pb)}
+.note{font-size:13px;color:var(--dim)}
+.k{font-family:var(--f-num);font-weight:700}
+.ca{color:var(--pa)}.cai{color:var(--pai)}.cb{color:var(--pb)}.cbi{color:var(--pbi)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--gold)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:58vh;min-height:380px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .warn{top:auto;bottom:10px;right:10px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="hotel" aria-pressed="true">① 無限旅館<small>客滿還能住</small></button>
+      <button data-tab="circle" aria-pressed="false">② 圓上的洞<small>轉一下就補好</small></button>
+      <button data-tab="tree" aria-pressed="false">③ 樹的分身術<small>一棵變兩棵</small></button>
+      <button data-tab="ball" aria-pressed="false">④ 球變兩顆<small>最後的魔術</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-hotel">
+        <div class="cv"><canvas id="cH"></canvas><div class="ro" id="roH"></div><div class="toast" id="tH"></div></div>
+        <div class="dock"><div class="row">
+          <button class="btn pri" data-op="1">🧳 來了 1 位客人</button>
+          <button class="btn" data-op="5">🚐 來了 5 位</button>
+          <button class="btn" data-op="bus">🚌 來了一台「無限大」巴士</button>
+          <button class="btn" id="hReset">↺ 重新開張</button>
+        </div></div>
+      </div>
+      <div class="pane" id="p-circle" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock"><div class="row">
+          <button class="btn pri" id="cRot">↶ 把彩色點全部往回轉 1</button>
+          <button class="btn" id="cReset">↺ 再挖一個洞</button>
+          <span class="note">圓周上每一點都在；只有 <b style="color:#fff">0 號位置</b>被挖掉了</span>
+        </div></div>
+      </div>
+      <div class="pane" id="p-tree" hidden>
+        <div class="cv"><canvas id="cT"></canvas><div class="ro" id="roT"></div><div class="toast" id="tT"></div></div>
+        <div class="dock"><div class="row">
+          <button class="btn pri" id="s1">① 依照第一步拆成 5 塊</button>
+          <button class="btn" id="s2" disabled>② 把 <span class="cai k">藍</span> 推一步 a</button>
+          <button class="btn" id="s3" disabled>③ 把 <span class="cbi k">橘</span> 推一步 b</button>
+          <button class="btn" id="sReset">↺ 重來</button>
+        </div></div>
+      </div>
+      <div class="pane" id="p-ball" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="warn">示意圖！真正的碎片是無限細碎、沒有「體積」的點集合，畫不出來。</div><div class="toast" id="tB"></div></div>
+        <div class="dock"><div class="row">
+          <button class="btn pri" id="bGo">✨ 變！</button>
+          <button class="btn" id="bReset">↺ 變回一顆</button>
+          <span class="note">拖曳可以轉動球</span>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>巴拿赫－塔斯基悖論</h1>
+    <p class="lede">把一顆實心球切成 5 塊，只移動、旋轉，就能拼回兩顆和原來一樣大的實心球。這是數學上被證明的定理！</p>
+
+    <div class="card">
+      <h2>這不是魔術，是定理</h2>
+      <p>1924 年，波蘭數學家<b>巴拿赫</b>和<b>塔斯基</b>證明：在數學的世界裡，一顆球可以分成有限塊，只靠移動和旋轉（不拉長、不壓扁），拼成兩顆一模一樣的球。</p>
+      <p>這違反我們「體積不會憑空變多」的直覺，所以叫做「悖論」。但它在邏輯上完全正確。</p>
+    </div>
+
+    <div class="card">
+      <h2>關鍵一：無限可以「等於」自己的一部分</h2>
+      <p>無限旅館裡，房間全滿，卻還能再住進無限多人。偶數只是整數的「一半」，卻可以和整數一對一配對。</p>
+      <div class="fx">1↔2　2↔4　3↔6　4↔8　…</div>
+      <p>有限的東西做不到這件事，無限的東西卻可以。</p>
+    </div>
+
+    <div class="card">
+      <h2>關鍵二：把點「洗牌」</h2>
+      <p>圓上的魔術：從 0 號位置開始，每次轉 1（弧度）放一個點，這串點永遠不會重疊，因為 π 是無理數。把整串點往回轉 1，第 1 號點填進 0 號洞，後面的每一點也往前遞補，卻沒有任何一點被用完。</p>
+    </div>
+
+    <div class="card">
+      <h2>關鍵三：會「分身」的旋轉</h2>
+      <p>選兩種旋轉 <span class="ca k">a</span>、<span class="cb k">b</span>（和它們的反方向 <span class="cai k">a⁻¹</span>、<span class="cbi k">b⁻¹</span>），用它們排成所有可能的「旋轉指令」。這些指令長得像一棵每個岔路分 3 支的無限大樹。</p>
+      <p>把以 <span class="cai k">a⁻¹</span> 開頭的那一支整體做一次 <span class="ca k">a</span>，它就變成「除了 <span class="ca k">a</span> 支以外的整棵樹」！再補上 <span class="ca k">a</span> 支，就得到完整的一棵。另外兩支也一樣，所以一棵樹拼出兩棵樹。</p>
+      <div class="fx">樹 = 紅 ∪ a·藍 = 綠 ∪ b·橘</div>
+      <p>球面上的點按照「被哪個指令轉到」來分組，就能把同樣的分法搬到球上。</p>
+    </div>
+
+    <div class="card">
+      <h2>那為什麼現實中做不到？</h2>
+      <p>• 真正的碎片不是一塊一塊的，而是無限細碎、到處散開的「點的灰塵」，連「體積」都無法定義。</p>
+      <p>• 要選出這些碎片，需要用到一條叫<b>選擇公理</b>的數學規則，它只保證碎片「存在」，卻沒有辦法真的把它們找出來或切出來。</p>
+      <p>• 真實的金球由有限多個原子組成，不是無限多個點，所以不能複製黃金。</p>
+    </div>
+
+    <div class="card">
+      <h2>最少要幾塊？</h2>
+      <p>1947 年，數學家<b>羅賓森</b>證明：最少 <b>5 塊</b>就夠了，而且不能再少。在「樹的分身術」裡，剛好也是 5 塊：紅、藍、綠、橘，加上中心那一點。</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>1904</b><span>策梅洛明確提出「選擇公理」</span></li>
+        <li><b>1914</b><span>豪斯多夫證明球面的分割悖論</span></li>
+        <li><b>1924</b><span>巴拿赫和塔斯基發表一顆球變兩顆的定理</span></li>
+        <li><b>1947</b><span>羅賓森證明最少需要 5 塊</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3400){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const COL={e:'#ffffff',a:'#ff6b6b',A:'#5aa9ff',b:'#5fd38d',B:'#ffa94d'};
+let TAB='hotel';
+
+/* ======================= 1. HOTEL ======================= */
+const HM=400; // rooms simulated
+const HO={occ:[],anim:null,ops:0,newCount:0};
+let gid=0;
+function hReset(){HO.occ=[];for(let r=1;r<=HM;r++)HO.occ[r]={id:gid++,kind:0,label:r};HO.anim=null;HO.ops=0;HO.newCount=0;}
+function hotelOp(op){
+  if(HO.anim)return;
+  const old=HO.occ,nw=[],moves=[];const kind=HO.ops%3+1;HO.ops++;
+  if(op==='bus'){
+    for(let r=1;2*r<=HM;r++){nw[2*r]=old[r];moves.push({g:old[r],from:r,to:2*r});}
+    for(let r=1;2*r-1<=HM;r++){const g={id:gid++,kind,label:'∞'+r};nw[2*r-1]=g;moves.push({g,from:-r,to:2*r-1,bus:true});}
+  }else{const k=+op;
+    for(let r=1;r+k<=HM;r++){nw[r+k]=old[r];moves.push({g:old[r],from:r,to:r+k});}
+    for(let j=1;j<=k;j++){const g={id:gid++,kind,label:'新'};nw[j]=g;moves.push({g,from:-j,to:j,bus:true});}
+  }
+  HO.newCount+=op==='bus'?Infinity:+op;
+  HO.anim={t0:performance.now(),moves,next:nw,op};
+}
+function drawHotel(now){
+  const cv=$('#cH'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h;const N=Math.max(6,Math.min(14,Math.floor((w-60)/62)));
+  const rw=(w-50)/(N+0.6),y0=Math.max(120,h*0.32),rh=Math.min(rw*1.5,h*0.36);
+  const RX=r=>25+(r-1)*rw;
+  // building
+  a.fillStyle='#2e285a';a.fillRect(10,y0-34,w-20,rh+70);
+  a.fillStyle='#f5c451';a.font='700 16px "Noto Serif TC",serif';a.textAlign='center';a.fillText('★ 希爾伯特無限旅館 ★　房間：1、2、3、……永遠沒有最後一間',w/2,y0-12);
+  for(let r=1;r<=N;r++){const x=RX(r);a.fillStyle='#3e3677';a.fillRect(x+3,y0,rw-6,rh);a.strokeStyle='#5d54a3';a.strokeRect(x+3,y0,rw-6,rh);
+    a.fillStyle='#cfc9ef';a.font='600 12px Lexend,sans-serif';a.fillText(r,x+rw/2,y0+rh+16);}
+  a.fillStyle='#cfc9ef';a.font='700 20px Lexend';a.fillText('…',RX(N+1)+8,y0+rh/2);
+  // guests
+  const P=(r)=>[RX(r)+rw/2,y0+rh*0.55];
+  const cols=['#9fb8ff','#ffa94d','#5fd38d','#ff6b6b'];
+  const drawG=(g,x,y,al=1)=>{a.globalAlpha=al;a.fillStyle=cols[g.kind];a.beginPath();a.arc(x,y-rh*0.12,Math.min(13,rw*0.22),0,7);a.fill();
+    a.beginPath();a.ellipse(x,y+rh*0.18,Math.min(15,rw*0.26),Math.min(20,rh*0.2),0,Math.PI,0);a.fill();
+    a.fillStyle='#14112a';a.font=`700 ${Math.min(11,rw*0.18)}px Lexend,"Noto Sans TC",sans-serif`;a.fillText(g.label,x,y-rh*0.12+4);a.globalAlpha=1;};
+  if(HO.anim){
+    const k=Math.min(1,(now-HO.anim.t0)/1600),e=ease(k);
+    for(const m of HO.anim.moves){
+      if(m.to>N+1&&(m.from>N+1||m.from<0))continue;
+      let x0,y0b;if(m.bus){x0=-40-(-m.from)*14;y0b=P(1)[1]+rh*0.9;}else[x0,y0b]=P(m.from);
+      const [x1,y1]=P(m.to);const lift=Math.sin(Math.PI*e)*rh*0.35;
+      drawG(m.g,x0+(x1-x0)*e,y0b+(y1-y0b)*e-lift);
+    }
+    if(k>=1){HO.occ=HO.anim.next;const op=HO.anim.op;HO.anim=null;
+      toast('#tH',op==='bus'?'無限多位新客人住進了所有單數房；原本的客人搬到雙數房。還是剛好客滿！':`每個人往後搬 ${op} 間，前面空出 ${op} 間給新客人。沒有人被趕走！`,4200);}
+  }else{for(let r=1;r<=N;r++)drawG(HO.occ[r],...P(r));}
+  // bus
+  a.fillStyle='#f5c451';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='left';
+  a.fillText('← 新客人從這裡來',16,y0+rh+44);
+  $('#roH').innerHTML=`<div class="big">客滿了！還能再住人嗎？</div><div>每間房都有人，房間有無限多間。點下面的按鈕試試。</div>`+(HO.ops?`<div>新住進來：<b>${HO.newCount===Infinity?'無限多':HO.newCount}</b> 人，被趕走：<b>0</b> 人</div>`:'');
+}
+document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>hotelOp(b.dataset.op));
+$('#hReset').onclick=()=>{hReset();};
+
+/* ======================= 2. CIRCLE ======================= */
+const CI={K:600,shift:0,anim:null};
+function drawCircle(now){
+  const cv=$('#cC'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,cx=w/2,cy=Math.max(130,h*0.57),R=Math.min(w*0.36,(h-120)*0.44);
+  let s=CI.shift;
+  if(CI.anim){const k=Math.min(1,(now-CI.anim.t0)/1800);s=CI.anim.from+(CI.anim.to-CI.anim.from)*ease(k);if(k>=1){CI.shift=CI.anim.to;CI.anim=null;
+    toast('#tC',CI.shift===-1?'1 號點掉進洞裡，把洞補好了！而 2 號移到 1 號、3 號移到 2 號……沒有最後一個點需要補。':'又挖開了 0 號洞。');}}
+  a.strokeStyle='rgba(238,234,248,.35)';a.lineWidth=2;a.beginPath();a.arc(cx,cy,R,0,7);a.stroke();
+  // hole at angle 0 (right side)
+  const hx=cx+R,hy=cy;
+  const P=k=>{const th=k+s;return[cx+R*Math.cos(th),cy-R*Math.sin(th)];};
+  for(let k=CI.K;k>=1;k--){const p=P(k),hue=(k*7)%360;a.fillStyle=`hsl(${hue},85%,65%)`;a.beginPath();a.arc(p[0],p[1],k<=8?6:2.6,0,7);a.fill();}
+  a.textAlign='center';a.font='700 12px Lexend,sans-serif';
+  for(let k=1;k<=6;k++){const th=k+s,p=[cx+(R+22)*Math.cos(th),cy-(R+22)*Math.sin(th)];a.fillStyle='#fff';a.fillText(k,p[0],p[1]+4);}
+  const filled=Math.abs(s+1)<1e-6;
+  a.strokeStyle=filled?'#5fd38d':'#ff6b6b';a.lineWidth=3;a.beginPath();a.arc(hx,hy,10,0,7);a.stroke();
+  a.fillStyle=filled?'#5fd38d':'#ff6b6b';a.font='700 13px "Noto Sans TC",sans-serif';a.textAlign='right';
+  a.fillText(filled?'洞補好了！':'0 號位置：挖掉了',hx+8,hy+32);a.textAlign='left';
+  $('#roC').innerHTML=`<div class="big">從 0 號位置出發，每次沿著圓轉 1（弧度）</div><div>放下第 1、2、3……號點（畫面畫出前 ${CI.K} 個，真正有無限多個）。</div><div>它們永遠不會剛好回到同一個位置，因為圓周一圈是 2π，而 π 是無理數。</div>`;
+}
+$('#cRot').onclick=()=>{if(CI.anim||CI.shift===-1)return;CI.anim={t0:performance.now(),from:0,to:-1};};
+$('#cReset').onclick=()=>{if(CI.anim||CI.shift===0)return;CI.anim={t0:performance.now(),from:-1,to:0};};
+
+/* ======================= 3. TREE ======================= */
+// letters: a (right), A = a⁻¹ (left), b (up), B = b⁻¹ (down)
+const DIR={a:[1,0],A:[-1,0],b:[0,1],B:[0,-1]},INV={a:'A',A:'a',b:'B',B:'b'};
+const RATIO=0.47,DEPTH=7;
+const NODES=[];
+(function build(){
+  const rec=(word,pos,len,parent)=>{
+    const node={w:word,p:pos,parent,first:word[0]||'e'};NODES.push(node);
+    if(word.length>=DEPTH)return;
+    for(const L of ['a','A','b','B']){if(word.length&&L===INV[word[word.length-1]])continue;
+      rec(word+L,[pos[0]+DIR[L][0]*len,pos[1]+DIR[L][1]*len],len*RATIO,node);}
+  };rec('',[0,0],1,null);
+})();
+function posOf(word){let p=[0,0],len=1;for(const L of word){p=[p[0]+DIR[L][0]*len,p[1]+DIR[L][1]*len];len*=RATIO;}return p;}
+const TS={stage:0,anim:null};
+// layout targets (world coords, tree radius ≈ 1/(1-RATIO) ≈ 1.9)
+function target(n,stage){
+  const f=n.first;
+  if(stage===0)return{c:[0,0],s:1,p:n.p};
+  const C0=[0,0],C1=[-2.15,0],C2=[2.15,0],sF=0.52;
+  if(stage===1){ // explode
+    if(f==='e')return{c:C0,s:1,p:[0,0]};
+    const off=[DIR[f][0]*0.55,DIR[f][1]*0.55];return{c:off,s:1,p:n.p};
+  }
+  // stage 2: red + a·blue at C1 ; stage 3: green + b·orange at C2
+  const inCopy1=(f==='a'||f==='A'),inCopy2=(f==='b'||f==='B');
+  if(f==='e')return{c:[0,-1.75],s:0.0,p:[0,0],dot:true};
+  if(inCopy1&&stage>=2){const w=f==='A'?n.w.slice(1):n.w;return{c:C1,s:sF,p:posOf(w)};}
+  if(inCopy2&&stage>=3){const w=f==='B'?n.w.slice(1):n.w;return{c:C2,s:sF,p:posOf(w)};}
+  if(inCopy1)return{c:[C1[0]+DIR[f][0]*0.4*sF,0],s:sF,p:f==='a'?n.p:n.p}; // waiting near copy1
+  const off=[DIR[f][0]*0.55,DIR[f][1]*0.55];return{c:[C2[0]+off[0]*0.3,off[1]*0.3],s:sF,p:n.p};
+}
+function placeAt(n,stage){const t=target(n,stage);return[t.c[0]+t.s*t.p[0],t.c[1]+t.s*t.p[1]];}
+function treeGo(stage){if(TS.anim)return;TS.anim={from:TS.stage,to:stage,t0:performance.now()};}
+function drawTree(now){
+  const cv=$('#cT'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=110;
+  let k=1,from=TS.stage,to=TS.stage;
+  if(TS.anim){k=ease(Math.min(1,(now-TS.anim.t0)/2200));from=TS.anim.from;to=TS.anim.to;}
+  const sc=Math.min((w-30)/6.6,(h-top-20)/5.0);
+  const ox=w/2,oy=top+(h-top-20)/2;
+  const S=p=>[ox+p[0]*sc,oy-p[1]*sc];
+  const pos=new Map();
+  for(const n of NODES){const p0=placeAt(n,from),p1=placeAt(n,to);pos.set(n,[p0[0]+(p1[0]-p0[0])*k,p0[1]+(p1[1]-p0[1])*k]);}
+  for(const n of NODES){
+    if(!n.parent)continue;const L=n.first;let st;
+    if(n.parent.first==='e'){
+      if((L==='A'&&to>=2)||(L==='B'&&to>=3))continue; // this edge is cut when the piece moves
+      const t0=target(n,from),t1=target(n,to);st=[t0.c[0]+(t1.c[0]-t0.c[0])*k,t0.c[1]+(t1.c[1]-t0.c[1])*k];
+    }else st=pos.get(n.parent);
+    a.strokeStyle=COL[L];a.lineWidth=Math.max(0.6,3.2*Math.pow(0.72,n.w.length));
+    const A=S(st),B=S(pos.get(n));a.beginPath();a.moveTo(A[0],A[1]);a.lineTo(B[0],B[1]);a.stroke();
+  }
+  a.globalAlpha=1;
+  // centre points (identity of each copy)
+  for(const n of NODES){if(n.w.length>1)continue;const p=S(pos.get(n));if(n.first==='e'){a.fillStyle='#fff';a.beginPath();a.arc(p[0],p[1],6,0,7);a.fill();}}
+  if(to>=2){const c=S([-2.15,0]);a.fillStyle='rgba(255,255,255,.9)';a.beginPath();a.arc(c[0],c[1],4,0,7);a.fill();}
+  if(to>=3){const c=S([2.15,0]);a.fillStyle='rgba(255,255,255,.9)';a.beginPath();a.arc(c[0],c[1],4,0,7);a.fill();}
+  // captions
+  a.font='700 13px "Noto Sans TC",sans-serif';a.textAlign='center';
+  if(TS.stage>=2&&!TS.anim||(TS.anim&&TS.anim.to>=2&&k>0.95)){const c=S([-2.15,-2.05]);a.fillStyle='#eee';a.fillText('第一棵：紅 ＋ a·藍',c[0],c[1]);}
+  if(TS.stage>=3&&!TS.anim||(TS.anim&&TS.anim.to>=3&&k>0.95)){const c=S([2.15,-2.05]);a.fillStyle='#eee';a.fillText('第二棵：綠 ＋ b·橘',c[0],c[1]);}
+  if(to>=2){const c=S([0,-1.75]);a.fillStyle='#bbb';a.font='12px "Noto Sans TC",sans-serif';a.fillText('（多出來的中心點）',c[0],c[1]+20);}
+  a.textAlign='left';
+  if(TS.anim&&k>=1){TS.stage=TS.anim.to;TS.anim=null;treeMsg();}
+  const msg=[
+    '每一個點代表一串旋轉指令。從中心出發，往右＝<span class="ca k">a</span>、往左＝<span class="cai k">a⁻¹</span>、往上＝<span class="cb k">b</span>、往下＝<span class="cbi k">b⁻¹</span>（不能剛走就馬上走回頭）。',
+    '依照「第一步往哪走」分成 5 塊：<span class="ca k">紅</span>、<span class="cai k">藍</span>、<span class="cb k">綠</span>、<span class="cbi k">橘</span>和中心點。每一支看起來都只有整棵樹的 1/4。',
+    '藍色（a⁻¹ 開頭）每個指令前面加一個 <span class="ca k">a</span>，a·a⁻¹ 互相抵消，結果變成「除了紅色以外的整棵樹」！1/4 變 3/4，再補上紅色，就是完整的一棵樹。',
+    '橘色做一樣的事（加上 <span class="cb k">b</span>），和綠色拼成第二棵完整的樹。一棵樹 → 兩棵樹，中間沒有拉長也沒有壓扁！'];
+  $('#roT').innerHTML=`<div class="big">樹的分身術</div><div>${msg[TS.anim?TS.anim.to:TS.stage]}</div>`;
+}
+function treeMsg(){
+  $('#s1').disabled=TS.stage!==0;$('#s2').disabled=TS.stage!==1;$('#s3').disabled=TS.stage!==2;
+  if(TS.stage===3)toast('#tT','完成！5 塊拼成 2 棵完整的樹（畫面只畫 7 層，真正的樹有無限多層）。',4600);
+}
+$('#s1').onclick=()=>treeGo(1);$('#s2').onclick=()=>treeGo(2);$('#s3').onclick=()=>treeGo(3);
+$('#sReset').onclick=()=>{TS.anim=null;TS.stage=0;treeMsg();};
+
+/* ======================= 4. BALL (illustration) ======================= */
+const BP=[];const PCOL=['#ff6b6b','#5aa9ff','#5fd38d','#ffa94d','#ffffff'];
+(function(){for(let i=0;i<2200;i++){let x,y,z;do{x=Math.random()*2-1;y=Math.random()*2-1;z=Math.random()*2-1;}while(x*x+y*y+z*z>1);
+  const piece=i===0?4:Math.floor(Math.random()*4);BP.push({p:[x,y,z],piece,extra:null});}})();
+// extra points so the moved blue / orange pieces can "spread" into 3/4 of a ball
+const EXTRA=[];(function(){for(let i=0;i<1100;i++){let x,y,z;do{x=Math.random()*2-1;y=Math.random()*2-1;z=Math.random()*2-1;}while(x*x+y*y+z*z>1);EXTRA.push({p:[x,y,z],piece:i%2?1:3,src:Math.floor(Math.random()*2200)});}})();
+const BS={stage:0,t0:0,yaw:0.5,pitch:0.3};
+function drawBall(now){
+  const cv=$('#cB'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=100,R=Math.min(w*0.2,(h-top-30)*0.42),cy=top+(h-top-20)/2;
+  if(!BS.drag)BS.yaw+=0.004;
+  const k=BS.stage?Math.min(1,(now-BS.t0)/3400):0;
+  // phase 0-0.3: explode; 0.3-0.65: move to sides; 0.65-1: spread & fill
+  const e1=ease(Math.min(1,k/0.3)),e2=ease(Math.max(0,Math.min(1,(k-0.3)/0.35))),e3=ease(Math.max(0,Math.min(1,(k-0.65)/0.35)));
+  const cyw=Math.cos(BS.yaw),syw=Math.sin(BS.yaw),cp=Math.cos(BS.pitch),sp=Math.sin(BS.pitch);
+  const proj=(v,cx)=>{const x=v[0]*cyw+v[2]*syw,z0=-v[0]*syw+v[2]*cyw,y=v[1]*cp-z0*sp,z=v[1]*sp+z0*cp;return[cx+x*R,cy-y*R,z];};
+  const offs=[[0.5,0.15,0],[-0.5,0.15,0],[0,0.55,0.2],[0,-0.55,0.2],[0,0,0]];
+  const sideX=[-1,-1,1,1,0];
+  const pts=[];
+  for(const q of BP){const o=offs[q.piece],sx=sideX[q.piece]*R*1.25*e2;
+    let v=[q.p[0]+o[0]*e1*(1-e2),q.p[1]+o[1]*e1*(1-e2),q.p[2]+o[2]*e1*(1-e2)];
+    if(q.piece===4){const pr=proj([0,0,0],w/2);pts.push([pr[0],h-30,1,q.piece,1]);continue;}
+    const pr=proj(v,w/2+sx);pts.push([pr[0],pr[1],pr[2],q.piece,1]);}
+  if(e3>0)for(const x of EXTRA){const src=BP[x.src].p,sx=(x.piece===1?-1:1)*R*1.25;const v=[src[0]+(x.p[0]-src[0])*e3,src[1]+(x.p[1]-src[1])*e3,src[2]+(x.p[2]-src[2])*e3];
+    const pr=proj(v,w/2+sx);pts.push([pr[0],pr[1],pr[2],x.piece,e3]);}
+  pts.sort((p,q)=>p[2]-q[2]);
+  for(const p of pts){a.globalAlpha=(0.45+0.5*(p[2]+1)/2)*p[4];a.fillStyle=PCOL[p[3]];a.fillRect(p[0]-1.3,p[1]-1.3,2.6,2.6);}
+  a.globalAlpha=1;
+  // outlines
+  a.strokeStyle='rgba(245,196,81,.35)';a.lineWidth=1.5;
+  if(e3>0.9){for(const sx of [-1,1]){a.beginPath();a.arc(w/2+sx*R*1.25,cy,R,0,7);a.stroke();}}
+  else if(k===0){a.beginPath();a.arc(w/2,cy,R,0,7);a.stroke();}
+  if(BS.stage&&k>=1&&!BS.toasted){BS.toasted=true;toast('#tB','一顆球 → 兩顆一樣大的球！（數學上真的成立，現實中做不到）',4600);}
+  const txt=k===0?'一顆實心球，裡面有無限多個點。<br>點被分成 5 組：紅、藍、綠、橘，和中心一點（底下白點）。':k<0.3?'① 把球拆成 5 塊「點的灰塵」…':k<0.65?'② 紅＋藍移到左邊，綠＋橘移到右邊…':'③ 藍和橘各「轉一下」，就像樹的分身術，從 1/4 變成 3/4！';
+  $('#roB').innerHTML=`<div class="big">巴拿赫－塔斯基：一顆變兩顆</div><div>${txt}</div>`;
+}
+$('#bGo').onclick=()=>{BS.stage=1;BS.t0=performance.now();BS.toasted=false;};
+$('#bReset').onclick=()=>{BS.stage=0;};
+{const cv=$('#cB');cv.addEventListener('pointerdown',e=>{BS.drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);});
+ cv.addEventListener('pointermove',e=>{if(!BS.drag)return;BS.yaw+=(e.clientX-BS.drag.x)*0.01;BS.pitch=Math.max(-1.3,Math.min(1.3,BS.pitch+(e.clientY-BS.drag.y)*0.01));BS.drag={x:e.clientX,y:e.clientY};});
+ const up=()=>BS.drag=null;cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);cv.style.touchAction='none';}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['hotel','circle','tree','ball'])$('#p-'+t).hidden=t!==TAB;});
+function frame(now){
+  if(TAB==='hotel')drawHotel(now);else if(TAB==='circle')drawCircle(now);else if(TAB==='tree')drawTree(now);else drawBall(now);
+  requestAnimationFrame(frame);}
+hReset();treeMsg();
+requestAnimationFrame(frame);
+})();
+</script>

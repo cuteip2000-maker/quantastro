@@ -1,0 +1,343 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>梅森素數獵人</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: number lab — scrolling work areas with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#09090d;
+  --panel:#121219;
+  --panel2:#1a1a24;
+  --rule:#2e2e3e;
+  --ink:#efeff5;
+  --dim:#a0a0b4;
+  --acc:#7ee0a8;
+  --gold:#ffd76a;
+  --bad:#ff8a7a;
+  --bulb:#ffe27a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--acc)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#06060a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.work{flex:1;min-height:0;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#05261a;font-weight:700}
+.btn.sel{border-color:var(--acc);color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-weight:700}
+.btn.sq{min-width:2.6em;font-family:var(--f-num)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--acc);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.6em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--acc);color:#05261a;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+#tA{top:12px;bottom:auto}
+
+/* ① factory */
+.hero{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-bottom:10px}
+.hero .eq{font-family:var(--f-num);font-size:clamp(26px,5vw,40px);font-weight:700}
+.hero .eq sup{font-size:.55em}
+.verdict{font-family:var(--f-disp);font-size:20px;font-weight:900;padding:4px 12px;border-radius:10px}
+.verdict.p{background:rgba(126,224,168,.15);color:var(--acc);border:1px solid var(--acc)}
+.verdict.c{background:rgba(255,138,122,.12);color:var(--bad);border:1px solid var(--bad)}
+.bulbs{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0 4px;max-width:100%}
+.bulb{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff7cf,var(--bulb) 55%,#c99a1d);box-shadow:0 0 6px rgba(255,226,122,.6);font-size:0}
+.bulb.big{width:22px;height:22px}
+.sub{font-size:12.5px;color:var(--dim);margin-bottom:10px}
+.num{font-family:var(--f-mono);font-size:15px;word-break:break-all;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:8px 12px;margin:4px 0 12px;line-height:1.5}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:14px}
+.box h3{margin:0 0 4px;font-family:var(--f-disp);font-size:16px}
+.box p{margin:0 0 6px}.box p:last-child{margin:0}
+.fac{font-family:var(--f-mono);word-break:break-all;color:var(--gold)}
+.story{border-color:#5a4a1e;background:#1d1910}
+.album{display:flex;flex-wrap:wrap;gap:6px}
+.slot{min-width:3.4em;text-align:center;font-family:var(--f-num);font-weight:700;border-radius:10px;padding:4px 8px;border:1px dashed var(--rule);color:var(--dim);background:transparent}
+.slot.got{border-style:solid;border-color:var(--acc);color:#05261a;background:var(--acc)}
+.slot.got:hover{filter:brightness(1.1)}
+.tried{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
+.tried span{font-family:var(--f-num);font-size:11px;width:2.4em;text-align:center;border-radius:5px;padding:1px 0;background:#1d1d27;color:#555569}
+.tried span.c{background:rgba(255,138,122,.18);color:var(--bad)}
+.tried span.p{background:var(--acc);color:#05261a;font-weight:700}
+
+/* ② Lucas–Lehmer */
+.ll{width:100%;border-collapse:collapse;font-size:13.5px}
+.ll th{text-align:left;color:var(--dim);font-weight:500;border-bottom:1px solid var(--rule);padding:4px 6px}
+.ll td{border-bottom:1px dashed var(--rule);padding:5px 6px;vertical-align:middle}
+.ll td.n{font-family:var(--f-mono);word-break:break-all}
+.ll td.i{font-family:var(--f-num);color:var(--dim);width:3.2em}
+.ll .bar{height:8px;background:#20202b;border-radius:4px;min-width:60px;overflow:hidden}
+.ll .bar i{display:block;height:100%;background:var(--gold)}
+.ll tr.zero td{color:var(--acc);font-weight:700}
+.ll tr.last td{background:rgba(255,255,255,.03)}
+.machine{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-num);font-size:14px;margin:6px 0 12px}
+.machine span{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:3px 10px}
+.machine .ar{border:0;background:none;color:var(--dim);padding:0}
+
+/* ③ */
+.ro{position:absolute;left:12px;top:10px;background:rgba(9,9,13,.88);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(360px,calc(100% - 24px))}
+.ro b{color:var(--gold);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .mono{font-family:var(--f-mono);color:var(--ink)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .work{height:68vh;min-height:420px;overflow-y:auto}
+  .cv{flex:none;height:62vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 2ⁿ−1 工廠<small>收集梅森素數</small></button>
+      <button data-tab="B" aria-pressed="false">② 檢驗機器<small>盧卡斯－萊默測試</small></button>
+      <button data-tab="C" aria-pressed="false">③ 大到不可思議<small>52 個紀錄</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="work" id="wA"></div>
+        <div class="toast" id="tA"></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn sq" id="nDn">−</button>
+            <label class="sl">n =<input id="n" type="range" min="1" max="127" step="1" value="2"><b id="nV"></b></label>
+            <button class="btn sq" id="nUp">＋</button>
+            <button class="btn" id="nPrime">跳到下一個質數 n</button>
+          </div>
+          <div class="note">任務：找出 n 不超過 127 的全部 12 個梅森素數。先試試看 n = 4、6、8、9……有什麼規律？</div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="work" id="wB"></div>
+        <div class="dock">
+          <div class="row"><span class="lab">要檢驗</span><span class="row" id="ps"></span></div>
+          <div class="row">
+            <button class="btn pri" id="llStep">▶ 下一步</button>
+            <button class="btn" id="llAll">⏩ 一次跑完</button>
+            <button class="btn" id="llReset">↺ 重來</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn sq" id="kDn">◀</button>
+            <label class="sl">第幾個<input id="k" type="range" min="1" max="52" step="1" value="52"><b id="kV"></b></label>
+            <button class="btn sq" id="kUp">▶</button>
+          </div>
+          <div class="note">橫軸是被發現的年份，縱軸是位數（每往上一格多 10 倍）。點圖上的點也可以選。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>梅森素數：一排全亮的燈</h1>
+    <p class="lede">把 2 乘上自己 n 次再減 1，寫成二進位就是 n 個 1 排成一排。這種數偶爾會是素數，數學家叫它「梅森素數」，目前已知最大的素數幾乎都是它。</p>
+
+    <div class="card">
+      <h2>什麼是梅森數？</h2>
+      <div class="fx">Mₙ ＝ 2ⁿ − 1</div>
+      <p>n = 1, 2, 3, 4, 5 … 時，依序是 1、3、7、15、31 …。如果它剛好是素數（只能被 1 和自己整除），就叫做<b>梅森素數</b>。</p>
+      <p>名字來自 17 世紀的法國修士<b>馬蘭・梅森</b>。他列出一張「哪些 n 會是素數」的清單，後來發現裡面有好幾個錯誤。</p>
+    </div>
+
+    <div class="card">
+      <h2>兩個重要的規律</h2>
+      <p><b>① n 不是質數 → 一定不是素數。</b>例如 2⁶−1 = 63，因為 6 = 2×3，所以 2²−1 = 3 和 2³−1 = 7 都能整除它。</p>
+      <p><b>② n 是質數 → 也不一定是素數。</b>最小的例子是 2¹¹−1 = 2047 = 23 × 89。</p>
+      <p>而且它的因數都長成「2 × k × n ＋ 1」的樣子：23 = 2×1×11＋1，89 = 2×4×11＋1。數學家就靠這個規律縮小搜尋範圍。</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼大家都找梅森素數？</h2>
+      <p>要檢查一個超大的數是不是素數，通常非常困難。但梅森數有一個專用的快速檢驗法：<b>盧卡斯－萊默測試</b>，只要重複「平方、減 2、取餘數」就好。</p>
+      <p>所以人類找到的最大素數，幾乎都是梅森素數。</p>
+    </div>
+
+    <div class="card">
+      <h2>和「完全數」是一家人</h2>
+      <p>完全數是「所有因數（不含自己）加起來剛好等於自己」的數，例如 6 = 1+2+3，28 = 1+2+4+7+14。</p>
+      <div class="fx">2ⁿ⁻¹ × (2ⁿ − 1)，當 2ⁿ−1 是梅森素數</div>
+      <p>每個梅森素數都能做出一個偶數完全數，而且所有偶數完全數都是這樣來的（歐幾里得和歐拉證明的）。有沒有奇數完全數？到現在還沒人知道。</p>
+    </div>
+
+    <div class="card">
+      <h2>你也可以當獵人</h2>
+      <p>1996 年開始的 <b>GIMPS</b>（網際網路梅森素數大搜尋）計畫，讓全世界的志工用自己的電腦一起檢驗。從那之後，新的梅森素數幾乎都是這樣找到的。</p>
+      <p>到 2024 年為止，人類一共找到 52 個梅森素數。最新、也是目前已知最大的素數是 2¹³⁶²⁷⁹⁸⁴¹−1，有四千多萬位。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const fmt=(x,d=0)=>x.toLocaleString('zh-TW',{maximumFractionDigits:d,minimumFractionDigits:d});
+function toast(id,msg,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+let TAB='A';
+const isPrimeN=n=>{if(n<2)return false;for(let d=2;d*d<=n;d++)if(n%d===0)return false;return true;};
+const M=n=>(1n<<BigInt(n))-1n;
+const grp=s=>s.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+// Lucas–Lehmer: for odd prime p, M_p is prime iff s_(p-2) ≡ 0 with s_0 = 4, s_(i+1) = s_i² − 2 (mod M_p)
+function llSeq(p){const m=M(p),seq=[4n];let s=4n;for(let i=0;i<p-2;i++){s=(s*s-2n)%m;if(s<0n)s+=m;seq.push(s);}return seq;}
+function isMersennePrime(n){if(!isPrimeN(n))return false;if(n===2)return true;const q=llSeq(n);return q[q.length-1]===0n;}
+// complete factorisations of 2^p − 1 for prime p ≤ 127 that are not prime (computed offline with Pollard's rho)
+const FAC={"11":["23","89"],"23":["47","178481"],"29":["233","1103","2089"],"37":["223","616318177"],"41":["13367","164511353"],"43":["431","9719","2099863"],"47":["2351","4513","13264529"],"53":["6361","69431","20394401"],"59":["179951","3203431780337"],"67":["193707721","761838257287"],"71":["228479","48544121","212885833"],"73":["439","2298041","9361973132609"],"79":["2687","202029703","1113491139767"],"83":["167","57912614113275649087721"],"97":["11447","13842607235828485645766393"],"101":["7432339208719","341117531003194129"],"103":["2550183799","3976656429941438590393"],"109":["745988807","870035986098720987332873"],"113":["3391","23279","65993","1868569","1066818132868207"]};
+const MEXP=[2,3,5,7,13,17,19,31,61,89,107,127];
+const STORY={
+  2:'最小的梅森素數：2² − 1 = 3。',
+  11:'第一個「n 是質數，2ⁿ−1 卻不是素數」的例子。看看因數：23 = 2×<b>1</b>×11＋1，89 = 2×<b>4</b>×11＋1，都是「2×k×11＋1」。',
+  31:'1772 年，歐拉用手算證明 2³¹−1 是素數。這個數 2,147,483,647 你可能看過：它是很多電腦程式裡「整數」能存的最大值。',
+  61:'1883 年，俄國鄉村牧師佩爾武申用手算證明它是素數。梅森的清單漏掉了它。',
+  67:'梅森說 2⁶⁷−1 是素數，200 多年來沒人能確定。1903 年，數學家科爾上台演講，一句話都沒說，只在黑板上把兩邊算出來給大家看：2⁶⁷−1 ＝ 193,707,721 × 761,838,257,287。全場起立鼓掌。據說他花了三年的星期天才找到。',
+  89:'1911 年由鮑爾斯證明。梅森的清單也漏掉了它。',
+  107:'1914 年由鮑爾斯證明，又一個梅森清單漏掉的。',
+  127:'1876 年，盧卡斯用手算證明 2¹²⁷−1 是素數，39 位數。這是人類不靠電腦找到的最大素數，紀錄保持了 75 年。',
+};
+const A={n:2,tried:{}};
+const nIn=$('#n');
+function setN(n){A.n=Math.max(1,Math.min(127,n));nIn.value=A.n;renderA();}
+nIn.oninput=e=>setN(+e.target.value);
+$('#nDn').onclick=()=>setN(A.n-1);$('#nUp').onclick=()=>setN(A.n+1);
+$('#nPrime').onclick=()=>{let n=A.n+1;while(n<=127&&!isPrimeN(n))n++;setN(n>127?2:n);};
+function smallestPrimeFactor(n){for(let d=2;d*d<=n;d++)if(n%d===0)return d;return n;}
+function renderA(){
+  const n=A.n,m=M(n),ms=m.toString(),np=isPrimeN(n),prime=isMersennePrime(n);
+  const first=!A.tried[n];A.tried[n]=prime?'p':'c';
+  $('#nV').textContent=n;
+  let bulbs='';const big=n<=24;for(let i=0;i<n;i++)bulbs+=`<span class="bulb${big?' big':''}"></span>`;
+  let why='';
+  if(n===1)why=`<div class="box"><h3>2¹ − 1 ＝ 1</h3><p>1 不是素數（素數要剛好有兩個因數：1 和自己）。</p></div>`;
+  else if(!np){const d=smallestPrimeFactor(n),e=n/d,f1=M(d),f2=m/f1;
+    why=`<div class="box"><h3>n = ${n} 不是質數（${n} = ${d} × ${e}）</h3><p>所以 2<sup>${d}</sup>−1 = ${f1} 一定能整除它：</p><p class="fac">${grp(ms)} ＝ ${grp(f1.toString())} × ${grp(f2.toString())}</p><p class="note">規律：只要 n 能拆成 a × b，2ⁿ−1 就能被 2ᵃ−1 整除。所以只有 n 是質數時才有希望！</p></div>`;}
+  else if(!prime){const fs=FAC[n];
+    why=`<div class="box"><h3>n = ${n} 是質數，可是……</h3><p>2<sup>${n}</sup>−1 還是能分解：</p><p class="fac">${fs.map(grp).join(' × ')}</p><p class="note">每個因數都是「2 × k × ${n} ＋ 1」：${fs.slice(0,3).map(f=>{const k=(BigInt(f)-1n)/(2n*BigInt(n));return `${grp(f)} 的 k＝${grp(k.toString())}`;}).join('；')}</p></div>`;}
+  else{const perf=(1n<<BigInt(n-1))*m;let dv='';
+    if(n<=5){const P=Number(perf),ds=[];for(let d=1;d<P;d++)if(P%d===0)ds.push(d);dv=`<p class="note">驗算：${ds.join(' + ')} ＝ ${P}</p>`;}
+    why=`<div class="box"><h3>🎉 這是梅森素數！</h3><p>用盧卡斯－萊默測試檢驗過（到「② 檢驗機器」可以看每一步）。</p><p>它還能做出一個<b>完全數</b>：2<sup>${n-1}</sup> × (2<sup>${n}</sup>−1) ＝</p><p class="fac">${grp(perf.toString())}</p>${dv}</div>`;}
+  const story=STORY[n]?`<div class="box story"><h3>📜 小故事</h3><p>${STORY[n]}</p></div>`:'';
+  const got=MEXP.filter(e=>A.tried[e]==='p');
+  const album=MEXP.map(e=>A.tried[e]==='p'?`<button class="slot got" data-go="${e}">M${e}</button>`:`<span class="slot">？</span>`).join('');
+  let tried='';for(let i=1;i<=127;i++)tried+=`<span class="${A.tried[i]||''}" title="n=${i}">${i}</span>`;
+  $('#wA').innerHTML=`<div class="hero"><span class="eq">2<sup>${n}</sup> − 1</span><span class="verdict ${prime?'p':'c'}">${prime?'是素數 ✓':'不是素數'}</span></div>
+    <div class="sub">寫成二進位：${n} 個 1 排成一排，像 ${n} 盞全亮的燈</div><div class="bulbs">${bulbs}</div>
+    <div class="sub">寫成十進位（${ms.length} 位數）：</div><div class="num">${grp(ms)}</div>
+    ${why}${story}
+    <div class="box"><h3>梅森素數收集冊（${got.length} / 12）</h3><div class="album">${album}</div><div class="tried">${tried}</div><p class="note" style="margin-top:6px">綠色＝梅森素數，紅色＝試過但不是。</p></div>`;
+  $$('#wA [data-go]').forEach(b=>b.onclick=()=>setN(+b.dataset.go));
+  if(first&&prime&&n>2){toast('#tA',got.length===12?'🏆 12 個全部收集到了！n ≤ 127 的梅森素數就只有這些。':`收集到第 ${got.length} 個梅森素數：2<sup>${n}</sup>−1！`);}
+}
+
+/* ================= B: Lucas–Lehmer ================= */
+const PS=[3,5,7,11,13,17,19,23,31,61,89,127];
+const B={p:5,i:0,seq:[]};
+function buildPs(){const box=$('#ps');box.innerHTML='';PS.forEach(p=>{const b=document.createElement('button');b.className='btn sq'+(p===B.p?' sel':'');b.textContent=p;b.onclick=()=>{B.p=p;B.i=0;buildPs();renderB();};box.appendChild(b);});}
+$('#llStep').onclick=()=>{if(B.i<B.p-2)B.i++;renderB();};
+$('#llAll').onclick=()=>{B.i=B.p-2;renderB();};
+$('#llReset').onclick=()=>{B.i=0;renderB();};
+function renderB(){const p=B.p,m=M(p),seq=llSeq(p),done=B.i>=p-2,last=seq[p-2];
+  const show=p<=31,rows=[];
+  const frac=v=>Math.max(0.5,Number((v*10000n)/m)/100);
+  for(let i=0;i<=B.i;i++){const v=seq[i],vs=v.toString();
+    const prev=i?seq[i-1]:null;
+    const calc=i===0?'起點固定是 4':show?`${grp(prev.toString())}² − 2 ＝ ${grp((prev*prev-2n).toString())}，除以 ${grp(m.toString())} 的餘數`:'上一個數平方、減 2、除以 M 取餘數';
+    rows.push(`<tr class="${v===0n?'zero':''} ${i===B.i?'last':''}"><td class="i">s<sub>${i}</sub></td><td class="n">${grp(vs)}</td><td style="width:22%"><div class="bar"><i style="width:${v===0n?0:frac(v)}%"></i></div></td></tr><tr><td></td><td colspan="2" class="note" style="padding-top:0">${calc}</td></tr>`);}
+  const verdict=done?(last===0n?`<div class="box"><h3 style="color:var(--acc)">✅ 最後一步是 0：2<sup>${p}</sup>−1 是素數！</h3><p>總共只做了 ${p-2} 次「平方、減 2、取餘數」。</p></div>`
+    :`<div class="box"><h3 style="color:var(--bad)">❌ 最後一步不是 0：2<sup>${p}</sup>−1 不是素數</h3><p>有趣的是，這個測試能告訴你「不是素數」，卻不會告訴你因數是多少。</p></div>`):'';
+  $('#wB').innerHTML=`<div class="hero"><span class="eq">檢驗 2<sup>${p}</sup> − 1</span></div>
+    <div class="sub">M ＝ ${grp(m.toString())}（${m.toString().length} 位數）。規則：從 4 開始，重複 ${p-2} 次（p − 2 次），最後是 0 就是素數。</div>
+    <div class="machine"><span>上一個數</span><span class="ar">→</span><span>平方</span><span class="ar">→</span><span>減 2</span><span class="ar">→</span><span>除以 M 取餘數</span><span class="ar">→</span><span>下一個數</span></div>
+    <div class="sub">第 ${B.i} / ${p-2} 步${show?'':'（數字太大，只列出結果）'}。長條是「這個數佔 M 的幾成」。</div>
+    <table class="ll"><tbody>${rows.join('')}</tbody></table>${verdict}`;
+  $('#llStep').disabled=done;$('#llAll').disabled=done;
+  const tb=$('#wB');tb.scrollTop=tb.scrollHeight;}
+
+/* ================= C: records ================= */
+const REC=[[2,-300,'古希臘時代就知道'],[3,-300,'古希臘時代就知道'],[5,-300,'古希臘時代就知道'],[7,-300,'古希臘時代就知道'],[13,1456,'不知名的人'],[17,1588,'卡塔爾迪'],[19,1588,'卡塔爾迪'],[31,1772,'歐拉（手算）'],[61,1883,'佩爾武申（手算）'],[89,1911,'鮑爾斯'],[107,1914,'鮑爾斯'],[127,1876,'盧卡斯（手算）'],
+[521,1952,'羅賓森（SWAC 電腦）'],[607,1952,'羅賓森（SWAC 電腦）'],[1279,1952,'羅賓森（SWAC 電腦）'],[2203,1952,'羅賓森（SWAC 電腦）'],[2281,1952,'羅賓森（SWAC 電腦）'],[3217,1957,'里塞爾'],[4253,1961,'赫維茲'],[4423,1961,'赫維茲'],[9689,1963,'吉利斯'],[9941,1963,'吉利斯'],[11213,1963,'吉利斯'],[19937,1971,'塔克曼'],[21701,1978,'諾爾、尼克爾（兩位 18 歲的高中生）'],[23209,1979,'諾爾'],[44497,1979,'尼爾森、斯洛溫斯基'],[86243,1982,'斯洛溫斯基'],[110503,1988,'柯奎特、威爾許'],[132049,1983,'斯洛溫斯基'],[216091,1985,'斯洛溫斯基'],[756839,1992,'斯洛溫斯基、蓋奇'],[859433,1994,'斯洛溫斯基、蓋奇'],[1257787,1996,'斯洛溫斯基、蓋奇'],
+[1398269,1996,'GIMPS 志工'],[2976221,1997,'GIMPS 志工'],[3021377,1998,'GIMPS 志工'],[6972593,1999,'GIMPS 志工'],[13466917,2001,'GIMPS 志工'],[20996011,2003,'GIMPS 志工'],[24036583,2004,'GIMPS 志工'],[25964951,2005,'GIMPS 志工'],[30402457,2005,'GIMPS 志工'],[32582657,2006,'GIMPS 志工'],[37156667,2008,'GIMPS 志工'],[42643801,2009,'GIMPS 志工'],[43112609,2008,'GIMPS 志工'],[57885161,2013,'GIMPS 志工'],[74207281,2016,'GIMPS 志工'],[77232917,2017,'GIMPS 志工'],[82589933,2018,'GIMPS 志工'],[136279841,2024,'杜蘭特（GIMPS，租用雲端顯示卡）']];
+const C={k:52,pts:[]};
+const LG2=0.30102999566398119521;
+const digitsOf=p=>Math.floor(p*LG2)+1;
+function lead(p){const f=p*LG2-Math.floor(p*LG2);return Math.floor(10**(f+5)).toString();}
+function modpow(b,e,m){let r=1n;b%=m;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
+function tail(p){const m=10n**10n;let r=(modpow(2n,BigInt(p),m)-1n+m)%m;return r.toString().padStart(Math.min(10,digitsOf(p)),'0');}
+function setK(k){C.k=Math.max(1,Math.min(52,k));$('#k').value=C.k;roC();}
+$('#k').oninput=e=>setK(+e.target.value);$('#kDn').onclick=()=>setK(C.k-1);$('#kUp').onclick=()=>setK(C.k+1);
+function roC(){const[p,yr,who]=REC[C.k-1],d=digitsOf(p);$('#kV').textContent='第 '+C.k+' 個';
+  const pages=d/3000,books=pages/300,days=d/86400;
+  const val=d<=40?`<span class="st mono">${grp(M(p).toString())}</span>`:`<span class="st">開頭 <span class="mono">${lead(p)}…</span>　結尾 <span class="mono">…${tail(p)}</span></span>`;
+  $('#roC').innerHTML=`<span class="big">2<sup>${fmt(p)}</sup> − 1</span>`
+   +`<span class="st"><b>${fmt(d)}</b> 位數・${yr<0?'古代':yr+' 年'}・${who}</span>`+val
+   +(d>3000?`<span class="st">印在 A4 紙上（每頁約 3,000 位）要 <b>${fmt(pages,pages<10?1:0)}</b> 頁${books>=1?`，約 <b>${fmt(books,books<10?1:0)}</b> 本 300 頁的書`:''}</span>`:'')
+   +(d>86400?`<span class="st">每秒念一位、不睡覺，要念 <b>${fmt(days,0)}</b> 天</span>`:'');}
+const cvC=$('#cC');
+cvC.addEventListener('click',e=>{const r=cvC.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let best=-1,bd=400;
+  C.pts.forEach((q,i)=>{const d=(q[0]-x)**2+(q[1]-y)**2;if(d<bd){bd=d;best=i;}});if(best>=0)setK(best+1);});
+function drawC(){
+  const r=cvC.getBoundingClientRect(),dp=Math.min(2,devicePixelRatio||1),W=Math.round(r.width*dp),H=Math.round(r.height*dp);if(cvC.width!==W||cvC.height!==H){cvC.width=W;cvC.height=H;}
+  const a=cvC.getContext('2d');a.setTransform(dp,0,0,dp,0,0);const w=r.width,h=r.height;
+  a.fillStyle='#06060a';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+24,pl=72,pr=w-16,pt=top,pb=h-34;
+  const Y0=1600,Y1=2030,X=y=>pl+(Math.max(y,Y0)-Y0)/(Y1-Y0)*(pr-pl),L1=8,Y=lg=>pb-lg/L1*(pb-pt);
+  a.strokeStyle='#22222e';a.lineWidth=1;a.font='11px Lexend,"Noto Sans TC",sans-serif';a.fillStyle='#a0a0b4';
+  for(let l=0;l<=L1;l++){const y=Y(l);a.beginPath();a.moveTo(pl,y);a.lineTo(pr,y);a.stroke();a.textAlign='right';a.textBaseline='middle';a.fillText(l===0?'1 位':l<4?fmt(10**l)+' 位':l<8?fmt(10**(l-4))+' 萬位':'1 億位',pl-6,y);}
+  for(let yr=1600;yr<=2020;yr+=50){const x=X(yr);a.beginPath();a.moveTo(x,pt);a.lineTo(x,pb);a.stroke();a.textAlign='center';a.textBaseline='top';a.fillText(yr,x,pb+6);}
+  // computer era shading
+  a.fillStyle='rgba(126,224,168,.05)';a.fillRect(X(1952),pt,X(1996)-X(1952),pb-pt);a.fillStyle='rgba(255,215,106,.06)';a.fillRect(X(1996),pt,pr-X(1996),pb-pt);
+  a.fillStyle='#a0a0b4';a.textAlign='left';a.textBaseline='top';a.fillText('手算時代',X(1610),pt+4);if(X(1996)-X(1955)>60)a.fillText('電腦',X(1955),pt+4);a.textAlign='right';a.fillText(pr-X(1996)>80?'GIMPS 網路':'GIMPS',pr-4,pt+4);
+  C.pts=REC.map(([p,yr])=>[X(yr<0?1600:yr),Y(Math.log10(digitsOf(p)))]);
+  C.pts.forEach(([x,y],i)=>{const sel=i===C.k-1;a.fillStyle=sel?'#ffd76a':REC[i][1]<0?'#a0a0b4':REC[i][1]>=1996?'#ffd76a99':REC[i][1]>=1952?'#7ee0a8':'#c9b8ff';a.beginPath();a.arc(x,y,sel?7:4,0,7);a.fill();
+    if(sel){a.strokeStyle='#fff';a.lineWidth=2;a.stroke();}});
+  if(true){const[x,y]=C.pts[C.k-1];a.strokeStyle='rgba(255,215,106,.4)';a.setLineDash([3,3]);a.beginPath();a.moveTo(pl,y);a.lineTo(x,y);a.lineTo(x,pb);a.stroke();a.setLineDash([]);}
+  a.fillStyle='#a0a0b4';a.textAlign='left';a.textBaseline='bottom';a.fillText('（古代的 4 個畫在最左邊）',pl+4,pb-4);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(){if(TAB==='C')drawC();requestAnimationFrame(loop);}
+renderA();buildPs();renderB();roC();requestAnimationFrame(loop);
+})();
+</script>

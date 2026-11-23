@@ -1,0 +1,881 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>拉格朗日點實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-height split — orbital stage (canvas) left, instrument rail right; stacks on phones */
+:root{
+  --void:#05060c;
+  --deck:#0a0d1a;
+  --deck2:#10142a;
+  --rule:#1e2443;
+  --ink:#e6e8f4;
+  --dim:#8a91b4;
+  --gold:#f2b64c;
+  --ship:#7ad4ff;
+  --bad:#ff7d6e;
+  --good:#7fe0a8;
+  --f-cjk:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-disp:"Chakra Petch","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-cjk);font-size:14px;line-height:1.55}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 370px;height:100%}
+.stage{position:relative;min-height:0;min-width:0;overflow:hidden;background:var(--void)}
+#cv{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 28px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:22px}
+
+.brand{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-family:var(--f-disp);font-size:11px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+h1{font-family:var(--f-cjk);font-weight:700;font-size:24px;margin:0;letter-spacing:.04em;text-wrap:balance}
+.lede{color:var(--dim);margin:6px 0 0;font-size:13px}
+
+section{display:flex;flex-direction:column;gap:10px}
+h2{font-family:var(--f-disp);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin:0;font-weight:600;
+  display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:transparent;border:1px solid var(--rule);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--dim)}
+.chip:hover{color:var(--ink);border-color:#36406e}
+.chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#1a1204;font-weight:700}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 6px;color:var(--dim);font-size:13px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--deck2);color:var(--ink);box-shadow:inset 0 -2px 0 var(--gold)}
+
+.gauge{position:relative;height:30px;margin-top:2px}
+.gauge .track{position:absolute;left:0;right:0;top:10px;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,#1c3a32 0%,#1c3a32 var(--crit),#4a2320 var(--crit),#4a2320 100%)}
+.gauge .tick{position:absolute;top:4px;width:2px;height:18px;background:var(--dim);left:var(--crit);transform:translateX(-1px)}
+.gauge .mark{position:absolute;top:6px;width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--void);transform:translateX(-7px);left:var(--pos);transition:left .3s}
+.gauge .lab{position:absolute;top:24px;font-family:var(--f-mono);font-size:10px;color:var(--dim);left:var(--crit);transform:translateX(-50%);white-space:nowrap}
+.mu-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.verdict{font-size:12.5px;color:var(--dim);margin-top:14px}
+.verdict b{color:var(--good);font-weight:500}
+.verdict b.no{color:var(--bad)}
+
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:var(--deck2);border:1px solid var(--rule);border-radius:8px;padding:8px 12px;font-size:13px}
+.btn:hover{border-color:#3a4578}
+.btn.primary{background:var(--gold);color:#1a1204;border-color:var(--gold);font-weight:700}
+.btn.primary:hover{filter:brightness(1.08)}
+.hint{font-size:12.5px;color:var(--dim);margin:0}
+.hint kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--rule);border-radius:4px;padding:0 4px;color:var(--ink)}
+
+label.check{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);cursor:pointer}
+label.check input{accent-color:var(--gold);width:15px;height:15px}
+.slider{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--dim)}
+.slider input{flex:1;accent-color:var(--gold);min-width:0}
+
+.lgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lbtn{background:var(--deck2);border:1px solid var(--rule);border-radius:8px;padding:7px 0 6px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.lbtn b{font-family:var(--f-disp);font-size:15px;letter-spacing:.04em}
+.lbtn span{font-size:10px;color:var(--dim)}
+.lbtn[aria-pressed="true"]{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.lbtn .st{width:7px;height:7px;transform:rotate(45deg);margin-bottom:3px}
+.st.ok{background:var(--gold)}
+.st.un{border:1.5px solid var(--gold)}
+
+.info{background:var(--deck2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.info h3{margin:0;font-size:15px;display:flex;align-items:baseline;gap:8px}
+.info h3 small{font-family:var(--f-mono);font-size:11px;color:var(--dim);font-weight:400}
+.info p{margin:0;font-size:13px;color:#c3c7dc}
+.info p.real{color:var(--ink);border-top:1px dashed var(--rule);padding-top:6px}
+.info p.real::before{content:"真實案例　";color:var(--gold);font-size:11px;letter-spacing:.1em}
+
+.readout{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+.readout dt{color:var(--dim)}
+.readout dd{margin:0;text-align:right}
+.region{font-size:13px;margin:4px 0 0;color:var(--ink)}
+
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+.bar .t{height:7px;background:#151a33;border-radius:4px;overflow:hidden}
+.bar .f{height:100%;width:0;background:var(--gold);transition:width .1s linear}
+.bar .v{text-align:right;color:var(--ink)}
+
+/* stage overlays */
+.hud{position:absolute;top:max(12px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));
+  font-family:var(--f-mono);font-size:12px;color:var(--dim);pointer-events:none;display:flex;flex-direction:column;gap:2px;
+  text-shadow:0 1px 3px #000}
+.hud .sys{font-family:var(--f-cjk);font-size:15px;color:var(--ink);font-weight:500}
+.ctrls{position:absolute;bottom:max(14px,env(safe-area-inset-bottom,0px));right:max(14px,env(safe-area-inset-right,0px));display:flex;gap:6px}
+.ctrls button,.dpad button{background:rgba(12,15,30,.82);border:1px solid var(--rule);border-radius:8px;min-width:38px;height:38px;padding:0 10px;font-size:14px;backdrop-filter:blur(4px)}
+.ctrls button:hover{border-color:#3a4578}
+.dpad{position:absolute;bottom:max(14px,env(safe-area-inset-bottom,0px));left:max(14px,env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:4px;user-select:none;-webkit-user-select:none}
+.dpad button{width:48px;height:48px;font-size:18px;touch-action:none}
+.dpad button.on{background:var(--gold);color:#1a1204}
+.dpad .u{grid-area:1/2}.dpad .l{grid-area:2/1}.dpad .r{grid-area:2/3}.dpad .d{grid-area:3/2}
+.toast{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+  background:rgba(12,15,30,.9);border:1px solid var(--rule);border-radius:8px;padding:8px 14px;font-size:13px;max-width:min(92%,440px);
+  text-align:center;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.banner{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,6,12,.55);padding:16px}
+.banner .card{background:var(--deck);border:1px solid var(--rule);border-radius:14px;padding:22px 24px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:10px;text-align:center}
+.banner h3{margin:0;font-size:22px}
+.banner p{margin:0;color:var(--dim)}
+.banner .row{justify-content:center;margin-top:6px}
+.legend{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));
+  font-size:11px;color:var(--dim);display:flex;flex-direction:column;gap:3px;align-items:flex-end;pointer-events:none;text-shadow:0 1px 3px #000}
+.legend i{display:inline-block;width:16px;height:2px;vertical-align:middle;margin-left:6px}
+
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:66vh;min-height:380px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .legend{display:none}
+}
+@media (prefers-reduced-motion:reduce){.toast,.gauge .mark{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="三體問題模擬畫面"></canvas>
+    <div class="hud" id="hud"><span class="sys" id="hudSys">地球–月球</span><span id="hudT">t = 0.00 圈</span><span id="hudV">旋轉座標系</span></div>
+    <div class="legend" id="legend">
+      <span>零速度曲線（經過 L1）<i style="background:var(--gold)"></i></span>
+      <span>你的飛船能量邊界<i style="background:var(--ship)"></i></span>
+      <span>等效位能等高線<i style="background:#46578f"></i></span>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="dpad" id="dpad" hidden>
+      <button class="u" data-d="0,1" aria-label="向上推進">▲</button>
+      <button class="l" data-d="-1,0" aria-label="向左推進">◀</button>
+      <button class="r" data-d="1,0" aria-label="向右推進">▶</button>
+      <button class="d" data-d="0,-1" aria-label="向下推進">▼</button>
+    </div>
+    <div class="ctrls">
+      <button id="bPause" aria-label="暫停或繼續">❚❚</button>
+      <button id="bOut" aria-label="縮小">−</button>
+      <button id="bFit">全景</button>
+      <button id="bIn" aria-label="放大">+</button>
+    </div>
+    <div class="banner" id="banner" hidden>
+      <div class="card">
+        <h3 id="bnT"></h3>
+        <p id="bnP"></p>
+        <div class="row">
+          <button class="btn primary" id="bnRetry">再試一次</button>
+          <button class="btn" id="bnExit">回到沙盒</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div class="brand">
+      <span class="eyebrow">Circular Restricted 3-Body</span>
+      <h1>拉格朗日點實驗室</h1>
+      <p class="lede">兩個天體互相繞轉時，有五個點能讓小飛船跟著一起轉、相對位置不變。親手把飛船放上去，看看哪些點真的待得住。</p>
+    </div>
+
+    <section>
+      <h2>天體系統</h2>
+      <div class="chips" id="sysChips"></div>
+      <div class="slider" id="customRow" hidden>
+        <span>μ</span><input type="range" id="muSlider" min="0" max="1000" value="700"><span class="mono" id="muOut"></span>
+      </div>
+      <div class="mu-row"><span>質量比 μ = m₂ / (m₁+m₂)</span><span class="mono" id="muVal"></span></div>
+      <div class="gauge" id="gauge"><div class="track"></div><div class="tick"></div><div class="mark"></div><div class="lab">Routh 臨界 0.0385</div></div>
+      <p class="verdict" id="verdict"></p>
+    </section>
+
+    <section>
+      <h2>玩法</h2>
+      <div class="seg" id="modeSeg">
+        <button data-m="sandbox" aria-pressed="true">沙盒實驗</button>
+        <button data-m="challenge" aria-pressed="false">站位挑戰</button>
+      </div>
+      <div id="sandboxBox" class="bars">
+        <p class="hint"><b style="color:var(--ink)">點一下</b>：在該處放一艘靜止（相對旋轉座標）的飛船。<b style="color:var(--ink)">按住拖曳</b>：設定初速度，虛線是預測軌道。點在 L 點標記上會自動對準。<span id="panHint">按住 <kbd>Shift</kbd> 或右鍵拖曳可平移，滾輪縮放。</span></p>
+        <div class="row">
+          <button class="btn primary" id="bSwarm">投放特洛伊小行星群</button>
+          <button class="btn" id="bClear">清除全部</button>
+        </div>
+      </div>
+      <div id="challengeBox" class="bars" hidden>
+        <p class="hint">飛船從 L 點附近出發，用推進器讓它在虛線圈內撐過系統公轉一圈。燃料有限。用 <kbd>←↑→↓</kbd> / <kbd>WASD</kbd> 或畫面左下方向鍵。</p>
+        <div class="lgrid" id="chGrid"></div>
+        <button class="btn primary" id="bStart">開始挑戰 L1</button>
+        <div class="bar"><span>時間</span><div class="t"><div class="f" id="fTime"></div></div><span class="v mono" id="vTime">—</span></div>
+        <div class="bar"><span>燃料</span><div class="t"><div class="f" id="fFuel" style="background:var(--ship)"></div></div><span class="v mono" id="vFuel">—</span></div>
+        <div class="bar"><span>偏離</span><div class="t"><div class="f" id="fDist" style="background:var(--good)"></div></div><span class="v mono" id="vDist">—</span></div>
+        <p class="hint" id="chTip"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2>五個拉格朗日點</h2>
+      <div class="lgrid" id="lGrid"></div>
+      <div class="info" id="info"></div>
+    </section>
+
+    <section>
+      <h2>飛船讀數</h2>
+      <dl class="readout" id="readout">
+        <dt>雅可比常數 C</dt><dd class="mono" id="rC">—</dd>
+        <dt>C − C(L1)</dt><dd class="mono" id="rD">—</dd>
+        <dt>狀態</dt><dd id="rS">尚未投放</dd>
+      </dl>
+      <p class="region" id="rRegion">投放飛船後，這裡會說明它的能量允許它去哪裡。</p>
+    </section>
+
+    <section>
+      <h2>檢視</h2>
+      <div class="seg" id="viewSeg">
+        <button data-v="rot" aria-pressed="true">旋轉座標系</button>
+        <button data-v="in" aria-pressed="false">慣性座標系</button>
+      </div>
+      <label class="check"><input type="checkbox" id="cMap" checked> 顯示等效位能與零速度曲線</label>
+      <label class="check"><input type="checkbox" id="cTrail" checked> 顯示軌跡</label>
+      <div class="slider"><span>模擬速度</span><input type="range" id="speed" min="0" max="100" value="45"><span class="mono" id="speedOut"></span></div>
+      <p class="hint">旋轉座標系跟著兩天體一起轉，L 點看起來靜止；切到慣性座標系就能看到它們其實都在繞圈。</p>
+    </section>
+  </aside>
+</div>
+
+<script>
+(() => {
+const TAU = Math.PI * 2, ROUTH = 0.0385209;
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const mapC = document.createElement('canvas'), mctx = mapC.getContext('2d');
+
+const SYS = {
+  em:{name:'地球–月球', m1:'地球', m2:'月球', mu:0.0121506, r1:0.01657, r2:0.00452, c1:'#6fa8ff', c2:'#cfd2de', s1:9, s2:5},
+  se:{name:'太陽–地球', m1:'太陽', m2:'地球', mu:3.0404e-6, r1:0.00465, r2:4.26e-5, c1:'#ffd27a', c2:'#6fa8ff', s1:13, s2:5},
+  sj:{name:'太陽–木星', m1:'太陽', m2:'木星', mu:9.537e-4, r1:0.000894, r2:9.18e-5, c1:'#ffd27a', c2:'#e3b48a', s1:13, s2:6},
+  pc:{name:'冥王星–卡戎', m1:'冥王星', m2:'卡戎', mu:0.1087, r1:0.0606, r2:0.0309, c1:'#dcc6a6', c2:'#a9aabb', s1:10, s2:7},
+  cu:{name:'自訂 μ', m1:'主星', m2:'伴星', mu:0.02, r1:0.01, r2:0.005, c1:'#ffd27a', c2:'#9fb3d9', s1:10, s2:6}
+};
+const LNAME = ['內側鞍點','外側鞍點','對面鞍點','領先 60°','落後 60°'];
+const GENERIC = [
+  '位於兩天體之間。兩邊的引力與跟著轉所需的向心力在這裡剛好平衡，但它是鞍點：稍微偏離就會越漂越遠。',
+  '位於伴星外側。外側多了一份伴星的引力，讓飛船能用較短的週期跟上伴星。同樣是鞍點，不穩定。',
+  '位於主星另一側，和伴星隔著主星相對。也不穩定，但伴星影響很弱，偏離得非常慢。',
+  '在伴星軌道上領先 60°，與兩天體構成等邊三角形。μ 小於 0.0385 時，科氏力會把偏離的物體拉回來，繞出「蝌蚪形」軌道。',
+  '在伴星軌道上落後 60°，性質和 L4 相同。'
+];
+const REAL = {
+  se:['SOHO、DSCOVR 與印度的 Aditya-L1 都在這裡，不受地球遮擋地盯著太陽。',
+      '韋伯太空望遠鏡（JWST）、Gaia、Euclid 在此附近的暈輪軌道上，太陽和地球永遠在同一側，好遮光。',
+      '永遠藏在太陽背後。科幻小說裡的「反地球」就放在這，但實際上什麼都沒有。',
+      '已發現兩顆地球特洛伊小行星：2010 TK7 與 2020 XL5。',
+      'ESA 規劃的 Vigil 太空天氣任務預計前往此處，從側面提早看見朝地球而來的太陽風暴。'],
+  em:['地月轉運站的候選位置：從這裡往地球或月球都很省燃料。',
+      '中國的鵲橋號中繼衛星在這附近的暈輪軌道運行，替月球背面的嫦娥四號傳回訊號。',
+      '在月球的正對面、地球的另一側，沒有已知的任務使用。',
+      '1961 年 Kordylewski 回報這裡有暗淡的塵埃雲，2018 年有觀測支持，但至今仍有爭議。',
+      '同 L4，傳說中的 Kordylewski 塵埃雲的另一團。'],
+  sj:[null,null,null,
+      '木星的「希臘營」特洛伊小行星群。木星兩側的特洛伊小行星已知超過一萬顆。',
+      '木星的「特洛伊營」小行星群。NASA 的 Lucy 探測器（2021 年發射）正前往造訪兩群小行星。'],
+  pc:[null,null,null,
+      '卡戎相對冥王星太重了（μ ≈ 0.109 > 0.0385），L4 不再穩定。放一艘飛船上去試試。',
+      '和 L4 一樣不穩定：這是少數「L4/L5 待不住」的真實天體系統。']
+};
+
+// ---------- state ----------
+let sysKey = 'em', mu = SYS.em.mu, R1, R2, L = [], CL = [];
+let customMu = 0.02;
+let t = 0, speed = 0.6, paused = false, inertial = false, showMap = true, showTrail = true;
+let crafts = [], swarm = [], selected = null, selL = 0;
+let mode = 'sandbox', ch = null, chK = 0;
+let W = 0, H = 0, DPR = 1;
+const cam = {x:0, y:0, s:200}, camT = {x:0, y:0, s:200};
+const thrust = {x:0, y:0}, keys = new Set();
+const SHIPC = ['#7ad4ff','#ff9fd0','#b9f27c','#ffb36b','#c6a7ff','#6fffe0','#ff8080','#f7f08a'];
+let shipIdx = 0;
+
+// ---------- physics ----------
+function omega(x, y){
+  const r1 = Math.hypot(x + mu, y), r2 = Math.hypot(x - 1 + mu, y);
+  return 0.5*(x*x + y*y) + (1 - mu)/r1 + mu/r2;
+}
+function computeL(){
+  const f = x => { const r1 = Math.abs(x + mu), r2 = Math.abs(x - 1 + mu);
+    return x - (1 - mu)*(x + mu)/(r1*r1*r1) - mu*(x - 1 + mu)/(r2*r2*r2); };
+  const bis = (a, b) => { let fa = f(a); for (let i = 0; i < 200; i++){ const m = (a + b)/2, fm = f(m);
+    if ((fm < 0) === (fa < 0)){ a = m; fa = fm; } else b = m; } return (a + b)/2; };
+  const e = 1e-9;
+  const x1 = bis(-mu + e, 1 - mu - e), x2 = bis(1 - mu + e, 3), x3 = bis(-3, -mu - e);
+  L = [{x:x1,y:0},{x:x2,y:0},{x:x3,y:0},{x:0.5 - mu, y:Math.sqrt(3)/2},{x:0.5 - mu, y:-Math.sqrt(3)/2}];
+  CL = L.map(p => 2*omega(p.x, p.y));
+}
+const A = [0, 0];
+function acc(x, y, vx, vy){
+  const dx1 = x + mu, dx2 = x - 1 + mu, y2 = y*y;
+  const r1 = Math.sqrt(dx1*dx1 + y2), r2 = Math.sqrt(dx2*dx2 + y2);
+  const a = (1 - mu)/(r1*r1*r1), b = mu/(r2*r2*r2);
+  A[0] = 2*vy + x - a*dx1 - b*dx2;
+  A[1] = -2*vx + y - (a + b)*y;
+}
+function rk4(s, h, ux, uy){
+  const x = s.x, y = s.y, vx = s.vx, vy = s.vy, hh = h/2;
+  acc(x, y, vx, vy);                         const a1x = A[0]+ux, a1y = A[1]+uy;
+  const x2 = x+hh*vx, y2 = y+hh*vy, v2x = vx+hh*a1x, v2y = vy+hh*a1y;
+  acc(x2, y2, v2x, v2y);                     const a2x = A[0]+ux, a2y = A[1]+uy;
+  const x3 = x+hh*v2x, y3 = y+hh*v2y, v3x = vx+hh*a2x, v3y = vy+hh*a2y;
+  acc(x3, y3, v3x, v3y);                     const a3x = A[0]+ux, a3y = A[1]+uy;
+  const x4 = x+h*v3x, y4 = y+h*v3y, v4x = vx+h*a3x, v4y = vy+h*a3y;
+  acc(x4, y4, v4x, v4y);                     const a4x = A[0]+ux, a4y = A[1]+uy;
+  s.x += h/6*(vx + 2*v2x + 2*v3x + v4x);
+  s.y += h/6*(vy + 2*v2y + 2*v3y + v4y);
+  s.vx += h/6*(a1x + 2*a2x + 2*a3x + a4x);
+  s.vy += h/6*(a1y + 2*a2y + 2*a3y + a4y);
+}
+function stepH(s, rem){
+  const r1 = Math.hypot(s.x + mu, s.y), r2 = Math.hypot(s.x - 1 + mu, s.y);
+  return Math.min(0.004, rem, 0.02*Math.sqrt(r1*r1*r1/(1 - mu)), 0.02*Math.sqrt(r2*r2*r2/mu));
+}
+function advance(s, dt, t0, ux = 0, uy = 0){
+  let rem = dt, tt = t0, n = 0;
+  const eps = 1.2/cam.s;
+  while (rem > 1e-12 && n++ < 60000){
+    const h = stepH(s, rem);
+    rk4(s, h, ux, uy); rem -= h; tt += h;
+    const q1 = Math.hypot(s.x + mu, s.y), q2 = Math.hypot(s.x - 1 + mu, s.y);
+    if (q1 < R1){ s.alive = false; s.why = '撞上' + SYS[sysKey].m1; }
+    else if (q2 < R2){ s.alive = false; s.why = '撞上' + SYS[sysKey].m2; }
+    else if (Math.hypot(s.x, s.y) > 7){ s.alive = false; s.why = '飛離系統'; }
+    if (s.trail){
+      const tr = s.trail, lp = tr[tr.length - 1];
+      if (!s.alive || !lp || Math.abs(s.x - lp[0]) + Math.abs(s.y - lp[1]) > eps || tt - lp[2] > 0.04){
+        tr.push([s.x, s.y, tt]); if (tr.length > 7000) tr.splice(0, 1500);
+      }
+    }
+    if (!s.alive) break;
+  }
+}
+const jacobi = s => 2*omega(s.x, s.y) - (s.vx*s.vx + s.vy*s.vy);
+
+// ---------- view transforms ----------
+const theta = () => inertial ? t : 0;
+function toScreen(x, y){
+  let dx = x - cam.x, dy = y - cam.y;
+  if (inertial){ const c = Math.cos(t), s = Math.sin(t); [dx, dy] = [c*dx - s*dy, s*dx + c*dy]; }
+  return [W/2 + dx*cam.s, H/2 - dy*cam.s];
+}
+function toScreenT(x, y, ti){
+  if (!inertial) return [W/2 + (x - cam.x)*cam.s, H/2 - (y - cam.y)*cam.s];
+  const c = Math.cos(ti), s = Math.sin(ti), C = Math.cos(t), S = Math.sin(t);
+  const px = c*x - s*y - (C*cam.x - S*cam.y), py = s*x + c*y - (S*cam.x + C*cam.y);
+  return [W/2 + px*cam.s, H/2 - py*cam.s];
+}
+function fromScreen(sx, sy){
+  let dx = (sx - W/2)/cam.s, dy = -(sy - H/2)/cam.s;
+  if (inertial){ const c = Math.cos(-t), s = Math.sin(-t); [dx, dy] = [c*dx - s*dy, s*dx + c*dy]; }
+  return [dx + cam.x, dy + cam.y];
+}
+function screenVecToRot(vx, vy){ // screen-direction vector (world units, y up) -> rotating-frame components
+  if (!inertial) return [vx, vy];
+  const c = Math.cos(-t), s = Math.sin(-t); return [c*vx - s*vy, s*vx + c*vy];
+}
+
+// ---------- camera ----------
+function fitAll(){ camT.x = 0.15 - mu*0; camT.y = 0; camT.s = Math.min(W, H)/3.3; }
+function dkOf(k){ return k <= 1 ? Math.abs(L[k].x - (1 - mu)) : 0.4; }
+function focusL(k){
+  if (k <= 1){ const d = dkOf(k); camT.x = (L[k].x + (1 - mu))/2; camT.y = 0; camT.s = Math.min(W, H)/(d*4.2); }
+  else if (k === 2){ camT.x = -0.2; camT.y = 0; camT.s = Math.min(W, H)/3.6; }
+  else { camT.x = L[k].x*0.55; camT.y = L[k].y*0.55; camT.s = Math.min(W, H)/2.4; }
+}
+function zoom(f, sx = W/2, sy = H/2){
+  const [wx, wy] = fromScreen(sx, sy);
+  camT.s = Math.max(20, Math.min(5e7, camT.s*f));
+  if (!inertial){ camT.x = wx - (sx - W/2)/camT.s; camT.y = wy + (sy - H/2)/camT.s; }
+}
+function animCam(){
+  const k = 0.16;
+  cam.x += (camT.x - cam.x)*k; cam.y += (camT.y - cam.y)*k;
+  cam.s = Math.exp(Math.log(cam.s) + (Math.log(camT.s) - Math.log(cam.s))*k);
+  if (Math.abs(camT.s/cam.s - 1) < 1e-4){ cam.s = camT.s; }
+}
+
+// ---------- potential map ----------
+let mapMeta = null, mapKey = '', lastBuild = 0;
+function buildMap(selC){
+  const step = 3, D = Math.ceil(Math.hypot(W, H)) + 12, n = Math.ceil(D/step);
+  mapC.width = n; mapC.height = n;
+  const img = mctx.createImageData(n, n), px = img.data, vals = new Float32Array(n*n);
+  const cL4 = CL[3], span = Math.max(CL[0] - cL4, 1e-12), del = span*0.004;
+  const fmin = Math.log10(del), fmax = Math.log10(span + del) + 0.7;
+  const unit = step/cam.s;
+  for (let j = 0; j < n; j++){
+    const y = cam.y - (j - n/2 + 0.5)*unit;
+    for (let i = 0; i < n; i++){
+      const x = cam.x + (i - n/2 + 0.5)*unit;
+      vals[j*n + i] = 2*omega(x, y);
+    }
+  }
+  const lv = v => Math.log10(Math.max(v - cL4, 0) + del);
+  for (let j = 0; j < n; j++){
+    for (let i = 0; i < n; i++){
+      const o = j*n + i, v = vals[o];
+      const f = lv(v), tt = Math.min(1, Math.max(0, (f - fmin)/(fmax - fmin)));
+      let r = 6 + 22*tt, g = 9 + 24*tt, b = 20 + 48*tt, a = 255;
+      const vr = i < n - 1 ? vals[o + 1] : v, vd = j < n - 1 ? vals[o + n] : v;
+      // contour bands
+      const band = Math.floor(f*5);
+      if (band !== Math.floor(lv(vr)*5) || band !== Math.floor(lv(vd)*5)){ r = 52; g = 66; b = 118; }
+      // critical zero-velocity curves
+      for (let k = 2; k >= 0; k--){
+        const c = CL[k];
+        if ((v > c) !== (vr > c) || (v > c) !== (vd > c)){
+          const w = k === 0 ? 1 : k === 1 ? .7 : .5;
+          r = r*(1 - w) + 242*w; g = g*(1 - w) + 182*w; b = b*(1 - w) + 76*w;
+        }
+      }
+      if (selC != null && ((v > selC) !== (vr > selC) || (v > selC) !== (vd > selC))){ r = 122; g = 212; b = 255; }
+      const p = o*4; px[p] = r; px[p + 1] = g; px[p + 2] = b; px[p + 3] = a;
+    }
+  }
+  mctx.putImageData(img, 0, 0);
+  mapMeta = {x:cam.x, y:cam.y, s:cam.s, size:n*step};
+}
+
+// ---------- stars ----------
+const stars = Array.from({length:320}, () => ({a:Math.random()*TAU, r:Math.sqrt(Math.random()), b:.25 + Math.random()*.75, z:Math.random() < .08 ? 1.6 : 1, p:Math.random()*TAU}));
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- drawing ----------
+function draw(now){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, W, H);
+
+  // map
+  if (showMap){
+    const selC = selected && selected.alive ? +jacobi(selected).toPrecision(9) : null;
+    const key = [mu, cam.x.toPrecision(6), cam.y.toPrecision(6), cam.s.toPrecision(5), W, H, selC].join('|');
+    if (key !== mapKey && now - lastBuild > 140){ buildMap(selC); mapKey = key; lastBuild = now; }
+    if (mapMeta){
+      const [cx, cy] = toScreen(mapMeta.x, mapMeta.y), sz = mapMeta.size*cam.s/mapMeta.s;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(-theta()); ctx.globalAlpha = inertial ? .55 : 1;
+      ctx.imageSmoothingEnabled = true; ctx.drawImage(mapC, -sz/2, -sz/2, sz, sz); ctx.restore();
+    }
+  }
+
+  // stars (fixed in inertial space)
+  const R = Math.hypot(W, H)/2, rot = inertial ? 0 : -t;
+  for (const s of stars){
+    const ang = s.a + rot, tw = reduceMotion ? 1 : .75 + .25*Math.sin(now/700 + s.p);
+    ctx.fillStyle = `rgba(220,226,255,${(showMap ? .45 : .8)*s.b*tw})`;
+    ctx.fillRect(W/2 + Math.cos(ang)*s.r*R, H/2 - Math.sin(ang)*s.r*R, s.z, s.z);
+  }
+
+  // orbit guide circle of secondary
+  ctx.strokeStyle = 'rgba(140,150,200,.14)'; ctx.setLineDash([3, 6]); ctx.lineWidth = 1;
+  const [ox, oy] = toScreen(0, 0); ctx.beginPath(); ctx.arc(ox, oy, (1 - mu)*cam.s, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+
+  // challenge zone
+  if (mode === 'challenge' && ch){
+    const [zx, zy] = toScreen(L[ch.k].x, L[ch.k].y);
+    const d = selected ? Math.hypot(selected.x - L[ch.k].x, selected.y - L[ch.k].y)/ch.R : 0;
+    ctx.strokeStyle = d > .75 ? '#ff7d6e' : 'rgba(127,224,168,.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.arc(zx, zy, ch.R*cam.s, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // L points
+  ctx.font = '600 13px "Chakra Petch", sans-serif'; ctx.textBaseline = 'middle';
+  L.forEach((p, k) => {
+    const [x, y] = toScreen(p.x, p.y), stable = k >= 3 && mu < ROUTH, sz = 6;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI/4);
+    ctx.strokeStyle = '#f2b64c'; ctx.fillStyle = '#f2b64c'; ctx.lineWidth = 1.6;
+    if (stable) ctx.fillRect(-sz/2, -sz/2, sz, sz); else ctx.strokeRect(-sz/2, -sz/2, sz, sz);
+    ctx.restore();
+    if (k === selL){ ctx.strokeStyle = 'rgba(242,182,76,.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.stroke(); }
+    ctx.fillStyle = '#f2b64c'; ctx.fillText('L' + (k + 1), x + 10, y - 11);
+  });
+
+  // trails
+  if (showTrail){
+    ctx.lineWidth = 1.3; ctx.lineJoin = 'round';
+    for (const c of crafts){
+      const tr = c.trail; if (tr.length < 2) continue;
+      ctx.strokeStyle = c.color; ctx.globalAlpha = c.alive ? .75 : .35; ctx.beginPath();
+      for (let i = 0; i < tr.length; i++){ const [x, y] = toScreenT(tr[i][0], tr[i][1], tr[i][2]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  // swarm
+  if (swarm.length){
+    ctx.strokeStyle = 'rgba(242,182,76,.22)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (const p of swarm){ if (!p.alive || !showTrail) continue; const h = p.h;
+      for (let i = 0; i < h.length; i++){ const [x, y] = toScreenT(h[i][0], h[i][1], h[i][2]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } }
+    ctx.stroke();
+    ctx.fillStyle = '#ffd88a';
+    for (const p of swarm){ if (!p.alive) continue; const [x, y] = toScreen(p.x, p.y); ctx.fillRect(x - 1.2, y - 1.2, 2.4, 2.4); }
+  }
+
+  // bodies
+  const S = SYS[sysKey];
+  drawBody(-mu, 0, Math.max(R1*cam.s, S.s1), S.c1, S.m1, S.c1 === '#ffd27a');
+  drawBody(1 - mu, 0, Math.max(R2*cam.s, S.s2), S.c2, S.m2, false);
+
+  // crafts
+  for (const c of crafts){
+    const [x, y] = toScreen(c.x, c.y);
+    if (c.alive){
+      if (c === selected){ ctx.strokeStyle = c.color; ctx.globalAlpha = .4; ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; }
+      ctx.fillStyle = c.color; ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x + 4.5, y + 4); ctx.lineTo(x - 4.5, y + 4); ctx.closePath(); ctx.fill();
+      if (c.burn){ ctx.strokeStyle = '#ffb36b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - c.burn[0]*14, y + c.burn[1]*14); ctx.stroke(); }
+    } else {
+      ctx.strokeStyle = c.color; ctx.globalAlpha = .6; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.moveTo(x + 4, y - 4); ctx.lineTo(x - 4, y + 4); ctx.stroke(); ctx.globalAlpha = 1;
+    }
+  }
+
+  // drag preview
+  if (drag && drag.type === 'launch'){
+    const [sx, sy] = toScreen(drag.start[0], drag.start[1]);
+    ctx.strokeStyle = '#7ad4ff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(drag.cur[0], drag.cur[1]); ctx.stroke();
+    if (drag.preview){ ctx.setLineDash([4, 5]); ctx.globalAlpha = .8; ctx.beginPath();
+      drag.preview.forEach(([x, y, ti], i) => { const [a, b] = toScreenT(x, y, ti); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); });
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+  }
+}
+function drawBody(x, y, r, col, name, glow){
+  const [sx, sy] = toScreen(x, y);
+  if (glow){ const g = ctx.createRadialGradient(sx, sy, r*.6, sx, sy, r*3.2); g.addColorStop(0, 'rgba(255,210,122,.45)'); g.addColorStop(1, 'rgba(255,210,122,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(sx, sy, r*3.2, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fill();
+  ctx.font = '500 12px "Noto Sans TC", sans-serif'; ctx.fillStyle = 'rgba(230,232,244,.85)'; ctx.textBaseline = 'top';
+  ctx.fillText(name, sx + r + 4, sy + r*.4 + 2); ctx.textBaseline = 'middle';
+}
+
+// ---------- simulation ----------
+function simulate(dt){
+  const t0 = t;
+  let ux = 0, uy = 0;
+  if (mode === 'challenge' && ch && !ch.done && selected){
+    let tx = thrust.x, ty = thrust.y;
+    for (const k of keys){ if (k === 'l') tx -= 1; if (k === 'r') tx += 1; if (k === 'u') ty += 1; if (k === 'd') ty -= 1; }
+    const m = Math.hypot(tx, ty);
+    if (m > 0 && ch.fuel > 0){
+      [ux, uy] = screenVecToRot(tx/m*ch.a, ty/m*ch.a);
+      ch.fuel = Math.max(0, ch.fuel - dt/ch.burn);
+      selected.burn = [tx/m, ty/m];
+    } else selected.burn = null;
+  }
+  for (const c of crafts) if (c.alive) advance(c, dt, t0, c === selected ? ux : 0, c === selected ? uy : 0);
+  for (const p of swarm){ if (!p.alive) continue; advance(p, dt, t0); p.h.push([p.x, p.y, t0 + dt]); if (p.h.length > 34) p.h.shift(); }
+  if (mode === 'challenge' && ch && !ch.done){
+    ch.elapsed += dt;
+    const d = Math.hypot(selected.x - L[ch.k].x, selected.y - L[ch.k].y);
+    if (!selected.alive) endChallenge(false, selected.why + '了。');
+    else if (d > ch.R) endChallenge(false, '飛船漂出了安全範圍。' + (ch.k <= 2 ? '鞍點的不穩定會指數成長，越早修正越省力。' : ''));
+    else if (ch.elapsed >= ch.goal) endChallenge(true);
+  }
+}
+
+function makeCraft(x, y, vx, vy){
+  const c = {x, y, vx, vy, alive:true, trail:[[x, y, t]], color:SHIPC[shipIdx++ % SHIPC.length], why:''};
+  crafts.push(c); if (crafts.length > 14){ const old = crafts.shift(); if (old === selected) selected = null; }
+  selected = c; return c;
+}
+function spawnSwarm(){
+  swarm = [];
+  for (let side of [1, -1]) for (let i = 0; i < 130; i++){
+    const ang = side*(Math.PI/3 + (Math.random() - .5)*0.9), r = 1 + (Math.random() - .5)*0.045;
+    swarm.push({x:-mu + r*Math.cos(ang), y:r*Math.sin(ang), vx:0, vy:0, alive:true, h:[]});
+  }
+  toast('投放了 260 顆小行星。μ 小的話，它們會在 L4、L5 附近繞出蝌蚪形或馬蹄形軌道；可以把模擬速度調快。');
+}
+function clearAll(){ crafts = []; swarm = []; selected = null; }
+
+// ---------- challenge ----------
+function startChallenge(k){
+  clearAll(); ch = null; $('#banner').hidden = true;
+  const p = L[k], dk = dkOf(k), Rz = (k <= 1 ? 0.25 : 0.3)*dk*(k <= 1 ? 1 : 1);
+  const a = (k <= 1 ? 9 : 4)*dk;
+  const ang = Math.random()*TAU, off = 0.02*Rz;
+  makeCraft(p.x + off*Math.cos(ang), p.y + off*Math.sin(ang), 0, 0);
+  ch = {k, R:Rz, a, fuel:1, burn:2.2, elapsed:0, goal:TAU, done:false};
+  focusL(k); selectL(k, false); paused = false; setPauseLabel();
+  const tips = [
+    '鞍點會沿著兩天體連線把你推開。推力會被科氏力偏轉，試試短促、小量的修正。',
+    '和 L1 一樣是鞍點。往外飄就往內推，但別推過頭。',
+    'L3 的不穩定非常緩慢，這關比較輕鬆，觀察漂移就好。',
+    mu < ROUTH ? '什麼都別按，看看會發生什麼事。' : '這個系統的 μ 超過 0.0385，L4 不再穩定，要靠推進器了。',
+    mu < ROUTH ? '和 L4 一樣，不用推進也能留住。' : 'μ 太大，L5 也不穩定。'
+  ];
+  $('#chTip').textContent = tips[k];
+}
+function endChallenge(win, msg){
+  ch.done = true;
+  const fuel = Math.round(ch.fuel*100);
+  $('#bnT').textContent = win ? '站位成功' : '任務失敗';
+  $('#bnT').style.color = win ? 'var(--good)' : 'var(--bad)';
+  $('#bnP').textContent = win
+    ? `撐過一整圈公轉，剩餘燃料 ${fuel}%。` + (fuel >= 99 ? ' 完全沒動用推進器：這就是穩定平衡點。' : fuel > 50 ? ' 修正很有效率！' : '')
+    : msg;
+  $('#banner').hidden = false;
+}
+function setMode(m){
+  mode = m;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
+  $('#sandboxBox').hidden = m !== 'sandbox'; $('#challengeBox').hidden = m !== 'challenge';
+  $('#dpad').hidden = m !== 'challenge';
+  $('#banner').hidden = true;
+  if (m === 'sandbox'){ ch = null; clearAll(); }
+  else { clearAll(); ch = null; renderChGrid(); }
+}
+
+// ---------- system ----------
+function setSystem(k){
+  sysKey = k; const S = SYS[k];
+  mu = k === 'cu' ? customMu : S.mu; R1 = S.r1; R2 = S.r2;
+  computeL(); clearAll(); ch = null; $('#banner').hidden = true;
+  document.querySelectorAll('#sysChips .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  $('#customRow').hidden = k !== 'cu';
+  $('#hudSys').textContent = S.name;
+  updateMuUI(); renderLGrid(); renderChGrid(); selectL(selL, false); mapKey = '';
+  if (mode === 'challenge') $('#chTip').textContent = '';
+  fitAll(); cam.x = camT.x; cam.y = camT.y; cam.s = camT.s;
+}
+function muPos(m){ const lo = -6.5, hi = Math.log10(0.5); return (Math.log10(m) - lo)/(hi - lo)*100; }
+function updateMuUI(){
+  $('#muVal').textContent = mu < 1e-3 ? mu.toExponential(3) : mu.toFixed(4);
+  const g = $('#gauge'); g.style.setProperty('--crit', muPos(ROUTH) + '%'); g.style.setProperty('--pos', muPos(mu) + '%');
+  const ok = mu < ROUTH;
+  $('#verdict').innerHTML = ok ? 'L4、L5：<b>穩定</b>。L1、L2、L3 永遠不穩定。' : 'L4、L5：<b class="no">不穩定</b>（μ 超過臨界值）。五個點全都待不住。';
+  $('#muOut').textContent = customMu < 1e-3 ? customMu.toExponential(1) : customMu.toFixed(3);
+}
+
+// ---------- panel ----------
+function renderLGrid(){
+  const g = $('#lGrid'); g.innerHTML = '';
+  L.forEach((p, k) => {
+    const b = document.createElement('button'); b.className = 'lbtn';
+    const stable = k >= 3 && mu < ROUTH;
+    b.innerHTML = `<i class="st ${stable ? 'ok' : 'un'}"></i><b>L${k + 1}</b><span>${LNAME[k]}</span>`;
+    b.setAttribute('aria-pressed', k === selL);
+    b.onclick = () => selectL(k, true);
+    g.appendChild(b);
+  });
+}
+function renderChGrid(){
+  const g = $('#chGrid'); g.innerHTML = '';
+  L.forEach((p, k) => {
+    const b = document.createElement('button'); b.className = 'lbtn';
+    const stable = k >= 3 && mu < ROUTH;
+    b.innerHTML = `<i class="st ${stable ? 'ok' : 'un'}"></i><b>L${k + 1}</b><span>${stable ? '穩定' : '不穩定'}</span>`;
+    b.setAttribute('aria-pressed', k === chK);
+    b.onclick = () => { chK = k; renderChGrid(); $('#bStart').textContent = `開始挑戰 L${k + 1}`; };
+    g.appendChild(b);
+  });
+}
+function selectL(k, focus){
+  selL = k;
+  document.querySelectorAll('#lGrid .lbtn').forEach((b, i) => b.setAttribute('aria-pressed', i === k));
+  const S = SYS[sysKey], p = L[k], real = REAL[sysKey] && REAL[sysKey][k];
+  const stable = k >= 3 && mu < ROUTH;
+  const dist = k <= 1 ? `距${S.m2} ${dkOf(k).toPrecision(3)} 個兩體距離` : `座標 (${p.x.toFixed(3)}, ${p.y.toFixed(3)})`;
+  $('#info').innerHTML = `<h3>L${k + 1}　${LNAME[k]} <small>${stable ? '穩定' : '不穩定'} · ${dist}</small></h3><p>${GENERIC[k]}</p>${real ? `<p class="real">${real}</p>` : ''}`;
+  if (focus) focusL(k);
+}
+
+let hudTimer = 0;
+function updateHUD(now){
+  if (now - hudTimer < 90) return; hudTimer = now;
+  $('#hudT').textContent = `t = ${(t/TAU).toFixed(2)} 圈`;
+  $('#hudV').textContent = (inertial ? '慣性座標系' : '旋轉座標系') + (paused ? '　· 已暫停' : '');
+  const s = selected;
+  if (s){
+    const C = jacobi(s);
+    $('#rC').textContent = C.toFixed(7);
+    $('#rD').textContent = (C - CL[0]).toExponential(3);
+    $('#rS').textContent = s.alive ? '飛行中' : s.why;
+    $('#rS').style.color = s.alive ? 'var(--good)' : 'var(--bad)';
+    const S = SYS[sysKey]; let txt;
+    if (C > CL[0]) txt = `能量不足以通過 L1：被困在${S.m1}或${S.m2}其中一個附近（或在遠方外圈）。`;
+    else if (C > CL[1]) txt = `L1 的門開了：能在${S.m1}與${S.m2}之間往返，但還逃不出去。`;
+    else if (C > CL[2]) txt = `L2 的門也開了：可以從${S.m2}外側離開系統。`;
+    else if (C > CL[3]) txt = `L3 也開了，只剩 L4、L5 附近兩塊區域到不了。`;
+    else txt = '能量夠高，整個平面都可以到達。';
+    $('#rRegion').textContent = txt + '（藍色線是它的零速度曲線）';
+  } else {
+    $('#rC').textContent = '—'; $('#rD').textContent = '—'; $('#rS').textContent = '尚未投放'; $('#rS').style.color = '';
+    $('#rRegion').textContent = '投放飛船後，這裡會說明它的能量允許它去哪裡。';
+  }
+  if (mode === 'challenge'){
+    if (ch){
+      const tp = Math.min(1, ch.elapsed/ch.goal), d = selected ? Math.hypot(selected.x - L[ch.k].x, selected.y - L[ch.k].y)/ch.R : 0;
+      $('#fTime').style.width = tp*100 + '%'; $('#vTime').textContent = Math.round(tp*100) + '%';
+      $('#fFuel').style.width = ch.fuel*100 + '%'; $('#vFuel').textContent = Math.round(ch.fuel*100) + '%';
+      $('#fDist').style.width = Math.min(1, d)*100 + '%'; $('#vDist').textContent = Math.round(d*100) + '%';
+      $('#fDist').style.background = d > .75 ? 'var(--bad)' : d > .45 ? 'var(--gold)' : 'var(--good)';
+    } else { ['Time','Fuel','Dist'].forEach(n => { $('#f' + n).style.width = '0'; $('#v' + n).textContent = '—'; }); }
+  }
+}
+
+// ---------- toast ----------
+let toastT;
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 4200); }
+
+// ---------- input ----------
+let drag = null;
+function ptr(e){ const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  const [sx, sy] = ptr(e);
+  if (e.button === 2 || e.button === 1 || e.shiftKey || mode === 'challenge'){
+    drag = {type:'pan', sx, sy, cx:camT.x, cy:camT.y}; return;
+  }
+  let w = fromScreen(sx, sy), snapped = null;
+  L.forEach((p, k) => { const [px, py] = toScreen(p.x, p.y); if (Math.hypot(px - sx, py - sy) < 16) snapped = k; });
+  if (snapped != null){ w = [L[snapped].x, L[snapped].y]; selectL(snapped, false); }
+  drag = {type:'launch', start:w, sx, sy, cur:[sx, sy], snapped, moved:false};
+});
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const [sx, sy] = ptr(e);
+  if (drag.type === 'pan'){
+    let dx = (sx - drag.sx)/cam.s, dy = -(sy - drag.sy)/cam.s;
+    if (inertial){ const c = Math.cos(-t), s = Math.sin(-t); [dx, dy] = [c*dx - s*dy, s*dx + c*dy]; }
+    camT.x = drag.cx - dx; camT.y = drag.cy - dy; cam.x = camT.x; cam.y = camT.y; return;
+  }
+  drag.cur = [sx, sy];
+  if (Math.hypot(sx - drag.sx, sy - drag.sy) > 6) drag.moved = true;
+  if (drag.moved) drag.preview = predict(...launchState());
+});
+function launchState(){
+  const [ssx, ssy] = toScreen(drag.start[0], drag.start[1]);
+  let vx = (drag.cur[0] - ssx)/cam.s, vy = -(drag.cur[1] - ssy)/cam.s;
+  if (inertial){ [vx, vy] = screenVecToRot(vx, vy); vx += drag.start[1]; vy -= drag.start[0]; }
+  if (!drag.moved){ vx = 0; vy = 0; }
+  return [drag.start[0], drag.start[1], vx, vy];
+}
+function predict(x, y, vx, vy){
+  const s = {x, y, vx, vy}, out = [[x, y, t]]; let tt = t, n = 0;
+  const T = Math.min(TAU*0.75, 900*0.004);
+  while (tt - t < T && n++ < 5000){
+    const h = stepH(s, 0.01); rk4(s, h, 0, 0); tt += h;
+    if (Math.hypot(s.x + mu, s.y) < R1 || Math.hypot(s.x - 1 + mu, s.y) < R2 || Math.hypot(s.x, s.y) > 7) break;
+    if (n % 3 === 0) out.push([s.x, s.y, tt]);
+  }
+  out.push([s.x, s.y, tt]); return out;
+}
+cv.addEventListener('pointerup', e => {
+  if (!drag) return;
+  if (drag.type === 'launch'){
+    let [x, y, vx, vy] = launchState();
+    if (drag.snapped != null && !drag.moved){
+      const k = drag.snapped, d = dkOf(k), a = Math.random()*TAU, eps = 1e-5*d;
+      x += eps*Math.cos(a); y += eps*Math.sin(a);
+      const msgs = ['飛船放在 L1，只偏了十萬分之一。看它能撐多久。', '飛船放在 L2，只偏了十萬分之一。看它能撐多久。',
+        '飛船放在 L3。它也會漂走，只是慢很多。', mu < ROUTH ? '飛船放在 L4。它會一直待著。' : '飛船放在 L4……但 μ 太大了。',
+        mu < ROUTH ? '飛船放在 L5。它會一直待著。' : '飛船放在 L5……但 μ 太大了。'];
+      toast(msgs[k]);
+    }
+    makeCraft(x, y, vx, vy);
+  }
+  drag = null;
+});
+cv.addEventListener('pointercancel', () => drag = null);
+cv.addEventListener('wheel', e => { e.preventDefault(); const [sx, sy] = ptr(e); zoom(Math.exp(-e.deltaY*0.0015), sx, sy); }, {passive:false});
+
+const KEYMAP = {ArrowLeft:'l', a:'l', A:'l', ArrowRight:'r', d:'r', D:'r', ArrowUp:'u', w:'u', W:'u', ArrowDown:'d', s:'d', S:'d'};
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+  if (KEYMAP[e.key] && mode === 'challenge'){ keys.add(KEYMAP[e.key]); e.preventDefault(); }
+  if (e.key === ' ' && e.target === document.body){ togglePause(); e.preventDefault(); }
+});
+addEventListener('keyup', e => { if (KEYMAP[e.key]) keys.delete(KEYMAP[e.key]); });
+addEventListener('blur', () => keys.clear());
+
+document.querySelectorAll('#dpad button').forEach(b => {
+  const [dx, dy] = b.dataset.d.split(',').map(Number);
+  const on = e => { e.preventDefault(); b.setPointerCapture(e.pointerId); thrust.x += dx; thrust.y += dy; b.classList.add('on'); b._on = true; };
+  const off = () => { if (!b._on) return; b._on = false; thrust.x -= dx; thrust.y -= dy; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+});
+
+// ---------- controls ----------
+const chips = $('#sysChips');
+Object.entries(SYS).forEach(([k, S]) => { const b = document.createElement('button'); b.className = 'chip'; b.dataset.k = k; b.textContent = S.name; b.onclick = () => setSystem(k); chips.appendChild(b); });
+$('#muSlider').addEventListener('input', e => {
+  const lo = -6, hi = Math.log10(0.5); customMu = Math.pow(10, lo + (hi - lo)*e.target.value/1000);
+  mu = customMu; computeL(); clearAll(); ch = null; updateMuUI(); renderLGrid(); renderChGrid(); selectL(selL, false); mapKey = '';
+});
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+document.querySelectorAll('#viewSeg button').forEach(b => b.onclick = () => {
+  inertial = b.dataset.v === 'in';
+  document.querySelectorAll('#viewSeg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  if (inertial && mode === 'sandbox'){ fitAll(); }
+});
+$('#cMap').onchange = e => { showMap = e.target.checked; $('#legend').style.visibility = showMap ? '' : 'hidden'; };
+$('#cTrail').onchange = e => showTrail = e.target.checked;
+const speedEl = $('#speed');
+function readSpeed(){ speed = 0.08*Math.pow(100, speedEl.value/100); $('#speedOut').textContent = (speed/TAU*10).toFixed(2) + ' 圈/10秒'; }
+speedEl.oninput = readSpeed;
+$('#bSwarm').onclick = spawnSwarm;
+$('#bClear').onclick = () => { clearAll(); toast('已清除。'); };
+$('#bStart').onclick = () => startChallenge(chK);
+$('#bnRetry').onclick = () => startChallenge(ch ? ch.k : chK);
+$('#bnExit').onclick = () => setMode('sandbox');
+function setPauseLabel(){ $('#bPause').textContent = paused ? '▶' : '❚❚'; }
+function togglePause(){ paused = !paused; setPauseLabel(); }
+$('#bPause').onclick = togglePause;
+$('#bIn').onclick = () => zoom(1.6);
+$('#bOut').onclick = () => zoom(1/1.6);
+$('#bFit').onclick = fitAll;
+if (matchMedia('(pointer: coarse)').matches) $('#panHint').textContent = '用右下角按鈕縮放，點下方 L1–L5 可以聚焦。';
+
+// ---------- sizing & loop ----------
+const stage = $('#stage');
+function resize(){
+  const r = stage.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1);
+  const first = !W; W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  mapKey = '';
+  if (first){ fitAll(); Object.assign(cam, camT); }
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+readSpeed();
+setSystem('em');
+
+// opening scene: a ship parked at L4, one nudged off L1, and a swarm
+(function demo(){
+  makeCraft(L[3].x, L[3].y, 0, 0);
+  const c = makeCraft(L[0].x + 1e-4, 0, 0, 0);
+  spawnSwarm();
+  selected = c;
+})();
+toast('點畫面放飛船，拖曳給它初速度。金色菱形是五個拉格朗日點。');
+
+let last = performance.now();
+function frame(now){
+  const rdt = Math.min(0.05, (now - last)/1000); last = now;
+  if (!paused && W){
+    const sdt = rdt*(mode === 'challenge' ? 0.26 : speed);
+    if (!(mode === 'challenge' && ch && ch.done)){ simulate(sdt); t += sdt; }
+  }
+  animCam();
+  if (W) draw(now);
+  updateHUD(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

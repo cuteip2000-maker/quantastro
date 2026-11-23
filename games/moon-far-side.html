@@ -1,0 +1,382 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>月球背面的白天</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: lunar mission room — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#08090f;
+  --panel:#11131c;
+  --panel2:#191c28;
+  --rule:#2c3042;
+  --ink:#eceef4;
+  --dim:#9ca1b5;
+  --near:#5aa9ff;
+  --far:#ffae57;
+  --sun:#ffd76a;
+  --ok:#5fd38d;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--sun)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#05060a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(8,9,15,.84);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(400px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--sun)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--sun);color:#221a00;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.pri{background:var(--sun);border-color:var(--sun);color:#221a00;font-weight:700}
+.btn.sel{border-color:var(--sun);color:var(--sun);box-shadow:inset 0 0 0 1px var(--sun);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px}
+.sl input{flex:1;accent-color:var(--sun);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:6.4em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--sun);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.cn{color:var(--near);font-weight:700}.cf{color:var(--far);font-weight:700}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--sun)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:58vh;min-height:380px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="top" aria-pressed="true">從太空俯瞰<small>陽光照到哪一面</small></button>
+      <button data-tab="stand" aria-pressed="false">站在月球上<small>看日出日落</small></button>
+      <button data-tab="lock" aria-pressed="false">潮汐鎖定挑戰<small>讓月亮只露一面</small></button>
+    </nav>
+    <div class="view">
+      <!-- top view -->
+      <div class="pane" id="p-top">
+        <div class="cv"><canvas id="cT"></canvas><div class="ro" id="roT"></div><div class="toast" id="tT"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="tPlay">▶ 播放一個月</button>
+            <label class="sl">農曆日期<input id="tDay" type="range" min="0" max="29.53" step="0.01" value="7"><b id="tDayV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">跳到</span>
+            <button class="btn" data-d="0">新月（初一）</button><button class="btn" data-d="7.4">上弦月</button><button class="btn" data-d="14.8">滿月（十五）</button><button class="btn" data-d="22.1">下弦月</button>
+            <label class="chk"><input type="checkbox" id="noLock">如果月亮不自轉…</label>
+          </div>
+        </div>
+      </div>
+      <!-- standing on the Moon -->
+      <div class="pane" id="p-stand" hidden>
+        <div class="cv"><canvas id="cS"></canvas><div class="ro" id="roS"></div><div class="toast" id="tS"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">站在</span><span class="row" id="sites"></span></div>
+          <div class="row">
+            <button class="btn pri" id="sPlay">▶ 時間前進</button>
+            <label class="sl">農曆日期<input id="sDay" type="range" min="0" max="29.53" step="0.01" value="0"><b id="sDayV"></b></label>
+          </div>
+        </div>
+      </div>
+      <!-- tidal locking -->
+      <div class="pane" id="p-lock" hidden>
+        <div class="cv"><canvas id="cL"></canvas><div class="ro" id="roL"></div><div class="toast" id="tL"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">月亮自轉一圈要<input id="spin" type="range" min="5" max="60" step="0.1" value="12"><b id="spinV"></b></label>
+            <button class="btn" id="lReset">↺ 重新統計</button>
+          </div>
+          <div class="note">目標：調整自轉速度，讓地球上的人永遠只看到藍色那一面（只看到 50% 的表面）。月亮繞地球一圈約 27.3 天。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>月球背面不是永夜</h1>
+    <p class="lede">很多人把月球背面叫做「黑暗面」，以為那裡永遠是晚上。其實背面和正面一樣，有大約兩週的白天、兩週的黑夜。</p>
+
+    <div class="card">
+      <h2>為什麼我們只看到一面？</h2>
+      <p>月球繞地球一圈約 27.3 天，<b>自轉一圈也剛好 27.3 天</b>。所以它總是用同一面（<span class="cn">正面</span>）對著地球，另一面（<span class="cf">背面</span>）我們在地球上永遠看不到。</p>
+      <p>這叫做<b>潮汐鎖定</b>：很久以前月球轉得比較快，地球的引力把它拉得有點變形，慢慢「煞車」，直到自轉和公轉一樣快。</p>
+    </div>
+
+    <div class="card">
+      <h2>看不到 ≠ 照不到</h2>
+      <p>「看得到」是看<b>地球</b>在哪裡；「照得到」是看<b>太陽</b>在哪裡。陽光永遠照亮月球朝向太陽的那一半，月亮繞地球轉時，被照亮的那一半會輪流落在正面和背面。</p>
+      <div class="fx">新月（初一）時：正面全暗，背面全亮！</div>
+      <p>所以我們看到「沒有月亮」的初一晚上，月球背面其實正是正中午。</p>
+    </div>
+
+    <div class="card">
+      <h2>月球上的一天</h2>
+      <p>月球上從日出到下一次日出，大約要 <b>29.5 天</b>（一個農曆月）。白天約兩週，溫度可以超過 <b>120°C</b>；黑夜也約兩週，會冷到約 <b>−170°C</b>。正面和背面都一樣，只是時間錯開半個月。</p>
+    </div>
+
+    <div class="card">
+      <h2>那為什麼叫「黑暗面」？</h2>
+      <p>以前英文說 dark side，「dark」是「未知、看不到」的意思，不是「沒有光」。在太空船飛過去拍照之前，沒有人知道背面長什麼樣子。</p>
+      <p>真正「永夜」的地方確實存在：月球南北極附近有些很深的隕石坑，坑底永遠照不到陽光，可能藏著冰。</p>
+    </div>
+
+    <div class="card">
+      <h2>背面長得不一樣</h2>
+      <p>正面有很多暗色的「月海」（古代熔岩流出形成的平原）；背面月海很少，到處都是坑洞，地殼也比較厚。科學家還在研究為什麼兩面差這麼多。</p>
+      <p>我們其實能看到約 <b>59%</b> 的月面：因為月球軌道是橢圓、又有點傾斜，它會像搖頭一樣輕輕擺動，邊緣偶爾露出一點點背面。</p>
+    </div>
+
+    <div class="card">
+      <h2>探索月球背面</h2>
+      <ul class="tl">
+        <li><b>1959</b><span>蘇聯月球 3 號第一次拍到月球背面</span></li>
+        <li><b>1968</b><span>阿波羅 8 號的太空人成為第一批親眼看到背面的人</span></li>
+        <li><b>2019</b><span>中國嫦娥四號第一次在背面軟著陸；因為背面收不到地球訊號，要靠「鵲橋」中繼衛星傳話</span></li>
+        <li><b>2024</b><span>嫦娥六號第一次從背面帶回岩石樣本</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const SYN=29.53,SID=27.32,TAU=2*Math.PI;
+let TAB='top';
+const STARS=Array.from({length:240},()=>[Math.random(),Math.random(),Math.random()]);
+function stars(a,w,h){a.fillStyle='#fff';for(const s of STARS){a.globalAlpha=0.15+0.5*s[2];a.fillRect(s[0]*w,s[1]*h,1.2,1.2);}a.globalAlpha=1;}
+// moon orbit angle θ (rad, counter-clockwise, measured from the anti-Sun direction): new moon θ=π, full moon θ=0. Sun light comes from the left.
+const thetaOf=day=>Math.PI+TAU*day/SYN;
+function dayLabel(d){const n=Math.floor(d)+1;const names=['初','十','廿','三'];const zh=['','一','二','三','四','五','六','七','八','九','十'];
+  const lun=n<=10?'初'+zh[n]:n<20?'十'+zh[n-10]:n===20?'二十':n<30?'廿'+zh[n-20]:'三十';return lun;}
+function phaseName(d){const p=d/SYN;return p<0.03||p>0.97?'新月':p<0.22?'眉月':p<0.28?'上弦月':p<0.47?'盈凸月':p<0.53?'滿月':p<0.72?'虧凸月':p<0.78?'下弦月':'殘月';}
+// fake but fixed surface features (maria on the near side, craters on the far side), body longitude 0 = centre of near side
+const FEAT=(()=>{const f=[];let s=5;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  for(let i=0;i<9;i++)f.push({lon:(r()-0.5)*2.2,lat:(r()-0.5)*1.6,r:0.18+r()*0.22,c:'rgba(70,75,90,.55)'});      // near-side maria
+  for(let i=0;i<22;i++)f.push({lon:Math.PI+(r()-0.5)*2.6,lat:(r()-0.5)*2,r:0.05+r()*0.08,c:'rgba(90,90,100,.5)'}); // far-side craters
+  return f;})();
+// draw a moon seen from above: centre (x,y), radius R, facing angle (direction of body longitude 0), sun from the left
+function drawMoonTop(a,x,y,R,face,opts={}){
+  // body
+  a.fillStyle='#d9d9df';a.beginPath();a.arc(x,y,R,0,TAU);a.fill();
+  // near/far halves outline
+  a.lineWidth=4;a.strokeStyle='#5aa9ff';a.beginPath();a.arc(x,y,R+3,-(face+Math.PI/2),-(face-Math.PI/2),false);a.stroke();
+  a.strokeStyle='#ffae57';a.beginPath();a.arc(x,y,R+3,-(face-Math.PI/2),-(face+Math.PI/2),false);a.stroke();
+  // night half (away from the Sun = right side)
+  a.fillStyle='rgba(5,6,12,.78)';a.beginPath();a.arc(x,y,R,-Math.PI/2,Math.PI/2,false);a.closePath();a.fill();
+  // face marker: a small flag on the near side
+  const fx=x+Math.cos(face)*R*0.62,fy=y-Math.sin(face)*R*0.62;a.fillStyle='#5aa9ff';a.beginPath();a.arc(fx,fy,R*0.16,0,TAU);a.fill();
+  const bx=x-Math.cos(face)*R*0.62,by=y+Math.sin(face)*R*0.62;a.fillStyle='#ffae57';a.beginPath();a.arc(bx,by,R*0.16,0,TAU);a.fill();
+}
+// a version that is robust for every k
+function phaseDisc(a,x,y,R,k,litRight,label,col,featFn){
+  a.save();a.beginPath();a.arc(x,y,R,0,TAU);a.clip();
+  a.fillStyle='#141620';a.fillRect(x-R,y-R,2*R,2*R);
+  // lit region = points whose x (towards the lit limb) satisfies the terminator
+  a.fillStyle='#dcdce2';
+  a.beginPath();
+  const s=litRight?1:-1,tx=(1-2*k)*R; // terminator x at equator, measured toward the lit side: -R (full) … +R (new)
+  for(let i=0;i<=40;i++){const yy=-R+2*R*i/40,half=Math.sqrt(Math.max(0,R*R-yy*yy)),xt=tx*half/R;i?a.lineTo(x+s*xt,y+yy):a.moveTo(x+s*xt,y+yy);}
+  for(let i=40;i>=0;i--){const yy=-R+2*R*i/40,half=Math.sqrt(Math.max(0,R*R-yy*yy));a.lineTo(x+s*half,y+yy);}
+  a.closePath();a.fill();
+  if(featFn)featFn();
+  a.restore();
+  a.strokeStyle=col;a.lineWidth=2;a.beginPath();a.arc(x,y,R+2,0,TAU);a.stroke();
+  a.fillStyle=col;a.font='700 12px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText(label,x,y+R+18);a.textAlign='left';
+}
+
+/* ======================= 1. TOP VIEW ======================= */
+const TV={day:7,run:false};
+function drawTop(){
+  const cv=$('#cT'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;if(gm.w<40||gm.h<40)return;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h;stars(a,w,h);
+  const insetW=w>620?150:0,top=96,cx=(w-insetW)/2+10,cy=top+(h-top-14)/2,orb=Math.min((w-insetW)*0.36,(h-top-14)/2*0.78);
+  // sunlight
+  a.fillStyle='rgba(255,215,106,.07)';a.fillRect(0,top-10,w,h-top+10);
+  for(let i=0;i<7;i++){const y=top+20+(h-top-50)*i/6;a.strokeStyle='rgba(255,215,106,.25)';a.lineWidth=1.5;a.beginPath();a.moveTo(6,y);a.lineTo(46,y);a.stroke();a.beginPath();a.moveTo(46,y);a.lineTo(39,y-4);a.lineTo(39,y+4);a.closePath();a.fillStyle='rgba(255,215,106,.4)';a.fill();}
+  a.fillStyle='#ffd76a';a.font='12px "Noto Sans TC",sans-serif';a.fillText('← 陽光從這邊來',10,top+6);
+  // orbit
+  a.strokeStyle='rgba(255,255,255,.15)';a.setLineDash([4,6]);a.beginPath();a.arc(cx,cy,orb,0,TAU);a.stroke();a.setLineDash([]);
+  // Earth
+  const eR=Math.max(14,orb*0.14);
+  a.fillStyle='#2f6fd1';a.beginPath();a.arc(cx,cy,eR,0,TAU);a.fill();a.fillStyle='rgba(5,6,12,.7)';a.beginPath();a.arc(cx,cy,eR,-Math.PI/2,Math.PI/2);a.closePath();a.fill();
+  a.fillStyle='#bcd6ff';a.textAlign='center';a.fillText('地球',cx,cy+eR+16);
+  // Moon
+  const th=thetaOf(TV.day),mx=cx+orb*Math.cos(th),my=cy-orb*Math.sin(th),mR=Math.max(12,orb*0.11);
+  const face=$('#noLock').checked?Math.PI:th+Math.PI; // near side points at Earth when locked
+  // line of sight from Earth
+  a.strokeStyle='rgba(90,169,255,.35)';a.beginPath();a.moveTo(cx,cy);a.lineTo(mx,my);a.stroke();
+  drawMoonTop(a,mx,my,mR,face);
+  a.fillStyle='#e6e6ee';a.fillText('月球',mx,my-mR-10);a.textAlign='left';
+  // insets: what the near side and far side look like
+  const k=(1+Math.cos(th))/2; // fraction of near side lit
+  const nearLit=$('#noLock').checked?(1+Math.cos(face-Math.PI))/2:k, farLit=1-nearLit;
+  const ix=insetW?w-insetW/2-8:w-64,iy1=top+60,iy2=insetW?top+200:top+60;
+  if(insetW){
+    a.fillStyle='rgba(8,9,15,.7)';a.fillRect(w-insetW-14,top,insetW,250);
+    phaseDisc(a,ix,iy1,40,nearLit,Math.sin(th)<0,`正面亮 ${Math.round(nearLit*100)}%`,'#5aa9ff');
+    phaseDisc(a,ix,iy2,40,farLit,Math.sin(th)>=0,`背面亮 ${Math.round(farLit*100)}%`,'#ffae57');
+  }
+  // far side brightness bar for small screens
+  $('#tDayV').textContent=`${dayLabel(TV.day)}（${phaseName(TV.day)}）`;
+  const msg=farLit>0.97?'<b>背面整面都是白天！</b>這時地球上看到的是新月（看不到月亮）。':farLit<0.03?'背面整面是黑夜，正面整面是白天（滿月）。':farLit>0.5?'背面大部分在白天。':'背面大部分在黑夜。';
+  $('#roT').innerHTML=`<div class="big">從太空俯瞰：農曆${dayLabel(TV.day)}</div><div><span class="cn">藍色</span>＝正面（朝地球）　<span class="cf">橘色</span>＝背面　暗的一半＝黑夜</div><div>${msg}</div>`+
+    (insetW?'':`<div>正面亮 <b>${Math.round(nearLit*100)}%</b>，背面亮 <b>${Math.round(farLit*100)}%</b></div>`)+
+    ($('#noLock').checked?'<div style="color:#ffae57">不自轉的話，月亮朝地球的那一面會一直換，我們就能看到整顆月亮了。</div>':'');
+}
+let last=performance.now();
+function topTick(dt){if(TV.run){TV.day=(TV.day+dt*2)%SYN;$('#tDay').value=TV.day;}drawTop();}
+$('#tPlay').onclick=()=>{TV.run=!TV.run;$('#tPlay').textContent=TV.run?'⏸ 暫停':'▶ 播放一個月';};
+$('#tDay').oninput=()=>{TV.day=+$('#tDay').value;};
+document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{TV.day=+b.dataset.d;$('#tDay').value=TV.day;TV.run=false;$('#tPlay').textContent='▶ 播放一個月';
+  if(TV.day===0)toast('#tT','初一新月：地球上看不到月亮，因為正面全黑；但背面正被太陽照得亮晶晶！',4200);});
+$('#noLock').onchange=()=>{if($('#noLock').checked)toast('#tT','關掉自轉：月球的方向固定不動，地球就會輪流看到不同的面。',3600);};
+
+/* ======================= 2. STANDING ON THE MOON ======================= */
+const SITES=[{n:'正面中央',lon:0,lat:0},{n:'正面邊緣',lon:80,lat:0},{n:'背面中央',lon:180,lat:0},{n:'南極附近',lon:0,lat:-88}];
+const ST={site:2,day:0,run:false};
+function sunElev(day,site){ // degrees, simple geometry (Moon's axis tilt ignored except near the pole)
+  const th=thetaOf(day),zen=th+Math.PI-site.lon*Math.PI/180; // zenith direction of this site in the orbit plane
+  let diff=Math.atan2(Math.sin(Math.PI-zen),Math.cos(Math.PI-zen)); // angle between zenith and the Sun
+  const latR=site.lat*Math.PI/180;
+  const el=Math.asin(Math.cos(latR)*Math.cos(diff))*180/Math.PI; // equatorial sun, site at latitude
+  return{el,az:diff};
+}
+function surfaceTemp(day,site){ // rough model: hot in daylight, cools through the long night
+  const {el}=sunElev(day,site);
+  if(el>0)return Math.max(-50,390*Math.pow(Math.sin(el*Math.PI/180),0.25)-273);
+  // days since sunset
+  let dd=0;for(let k=0;k<SYN*4;k++){const t=day-k*0.25;if(sunElev(t,site).el>0){dd=k*0.25;break;}}
+  return -173+80*Math.exp(-dd/1.5);
+}
+function buildSites(){const r=$('#sites');r.innerHTML='';SITES.forEach((s,i)=>{const b=document.createElement('button');b.className='btn'+(i===ST.site?' sel':'');b.textContent=s.n;b.onclick=()=>{ST.site=i;buildSites();};r.appendChild(b);});}
+function drawStand(){
+  const cv=$('#cS'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;if(gm.w<40||gm.h<40)return;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,site=SITES[ST.site],{el,az}=sunElev(ST.day,site);
+  const day=el>0;
+  // sky: on the Moon it is black even in daytime (no air)
+  a.fillStyle='#030409';a.fillRect(0,0,w,h);if(!day)stars(a,w,h*0.75);else{a.globalAlpha=0.35;stars(a,w,h*0.75);a.globalAlpha=1;}
+  const gy=h*0.78,cx=w/2,R=Math.min(w*0.42,gy-110);
+  // sky arc
+  a.strokeStyle='rgba(255,255,255,.12)';a.setLineDash([3,6]);a.beginPath();a.arc(cx,gy,R,Math.PI,0);a.stroke();a.setLineDash([]);
+  a.fillStyle='#9ca1b5';a.font='12px "Noto Sans TC",sans-serif';a.fillText('東',cx-R-6,gy+18);a.fillText('西',cx+R-6,gy+18);a.fillText('頭頂',cx-12,gy-R-8);
+  // Sun position on the arc (east → west)
+  if(el>-3){const sy=gy-R*Math.sin(Math.max(-0.05,el*Math.PI/180)),px=cx-R*Math.sin(az); // rises in the east (left), sets in the west
+    const g=a.createRadialGradient(px,sy,2,px,sy,46);g.addColorStop(0,'#fffbe6');g.addColorStop(0.3,'#ffd76a');g.addColorStop(1,'rgba(255,200,80,0)');a.fillStyle=g;a.beginPath();a.arc(px,sy,46,0,TAU);a.fill();}
+  // Earth in the sky (only on the near side)
+  const earthEl=90-Math.abs(site.lon)-(site.lat<-80?88:0);
+  if(earthEl>-2&&site.lon<=90){const th=thetaOf(ST.day),ke=(1-Math.cos(th))/2;
+    const ex=cx+R*Math.cos(Math.PI/2+site.lon*Math.PI/180)*-1,ey=gy-R*Math.sin(Math.max(0.02,earthEl*Math.PI/180));
+    a.save();a.fillStyle='#173a7a';a.beginPath();a.arc(ex,ey,20,0,TAU);a.fill();a.restore();
+    phaseDisc(a,ex,ey,20,ke,Math.sin(th)<0,'地球','#7fb2ff');}
+  // ground
+  const gr=a.createLinearGradient(0,gy,0,h);const lightK=day?Math.min(1,0.25+el/30):0.06;
+  gr.addColorStop(0,`rgba(${Math.round(150*lightK+20)},${Math.round(150*lightK+20)},${Math.round(155*lightK+24)},1)`);gr.addColorStop(1,'#07080c');a.fillStyle=gr;
+  a.beginPath();a.moveTo(0,h);for(let x=0;x<=w;x+=10)a.lineTo(x,gy+6*Math.sin(x*0.03)+4*Math.sin(x*0.11));a.lineTo(w,h);a.closePath();a.fill();
+  // astronaut
+  a.fillStyle=day?'#f2f2f2':'#5a5e6e';a.fillRect(cx-6,gy-34,12,22);a.beginPath();a.arc(cx,gy-40,8,0,TAU);a.fill();a.fillStyle='#ffcf5c';a.fillRect(cx-4,gy-43,8,5);
+  // shadow of astronaut
+  if(day){a.fillStyle='rgba(0,0,0,.45)';const L=Math.min(160,30/Math.tan(Math.max(0.05,el*Math.PI/180)));a.beginPath();a.ellipse(cx+(az>0?1:-1)*L/2,gy-2,L/2,4,0,0,TAU);a.fill();}
+  const T=surfaceTemp(ST.day,site);
+  // time to next change
+  let until=null;for(let k=1;k<=SYN*8;k++){const t=ST.day+k*0.125;if((sunElev(t,site).el>0)!==day){until=k*0.125;break;}}
+  $('#sDayV').textContent=`${dayLabel(ST.day)}（${phaseName(ST.day)}）`;
+  const pole=site.lat<-80;
+  $('#roS').innerHTML=`<div class="big">${site.n}：${day?'☀️ 白天':'🌙 黑夜'}</div><div>地面溫度約 <b>${Math.round(T)}°C</b>　太陽高度 <b>${el.toFixed(0)}°</b></div>`+
+    (pole?'<div style="color:var(--dim)">極區的太陽一直貼著地平線繞，深坑底部可能永遠照不到陽光，那裡才是真正的「永夜」。</div>':
+    `<div>${until?`再過約 <b>${until.toFixed(1)}</b> 天${day?'日落':'日出'}`:''}</div>`)+
+    `<div style="color:var(--dim)">${site.lon===180?'在背面永遠看不到地球，但太陽照樣升起落下。':site.lon===0?'地球一直掛在頭頂附近，不會升起也不會落下！':'地球掛在天邊不動。'}</div>`;
+}
+function standTick(dt){if(ST.run){ST.day=(ST.day+dt*1.5)%SYN;$('#sDay').value=ST.day;}drawStand();}
+$('#sPlay').onclick=()=>{ST.run=!ST.run;$('#sPlay').textContent=ST.run?'⏸ 暫停':'▶ 時間前進';};
+$('#sDay').oninput=()=>{ST.day=+$('#sDay').value;};
+
+/* ======================= 3. TIDAL LOCK CHALLENGE ======================= */
+const LK={t:0,seen:new Uint8Array(72),spin:12,ok:0};
+function lkReset(){LK.t=0;LK.seen.fill(0);LK.ok=0;}
+$('#spin').oninput=()=>{LK.spin=+$('#spin').value;$('#spinV').textContent=LK.spin.toFixed(1)+' 天';lkReset();};
+$('#lReset').onclick=lkReset;
+function lockTick(dt){
+  LK.t+=dt*3; // days
+  const orbitA=TAU*LK.t/SID,spinA=TAU*LK.t/LK.spin+Math.PI; // start with the blue side facing Earth
+  // which body longitude faces Earth: Earth direction (orbitA+π) minus body rotation
+  const facing=((orbitA+Math.PI-spinA)%TAU+TAU)%TAU;
+  // mark the visible hemisphere (±90°) as seen
+  for(let i=0;i<72;i++){const lon=i/72*TAU+TAU/144,dd=Math.abs(((lon-facing+Math.PI)%TAU+TAU)%TAU-Math.PI);if(dd<Math.PI/2)LK.seen[i]=1;}
+  drawLock(orbitA,spinA,facing);
+}
+function drawLock(orbitA,spinA,facing){
+  const cv=$('#cL'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;if(gm.w<40||gm.h<40)return;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h;stars(a,w,h);
+  const top=100,cx=w/2,cy=top+(h-top-70)/2,orb=Math.min(w*0.34,(h-top-70)/2*0.8);
+  a.strokeStyle='rgba(255,255,255,.15)';a.setLineDash([4,6]);a.beginPath();a.arc(cx,cy,orb,0,TAU);a.stroke();a.setLineDash([]);
+  a.fillStyle='#2f6fd1';a.beginPath();a.arc(cx,cy,16,0,TAU);a.fill();
+  const mx=cx+orb*Math.cos(orbitA),my=cy-orb*Math.sin(orbitA),R=Math.max(16,orb*0.13);
+  // moon with near (blue) / far (orange) halves rotating with spin
+  a.fillStyle='#ffae57';a.beginPath();a.arc(mx,my,R,0,TAU);a.fill();
+  a.fillStyle='#5aa9ff';a.beginPath();a.moveTo(mx,my);a.arc(mx,my,R,-(spinA+Math.PI/2),-(spinA-Math.PI/2),false);a.closePath();a.fill();
+  a.fillStyle='#fff';a.beginPath();a.arc(mx+Math.cos(spinA)*R*0.55,my-Math.sin(spinA)*R*0.55,R*0.18,0,TAU);a.fill();
+  a.strokeStyle='rgba(255,255,255,.4)';a.beginPath();a.moveTo(cx,cy);a.lineTo(mx,my);a.stroke();
+  // seen-strip
+  const sx0=24,sx1=w-24,sy=h-40,cw=(sx1-sx0)/72;
+  a.fillStyle='#9ca1b5';a.font='12px "Noto Sans TC",sans-serif';a.fillText('地球上的人看過的月面（左半＝藍色正面，右半＝橘色背面）',sx0,sy-10);
+  for(let i=0;i<72;i++){const lon=i/72*TAU;const nearSide=Math.cos(lon)>0;a.fillStyle=LK.seen[i]?(nearSide?'#5aa9ff':'#ffae57'):'#222533';
+    const pos=((i+18)%72); a.fillRect(sx0+pos*cw,sy,cw-1,16);}
+  const pct=LK.seen.reduce((s,v)=>s+v,0)/72*100;
+  const locked=Math.abs(LK.spin-SID)<0.25;
+  if(locked&&LK.t>SID&&!LK.ok){LK.ok=1;toast('#tL','成功！自轉一圈 ≈ 繞地球一圈，地球上永遠只看到藍色正面。這就是潮汐鎖定！',4500);}
+  $('#roL').innerHTML=`<div class="big">潮汐鎖定挑戰</div><div>月亮自轉一圈 <b>${LK.spin.toFixed(1)}</b> 天，繞地球一圈 <b>27.3</b> 天</div><div>已經過了 <b>${LK.t.toFixed(0)}</b> 天，地球上看過 <b>${pct.toFixed(0)}%</b> 的月面</div>`+
+    (locked?'<div style="color:#5fd38d;font-weight:700">鎖定了！永遠同一面朝向地球。</div>':`<div style="color:var(--dim)">${LK.spin<SID?'自轉太快了，背面會轉到地球這邊來。':'自轉太慢了，月亮繞著走時背面會露出來。'}</div>`);
+}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['top','stand','lock'])$('#p-'+t).hidden=t!==TAB;});
+function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;if(TAB==='top')topTick(dt);else if(TAB==='stand')standTick(dt);else lockTick(dt);requestAnimationFrame(frame);}
+buildSites();$('#spin').oninput();
+
+requestAnimationFrame(frame);
+})();
+</script>

@@ -1,0 +1,364 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>大家都在哪裡？</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: radio observatory — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#07070f;
+  --panel:#100f1f;
+  --panel2:#18172e;
+  --rule:#2c2a4d;
+  --ink:#ecebf8;
+  --dim:#9d9abd;
+  --teal:#41e0c2;
+  --pink:#ff6fae;
+  --gold:#ffcf5c;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--teal)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#16143a 0,#07070f 70%)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(7,7,15,.82);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(390px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--teal)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.bigN{position:absolute;right:12px;top:10px;background:rgba(7,7,15,.82);border:1px solid var(--rule);border-radius:10px;padding:8px 14px;text-align:right;pointer-events:none;max-width:240px}
+.bigN .n{font-family:var(--f-num);font-size:30px;font-weight:700;color:var(--gold);line-height:1.1}
+.bigN small{display:block;color:var(--dim);font-size:12px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--teal);color:#032a22;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:7px;max-height:46vh;overflow-y:auto}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.pri{background:var(--teal);border-color:var(--teal);color:#032a22;font-weight:700}
+.btn.sel{border-color:var(--gold);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);font-weight:700}
+.drake{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px 16px}
+.sl{display:grid;grid-template-columns:7.5em 1fr 5.2em;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+.sl input{width:100%;accent-color:var(--teal)}
+.sl b{font-family:var(--f-num);color:var(--ink);text-align:right;font-size:13px}
+.sl2{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px}
+.sl2 input{flex:1;accent-color:var(--teal);min-width:80px}
+.sl2 b{font-family:var(--f-num);color:var(--ink);min-width:6em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--teal);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+
+/* filter tab */
+.ladder{position:absolute;inset:0;overflow-y:auto;padding:96px 16px 16px}
+.steps{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--rule);border-radius:12px;padding:7px 12px}
+.step .ic{font-size:22px;text-align:center}
+.step b{font-size:14.5px}
+.step small{display:block;color:var(--dim);font-size:12px}
+.step .tag{font-size:11.5px;font-family:var(--f-num);color:var(--teal);white-space:nowrap}
+.step.future{opacity:.55;border-style:dashed}
+.gap{height:26px;display:flex;align-items:center;justify-content:center;position:relative}
+.gap button{background:none;border:1px dashed transparent;border-radius:8px;color:var(--dim);font-size:12px;padding:1px 10px}
+.gap button:hover{border-color:var(--rule);color:var(--ink)}
+.gap.wall button{background:#4a1630;border:1px solid var(--pink);color:#ffd0e4;font-weight:700}
+.gap.here::after{content:"◀ 我們在這裡";position:absolute;right:-6px;font-size:12px;color:var(--gold);font-weight:700}
+.verdict{max-width:560px;margin:12px auto 0;background:var(--panel2);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;max-width:760px;margin:12px auto 0}
+.idea{background:var(--panel2);border:1px solid var(--rule);border-radius:12px;padding:9px 12px;text-align:left;font-size:13.5px}
+.idea b{display:block;font-size:14.5px;margin-bottom:2px}
+.idea span{color:var(--dim)}
+.idea.sel{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.idea .v{display:none;color:var(--gold);font-weight:700;font-size:12px}
+.idea.sel .v{display:block}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--teal)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:52vh;min-height:340px}
+  #p-filter .cv{height:auto;min-height:0}
+  .ladder{position:relative;padding-top:110px}
+  .dock{max-height:none}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:calc(100% - 24px)}
+  .bigN{top:auto;bottom:10px}
+  .bigN .n{font-size:22px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="drake" aria-pressed="true">算算外星文明<small>德雷克方程式</small></button>
+      <button data-tab="colony" aria-pressed="false">佔領銀河要多久<small>殖民模擬</small></button>
+      <button data-tab="filter" aria-pressed="false">可能的答案<small>大過濾器</small></button>
+    </nav>
+    <div class="view">
+      <!-- Drake -->
+      <div class="pane" id="p-drake">
+        <div class="cv"><canvas id="cD"></canvas><div class="ro" id="roD"></div><div class="bigN" id="nD"></div><div class="toast" id="tD"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">預設</span><span class="row" id="presets"></span><label class="chk"><input type="checkbox" id="bubble">顯示人類無線電泡泡</label></div>
+          <div class="drake" id="sliders"></div>
+        </div>
+      </div>
+      <!-- colonisation -->
+      <div class="pane" id="p-colony" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="bigN" id="nC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="cGo">▶ 出發！</button>
+            <button class="btn" id="cReset">↺ 重來</button>
+          </div>
+          <div class="row">
+            <label class="sl2">太空船速度<input id="spd" type="range" min="0" max="100" value="50"><b id="spdV"></b></label>
+            <label class="sl2">每到一顆星休息<input id="rest" type="range" min="0" max="100" value="60"><b id="restV"></b></label>
+          </div>
+        </div>
+      </div>
+      <!-- filter -->
+      <div class="pane" id="p-filter" hidden>
+        <div class="cv"><div class="ladder" id="ladder"></div><div class="ro" id="roF"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>費米悖論</h1>
+    <p class="lede">銀河系有幾千億顆恆星，存在的時間也比地球久很多。如果外星文明很常見，早就該到處都是了。那麼……大家都在哪裡？</p>
+
+    <div class="card">
+      <h2>一頓午餐引出的問題</h2>
+      <p>1950 年，物理學家<b>費米</b>在美國洛斯阿拉莫斯實驗室和同事吃午餐，聊到飛碟和外星人。他突然問：「<b>大家都在哪裡？</b>」</p>
+      <p>他的意思是：只要有一個文明會在星際間旅行，就算速度很慢，幾百萬年也能走遍整個銀河。銀河已經存在一百多億年，我們卻完全沒看到他們的痕跡。</p>
+    </div>
+
+    <div class="card">
+      <h2>德雷克方程式（1961）</h2>
+      <p>天文學家<b>德雷克</b>把「銀河裡有幾個能用無線電聯絡的文明」拆成好幾個因子相乘：</p>
+      <div class="fx">N ＝ R* × fp × ne × fl × fi × fc × L</div>
+      <p>前面幾項（每年誕生幾顆恆星、有行星的比例）現在已經量得出來；後面幾項（生命、智慧、文明能撐多久）還沒有人知道，答案可以從「幾百萬」差到「只有我們」。</p>
+    </div>
+
+    <div class="card">
+      <h2>銀河其實「不大」</h2>
+      <p>銀河系直徑約 10 萬光年。就算太空船只有光速的 1%，從一頭飛到另一頭也只要約 1000 萬年。</p>
+      <p>和銀河 100 多億年的年齡相比，1000 萬年只是 0.1%。這就是費米覺得奇怪的地方。</p>
+    </div>
+
+    <div class="card">
+      <h2>大過濾器</h2>
+      <p>經濟學家<b>漢森</b>在 1996 年提出：從一團氣體到星際文明，中間一定有某一步<b>非常非常難</b>，幾乎沒有人通過，這一步叫「大過濾器」。</p>
+      <p>如果它在我們<b>後面</b>（例如生命很難出現），我們很幸運；如果它在我們<b>前面</b>，文明可能常常在發達之後就消失了。</p>
+      <p>有人說：如果在火星找到「獨立出現」的生命，反而是有點可怕的消息，因為代表生命出現不難，過濾器比較可能在前面。</p>
+    </div>
+
+    <div class="card">
+      <h2>我們找得夠多嗎？</h2>
+      <p>天文學家估計，到目前為止的外星訊號搜尋，就像從地球所有的海洋裡只舀了<b>一個大浴缸</b>的水來找魚。沒找到魚，不代表海裡沒有魚。</p>
+      <p>人類的無線電訊號才發出約一百年，只傳到一百光年左右，在銀河裡只是一個小點。</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>1950</b><span>費米問：「大家都在哪裡？」</span></li>
+        <li><b>1960</b><span>德雷克的「奧茲瑪計畫」第一次用電波望遠鏡聽外星訊號</span></li>
+        <li><b>1961</b><span>德雷克方程式在綠堤天文台的會議上提出</span></li>
+        <li><b>1974</b><span>阿雷西博電波望遠鏡向 M13 星團發送訊息（要 2 萬多年才會到）</span></li>
+        <li><b>1977</b><span>收到著名的「Wow! 訊號」，之後再也沒有出現</span></li>
+        <li><b>1996</b><span>漢森提出「大過濾器」</span></li>
+        <li><b>2015</b><span>「突破聆聽」計畫開始，大規模搜尋外星訊號</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+let seed=11;const srnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
+const p3=v=>v>=100?Math.round(v).toLocaleString():String(+v.toPrecision(3));
+function fmtBig(x){if(x>=1e12)return p3(x/1e12)+' 兆';if(x>=1e8)return p3(x/1e8)+' 億';if(x>=1e4)return p3(x/1e4)+' 萬';if(x>=10)return Math.round(x).toLocaleString();if(x>=1)return x.toFixed(1);return x.toPrecision(2);}
+function fmtYears(y){if(y>=1e8)return p3(y/1e8)+' 億年';if(y>=1e4)return p3(y/1e4)+' 萬年';return Math.round(y).toLocaleString()+' 年';}
+let TAB='drake';
+const GR=50000; // galaxy radius in light-years
+
+/* ---------- shared galaxy star field ---------- */
+const GAL=[];(function(){for(let i=0;i<5200;i++){const arm=i%2,t=Math.pow(srnd(),0.6),r=t*GR,th=arm*Math.PI+Math.log(1+r/3000)*2.1+(srnd()-0.5)*(0.9-0.4*t),spread=(srnd()-0.5)*0.12*r;
+  const x=r*Math.cos(th)+spread*Math.sin(th),y=r*Math.sin(th)-spread*Math.cos(th);GAL.push([x,y,0.3+srnd()*0.7]);}
+  for(let i=0;i<1600;i++){const r=Math.abs((srnd()+srnd()+srnd()-1.5))*9000,th=srnd()*6.283;GAL.push([r*Math.cos(th),r*Math.sin(th)*0.7,0.5+srnd()*0.5]);}})();
+const EARTH=[26000*Math.cos(2.4),26000*Math.sin(2.4)];
+function drawGalaxy(a,cx,cy,S,alpha=1){
+  const g=a.createRadialGradient(cx,cy,0,cx,cy,GR*S*0.35);g.addColorStop(0,`rgba(255,230,180,${0.5*alpha})`);g.addColorStop(1,'rgba(255,230,180,0)');a.fillStyle=g;a.beginPath();a.arc(cx,cy,GR*S*0.35,0,7);a.fill();
+  for(const s of GAL){a.globalAlpha=0.35*s[2]*alpha;a.fillStyle=s[2]>0.85?'#ffe8c8':'#c9d4ff';a.fillRect(cx+s[0]*S,cy+s[1]*S,1.2,1.2);}a.globalAlpha=1;}
+
+/* ======================= 1. DRAKE ======================= */
+const F=[
+  {k:'R',n:'每年新誕生的恆星',min:0.5,max:10,log:false,step:0.1,fmt:v=>v.toFixed(1)+' 顆',tip:'天文觀測：銀河每年大約誕生 1.5～3 顆像太陽的恆星'},
+  {k:'fp',n:'有行星的比例',min:0.1,max:1,log:false,step:0.01,fmt:v=>Math.round(v*100)+'%',tip:'克卜勒太空望遠鏡發現：大多數恆星都有行星'},
+  {k:'ne',n:'適合生命的行星',min:0.01,max:1,log:true,fmt:v=>v>=0.1?v.toFixed(1)+' 顆':v.toFixed(2)+' 顆',tip:'每個行星系平均有幾顆溫度適合液態水的行星'},
+  {k:'fl',n:'出現生命的比例',min:1e-6,max:1,log:true,fmt:pct,tip:'沒人知道！地球上生命很早就出現了，但我們只有一個例子'},
+  {k:'fi',n:'演化出智慧的比例',min:1e-6,max:1,log:true,fmt:pct,tip:'沒人知道！地球生命花了約 40 億年才出現人類'},
+  {k:'fc',n:'會發出訊號的比例',min:1e-3,max:1,log:true,fmt:pct,tip:'聰明的生命會不會發明無線電，讓別人聽得到？'},
+  {k:'L',n:'文明能維持幾年',min:100,max:1e9,log:true,fmt:v=>fmtYears(v),tip:'人類用無線電才大約 100 年……'}
+];
+function pct(v){return v>=0.01?(v*100).toPrecision(2).replace(/\.0+$/,'')+'%':v>=1e-4?(v*100).toFixed(3).replace(/0+$/,'')+'%':'百萬分之 '+(v*1e6).toPrecision(2);}
+const PRESET={opt:{n:'樂觀',v:{R:3,fp:1,ne:0.4,fl:1,fi:0.5,fc:0.5,L:1e6}},mid:{n:'中間',v:{R:1.5,fp:1,ne:0.2,fl:0.5,fi:0.1,fc:0.2,L:1e4}},pes:{n:'悲觀',v:{R:1.5,fp:1,ne:0.1,fl:1e-3,fi:1e-3,fc:0.1,L:1000}}};
+const DV={...PRESET.mid.v};let curPreset='mid';
+function toSl(f,v){return f.log?Math.round(1000*Math.log(v/f.min)/Math.log(f.max/f.min)):Math.round(1000*(v-f.min)/(f.max-f.min));}
+function fromSl(f,s){return f.log?f.min*Math.pow(f.max/f.min,s/1000):f.min+(f.max-f.min)*s/1000;}
+function buildSliders(){const box=$('#sliders');box.innerHTML='';
+  for(const f of F){const l=document.createElement('label');l.className='sl';l.title=f.tip;l.innerHTML=`<span>${f.n}</span><input type="range" min="0" max="1000" value="${toSl(f,DV[f.k])}"><b>${f.fmt(DV[f.k])}</b>`;
+    const inp=l.querySelector('input');inp.oninput=()=>{DV[f.k]=fromSl(f,+inp.value);l.querySelector('b').textContent=f.fmt(DV[f.k]);curPreset=null;buildPresets();drawDrake();};
+    inp.onfocus=()=>toast('#tD',f.tip,2600);box.appendChild(l);}}
+function buildPresets(){const r=$('#presets');r.innerHTML='';for(const k in PRESET){const b=document.createElement('button');b.className='btn'+(k===curPreset?' sel':'');b.textContent=PRESET[k].n;b.onclick=()=>{Object.assign(DV,PRESET[k].v);curPreset=k;buildSliders();buildPresets();drawDrake();};r.appendChild(b);}}
+function drakeN(){return F.reduce((p,f)=>p*DV[f.k],1);}
+let civ=[];
+function placeCivs(N){seed=77;civ=[];const shown=Math.min(1500,Math.round(N));for(let i=0;i<shown;i++){const s=GAL[Math.floor(srnd()*5200)];civ.push([s[0]+(srnd()-0.5)*800,s[1]+(srnd()-0.5)*800]);}}
+function drawDrake(){
+  const cv=$('#cD'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=90,cx=w/2,cy=top+(h-top-10)/2,S=Math.min(w*0.47,(h-top-10)/2*0.96)/GR;
+  drawGalaxy(a,cx,cy,S);
+  const N=drakeN();placeCivs(N);
+  // spacing between civilisations (disc of radius 50,000 ly, thickness 1,000 ly)
+  const V=Math.PI*GR*GR*1000,sp=N>=1?Math.cbrt(V/N):null;
+  // civilisations
+  for(const c of civ){a.fillStyle='#41e0c2';a.globalAlpha=0.9;a.beginPath();a.arc(cx+c[0]*S,cy+c[1]*S,2.2,0,7);a.fill();}a.globalAlpha=1;
+  // Earth
+  const ex=cx+EARTH[0]*S,ey=cy+EARTH[1]*S;a.strokeStyle='#ffcf5c';a.lineWidth=2;a.beginPath();a.arc(ex,ey,6,0,7);a.stroke();a.fillStyle='#ffcf5c';a.font='700 12px "Noto Sans TC",sans-serif';a.fillText('太陽系',ex+9,ey+4);
+  if(sp&&sp<GR){a.strokeStyle='rgba(65,224,194,.5)';a.setLineDash([4,4]);a.beginPath();a.arc(ex,ey,Math.max(3,sp*S),0,7);a.stroke();a.setLineDash([]);}
+  if($('#bubble').checked){const r=100*S;a.fillStyle='rgba(255,111,174,.9)';a.beginPath();a.arc(ex,ey,Math.max(1.2,r),0,7);a.fill();
+    a.fillStyle='#ff9cc8';a.font='12px "Noto Sans TC",sans-serif';a.fillText('人類的無線電只傳到這麼遠（約 100 光年，小到看不見）',Math.min(ex+10,w-330),ey+22);}
+  const msg=N<1?'銀河裡此刻可能<b>只有我們</b>，或根本沒有別人。':N<10?'銀河裡只有零星幾個文明，彼此距離非常遙遠。':N<1e4?'銀河裡有不少文明，但彼此還是隔得很遠。':'銀河裡應該熱鬧非凡！那為什麼我們什麼都沒聽到？';
+  $('#roD').innerHTML=`<div class="big">銀河裡此刻有幾個會發訊號的文明？</div><div>${msg}</div>`+(sp?`<div>平均每個文明相隔約 <b>${fmtBig(sp)}</b> 光年，打招呼一來一回要 <b>${fmtYears(sp*2)}</b></div>`:'');
+  $('#nD').innerHTML=`<div class="n">${N<1?'＜ 1':fmtBig(N)}</div><small>N ＝ 銀河裡的文明數量</small><small>${civ.length<Math.round(N)?`畫面只畫出 ${civ.length.toLocaleString()} 個`:''}</small>`;
+}
+$('#bubble').onchange=drawDrake;
+new ResizeObserver(()=>{if(TAB==='drake')drawDrake();}).observe($('#cD'));
+
+/* ======================= 2. COLONISATION ======================= */
+const NODES=[];(function(){seed=303;for(let i=0;i<1600;i++){const s=GAL[Math.floor(srnd()*GAL.length)];NODES.push([s[0],s[1]]);}NODES.push(EARTH.slice());})();
+const KNN=(function(){const n=NODES.length,nb=[];for(let i=0;i<n;i++){const d=[];for(let j=0;j<n;j++)if(j!==i)d.push([Math.hypot(NODES[i][0]-NODES[j][0],NODES[i][1]-NODES[j][1]),j]);d.sort((x,y)=>x[0]-y[0]);nb.push(d.slice(0,7));}
+  // make it symmetric
+  for(let i=0;i<n;i++)for(const [dd,j] of nb[i])if(!nb[j].some(e=>e[1]===i))nb[j].push([dd,i]);return nb;})();
+const CO={v:0.01,rest:1000,times:null,tmax:0,t:0,run:false};
+function speedFromSl(s){return 0.0005*Math.pow(200,s/100);} // 0.05% c .. 10% c
+function restFromSl(s){return s===0?0:10*Math.pow(1000,s/100);}  // 10 .. 10,000 years
+function solveColony(){
+  // Dijkstra over the star graph. Real probes hop ~7 light-years at a time and rest at every hop.
+  const n=NODES.length,T=new Float64Array(n).fill(Infinity),done=new Uint8Array(n);T[n-1]=0;
+  for(let it=0;it<n;it++){let u=-1,best=Infinity;for(let i=0;i<n;i++)if(!done[i]&&T[i]<best){best=T[i];u=i;}if(u<0)break;done[u]=1;
+    for(const [d,j] of KNN[u]){const c=d/CO.v+CO.rest*(d/7);if(T[u]+c<T[j])T[j]=T[u]+c;}}
+  CO.times=T;CO.tmax=Math.max(...T);
+}
+function drawColony(){
+  const cv=$('#cC'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=90,cx=w/2,cy=top+(h-top-10)/2,S=Math.min(w*0.47,(h-top-10)/2*0.96)/GR;
+  drawGalaxy(a,cx,cy,S,0.55);
+  let got=0;const n=NODES.length;
+  for(let i=0;i<n;i++){const t=CO.times[i],p=[cx+NODES[i][0]*S,cy+NODES[i][1]*S];
+    if(t<=CO.t){got++;const fresh=CO.t-t<CO.tmax*0.04;a.fillStyle=fresh?'#ffffff':'#41e0c2';a.globalAlpha=fresh?1:0.8;a.beginPath();a.arc(p[0],p[1],fresh?2.6:1.9,0,7);a.fill();}
+    else{a.fillStyle='#5b5880';a.globalAlpha=0.6;a.fillRect(p[0]-0.8,p[1]-0.8,1.6,1.6);}}
+  a.globalAlpha=1;
+  const ex=cx+EARTH[0]*S,ey=cy+EARTH[1]*S;a.strokeStyle='#ffcf5c';a.lineWidth=2;a.beginPath();a.arc(ex,ey,7,0,7);a.stroke();a.fillStyle='#ffcf5c';a.font='700 12px "Noto Sans TC",sans-serif';a.fillText('出發點',ex+10,ey+4);
+  const pctDone=got/n*100,age=1.36e10;
+  $('#roC').innerHTML=`<div class="big">一個文明從這裡出發，一站一站往外擴散</div><div>已經過了 <b>${fmtYears(CO.t)}</b>，佔領了 <b>${pctDone.toFixed(0)}%</b></div><div style="color:var(--dim)">每個點代表一大群恆星。太空船每飛約 7 光年就停下來，在新的星球休息、建造新船。</div>`;
+  $('#nC').innerHTML=`<div class="n">${fmtYears(CO.tmax)}</div><small>佔滿整個銀河需要的時間</small><small>只是銀河年齡的 ${(CO.tmax/age*100).toPrecision(2)}%</small>`;
+}
+let cLast=0;
+function colonyTick(now){const dt=Math.min(0.05,(now-cLast)/1000);cLast=now;
+  if(CO.run){CO.t+=dt*CO.tmax/14;if(CO.t>=CO.tmax){CO.t=CO.tmax;CO.run=false;$('#cGo').textContent='▶ 出發！';
+    const dino=6.6e7;toast('#tC',CO.tmax<dino?`佔滿銀河只要 ${fmtYears(CO.tmax)}，比恐龍滅絕到現在（6600 萬年）還短！`:`佔滿銀河要 ${fmtYears(CO.tmax)}，但銀河已經 136 億歲了。`,5000);}}
+  drawColony();}
+function syncColony(){CO.v=speedFromSl(+$('#spd').value);CO.rest=restFromSl(+$('#rest').value);
+  $('#spdV').textContent='光速的 '+(CO.v*100).toPrecision(2)+'%';$('#restV').textContent=CO.rest?fmtYears(CO.rest):'不休息';solveColony();if(!CO.run)CO.t=Math.min(CO.t,CO.tmax);}
+$('#spd').oninput=$('#rest').oninput=()=>{syncColony();CO.t=0;CO.run=false;$('#cGo').textContent='▶ 出發！';};
+$('#cGo').onclick=()=>{if(CO.t>=CO.tmax)CO.t=0;CO.run=!CO.run;$('#cGo').textContent=CO.run?'⏸ 暫停':'▶ 出發！';};
+$('#cReset').onclick=()=>{CO.t=0;CO.run=false;$('#cGo').textContent='▶ 出發！';};
+
+/* ======================= 3. GREAT FILTER ======================= */
+const STEPS=[
+  ['✨','恆星和行星形成','銀河裡到處都在發生','已知很常見'],
+  ['🌍','溫度剛好、有液態水的行星','克卜勒望遠鏡找到不少候選者','已知不少'],
+  ['🦠','生命出現（簡單的細胞）','地球形成後不久就出現','地球：約 40 億年前'],
+  ['🧫','複雜細胞（有細胞核）','花了約 20 億年才出現','地球：約 20 億年前'],
+  ['🪸','多細胞生物','寒武紀大爆發','地球：約 5～6 億年前'],
+  ['🐒','聰明、會用工具的動物','只有一個物種發展出科技','地球：數百萬年前'],
+  ['📡','科技文明（會用無線電）','我們剛走到這裡','地球：約 100 年前'],
+  ['🚀','離開母星，在別的星球定居','還沒有任何文明做到（我們所知）','未來？'],
+  ['🌌','擴散到整個銀河，被別人看見','如果有人做到，我們應該看得到','未來？']
+];
+const IDEAS=[
+  ['🏝️','地球很特別','生命或智慧極難出現，銀河裡真的只有我們（或很少）。'],
+  ['📏','太遠了','文明之間隔太遠，訊號太弱，還沒傳到或聽不清楚。'],
+  ['🔍','我們找得太少','搜尋才幾十年，像只從海裡舀了一浴缸的水。'],
+  ['🦓','動物園假說','他們知道我們，但刻意不打擾，就像保護區的動物。'],
+  ['⏳','文明壽命很短','科技文明可能很快就因戰爭、災難或環境問題消失。'],
+  ['📻','頻道不一樣','他們用我們想不到的方法溝通，我們根本聽不懂。']
+];
+const GF={wall:null,vote:null};
+try{GF.vote=localStorage.getItem('fermi-vote');}catch(e){}
+function buildLadder(){
+  const L=$('#ladder');let html='<div class="steps">';
+  STEPS.forEach((s,i)=>{
+    html+=`<div class="step${i>=7?' future':''}"><div class="ic">${s[0]}</div><div><b>${i+1}. ${s[1]}</b><small>${s[2]}</small></div><span class="tag">${s[3]}</span></div>`;
+    if(i<STEPS.length-1)html+=`<div class="gap${GF.wall===i?' wall':''}${i===6?' here':''}"><button data-g="${i}">${GF.wall===i?'🧱 大過濾器在這裡！':'＋ 把大過濾器放這裡'}</button></div>`;
+  });
+  html+='</div>';
+  let v='';
+  if(GF.wall==null)v='點兩個步驟之間的「＋」，猜猜看最難通過的關卡在哪裡。';
+  else if(GF.wall<=1)v='<b style="color:#41e0c2">過濾器在很前面：</b>連適合的行星都很少，那宇宙大部分地方都很荒涼。但觀測顯示行星其實很常見，所以這個位置不太可能。';
+  else if(GF.wall<=5)v='<b style="color:#41e0c2">好消息：最難的關卡在我們後面！</b>生命或智慧極難出現，所以銀河很安靜，而我們是很幸運的少數。但如果在火星找到獨立出現的生命，就代表「生命出現」不難，這個猜測要往後移了。';
+  else v='<b style="color:#ff6fae">壞消息：最難的關卡在我們前面！</b>代表很多文明走到我們這一步，卻沒能擴散到星際。可能是戰爭、資源耗盡或其他災難。人類要特別小心！';
+  html+=`<div class="verdict">${v}</div><div class="verdict" style="margin-top:14px"><b>其他可能的解釋：</b>你最相信哪一個？（點一下投票）</div><div class="cards">`+
+    IDEAS.map((d,i)=>`<button class="idea${GF.vote==String(i)?' sel':''}" data-i="${i}"><b>${d[0]} ${d[1]}</b><span>${d[2]}</span><span class="v">★ 你的選擇</span></button>`).join('')+'</div>';
+  L.innerHTML=html;
+  L.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{GF.wall=+b.dataset.g;buildLadder();});
+  L.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{GF.vote=b.dataset.i;try{localStorage.setItem('fermi-vote',GF.vote);}catch(e){}buildLadder();});
+  $('#roF').innerHTML='<div class="big">大過濾器在哪裡？</div><div>從星塵到星際文明有好多關卡。銀河這麼安靜，代表至少有一關非常難。</div>';
+}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['drake','colony','filter'])$('#p-'+t).hidden=t!==TAB;
+  if(TAB==='drake')requestAnimationFrame(drawDrake);});
+function frame(now){if(TAB==='colony')colonyTick(now);requestAnimationFrame(frame);}
+buildPresets();buildSliders();drawDrake();syncColony();buildLadder();
+
+requestAnimationFrame(frame);
+})();
+</script>

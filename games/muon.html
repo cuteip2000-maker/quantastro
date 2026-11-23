@@ -1,0 +1,416 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>μ 子大逃亡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* Layout: atmosphere stage with mode tabs left, explainer rail right; stacks on phones. Single dusk-sky look. */
+:root{
+  --space:#0a0f24;
+  --deck:#10162e;
+  --deck2:#18203f;
+  --rule:#2a3560;
+  --ink:#eef2ff;
+  --dim:#9fa9cf;
+  --muon:#ffb547;
+  --earth:#5fd0a8;
+  --rel:#a98bff;
+  --bad:#ff7a6e;
+  --f-num:"Rubik","Noto Sans TC",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"Roboto Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--space);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--muon);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--deck);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--deck2);color:var(--ink);box-shadow:inset 0 3px 0 var(--muon)}
+.view{position:relative;flex:1;min-height:0;background:var(--deck2);border-top:1px solid var(--rule);overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.read{position:absolute;top:10px;right:max(14px,env(safe-area-inset-right,0px));pointer-events:none;display:flex;flex-direction:column;gap:2px;text-align:right;max-width:min(60%,380px);text-shadow:0 1px 5px rgba(0,0,0,.7)}
+.read .big{font-family:var(--f-num);font-weight:800;font-size:30px;line-height:1.1}
+.read .big small{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--dim);margin-left:4px}
+.read .line{font-size:14px}
+.read .line b{font-family:var(--f-num);color:var(--muon)}
+.read .sub{font-size:13px;color:var(--dim)}
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;
+  padding-block:8px max(10px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:rgba(16,22,46,.95);border-top:1px solid var(--rule)}
+.dock button{background:var(--deck);border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.dock button:hover{border-color:#4b5a96}
+.dock button.on{background:var(--rel);border-color:var(--rel);color:#160b36;font-weight:700}
+.dock button.off{background:var(--bad);border-color:var(--bad);color:#2a0400;font-weight:700}
+.dock button.pri{background:var(--muon);border-color:var(--muon);color:#2a1700;font-weight:700}
+.dock .sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 230px;max-width:420px}
+.dock .sl input{flex:1;min-width:0;accent-color:var(--muon)}
+.dock .sl output{font-family:var(--f-mono);color:var(--ink);min-width:92px;text-align:right;font-size:12.5px}
+.missions{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+.missions span{font-size:12.5px;color:var(--dim);border:1px dashed var(--rule);border-radius:999px;padding:2px 10px}
+.missions span.done{color:#0d2a1f;background:var(--earth);border-color:var(--earth);font-weight:700}
+.toast{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--space);font-weight:700;border-radius:10px;padding:8px 16px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:86%;text-align:center}
+.toast.show{opacity:1}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-num);font-weight:700;font-size:12px;letter-spacing:.2em;color:var(--muon);text-transform:uppercase}
+h1{margin:2px 0 0;font-weight:900;font-size:28px;line-height:1.3;text-wrap:balance}
+.lede{margin:8px 0 0;color:#d3d9f3;font-size:14.5px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+.card{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#d3d9f3}
+.card b{color:var(--ink)}
+.card .t{display:block;font-weight:700;color:var(--ink);font-size:15px;margin-bottom:2px}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fact{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:10px 12px}
+.fact span{display:block;font-size:12px;color:var(--dim)}
+.fact b{font-family:var(--f-num);font-weight:800;font-size:22px;line-height:1.2;display:block}
+.fact small{font-size:12px;color:var(--dim)}
+table.g{width:100%;border-collapse:collapse;font-size:13.5px}
+.g th,.g td{padding:5px 6px;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums}
+.g th:first-child,.g td:first-child{text-align:left}
+.g th{color:var(--dim);font-weight:500;font-size:12.5px}
+.g td:nth-child(2){color:var(--rel);font-weight:700}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:48px 1fr;gap:10px;font-size:13.5px;color:#d3d9f3}
+.tl time{font-family:var(--f-num);font-weight:700;color:var(--muon)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:86vh;min-height:620px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .read .big{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="rain" aria-pressed="true">μ 子大逃亡<small>能活著到地面嗎</small></button>
+      <button data-t="frames" aria-pressed="false">誰說的才對？<small>兩種觀點</small></button>
+      <button data-t="mount" aria-pressed="false">1963 山頂實驗<small>猜猜看</small></button>
+    </div>
+    <div class="view" id="view">
+      <canvas id="cv" aria-label="μ 子穿過大氣層的模擬"></canvas>
+      <div class="read" id="read"></div>
+      <div class="toast" id="toast"></div>
+      <div class="dock" id="dock"></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">The Muon Paradox</div>
+      <h1>μ 子悖論：短命的粒子怎麼跑完全程？</h1>
+      <p class="lede">高空中，來自宇宙的高能粒子撞上空氣，產生一種叫「μ 子」的粒子。它平均只能活 2.2 微秒，就算用光速飛，也只能跑大約 660 公尺。可是從 15 公里高空出發的 μ 子，卻大量抵達地面，每秒都有一兩個穿過你的手掌。這怎麼可能？</p>
+    </div>
+
+    <section>
+      <h2>μ 子的基本資料</h2>
+      <div class="facts">
+        <div class="fact"><span>平均壽命</span><b>2.2</b><small>微秒（百萬分之 2.2 秒）</small></div>
+        <div class="fact"><span>質量</span><b>207×</b><small>電子的 207 倍，像電子的胖表哥</small></div>
+        <div class="fact"><span>誕生高度</span><b>~15</b><small>公里，比聖母峰高很多</small></div>
+        <div class="fact"><span>到地面的數量</span><b>~1</b><small>每平方公分每分鐘約一個</small></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>答案：時間膨脹</h2>
+      <div class="card"><span class="t">跑得越快，時間過得越慢</span>愛因斯坦的狹義相對論說：一個東西跑得越接近光速，<b>它身上的時間就過得越慢</b>。從地面看，μ 子的「手錶」走得很慢，所以它能撐得比 2.2 微秒久得多，飛得更遠。變慢的倍數叫做 γ（伽瑪）：</div>
+      <table class="g">
+        <thead><tr><th>速度（光速的幾倍）</th><th>時間變慢 γ 倍</th><th>能飛多遠（平均）</th></tr></thead>
+        <tbody>
+          <tr><td>0.5</td><td>1.15</td><td>0.38 公里</td></tr>
+          <tr><td>0.9</td><td>2.29</td><td>1.4 公里</td></tr>
+          <tr><td>0.99</td><td>7.09</td><td>4.6 公里</td></tr>
+          <tr><td>0.999</td><td>22.4</td><td>15 公里</td></tr>
+          <tr><td>0.9999</td><td>70.7</td><td>47 公里</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>那 μ 子自己怎麼看？</h2>
+      <div class="card"><span class="t">對 μ 子來說，是大氣層變薄了</span>站在 μ 子的角度，它的手錶一切正常，是整個地球朝它衝過來。高速運動的東西在運動方向上會<b>縮短</b>（長度收縮），所以 15 公里厚的大氣層，在它眼中只剩薄薄的一層。兩種說法看起來不同，但算出來的結果完全一樣：μ 子抵達地面時，它的手錶顯示的是同一個時間。</div>
+    </section>
+
+    <section>
+      <h2>今天的 μ 子</h2>
+      <div class="card"><span class="t">用 μ 子幫金字塔照 X 光</span>μ 子能穿透幾十公尺的岩石。2017 年，科學家在古夫金字塔周圍放了 μ 子偵測器，發現金字塔內部藏著一個從沒被發現過的大空間。日本和義大利也用 μ 子造影來觀察火山內部的岩漿。</div>
+    </section>
+
+    <section>
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><time>1905</time><span>愛因斯坦發表狹義相對論，預測運動時鐘會變慢。</span></li>
+        <li><time>1936</time><span>安德森與尼德梅耶在宇宙射線中發現 μ 子。</span></li>
+        <li><time>1941</time><span>羅西與霍爾比較不同高度的 μ 子數量，首次用它驗證時間膨脹。</span></li>
+        <li><time>1963</time><span>弗里施與史密斯在華盛頓山頂和海平面計數 μ 子，結果被拍成經典教學影片。</span></li>
+        <li><time>2017</time><span>μ 子造影發現古夫金字塔裡的神祕空間。</span></li>
+      </ul>
+    </section>
+    <p class="note">模擬中的時間被大幅放慢：1 微秒大約變成畫面上的零點幾秒。μ 子的壽命是隨機的，2.2 微秒是平均值。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, tab = 'rain';
+const C = 0.299792458, TAU = 2.197, H0 = 15;          // km/µs, µs, km
+const gammaOf = b => 1/Math.sqrt(1 - b*b);
+let toastT; function toast(m, ms = 3800){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), ms); }
+const fmtB = b => b >= .99995 ? b.toFixed(6) : b >= .9995 ? b.toFixed(5) : b.toFixed(4);
+// slider 0..1000 ↔ β via log(1−β): 0.5 … 0.99999
+const bFromS = v => 1 - Math.pow(10, Math.log10(.5) + v/1000*(Math.log10(1e-5) - Math.log10(.5)));
+const sFromB = b => Math.round((Math.log10(1 - b) - Math.log10(.5))/(Math.log10(1e-5) - Math.log10(.5))*1000);
+
+// =========== shared sky drawing ===========
+function sky(x, y, w, h, alt0 = 0, alt1 = 16){
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, '#0b1030'); g.addColorStop(.45, '#24386f'); g.addColorStop(.8, '#4f7fc0'); g.addColorStop(1, '#8cc3ec');
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+}
+function ground(x, y, w){
+  ctx.fillStyle = '#1d3a2c'; ctx.fillRect(x, y, w, 40);
+  ctx.fillStyle = '#2c5440';
+  let s = 3; const r = () => (s = (s*16807) % 2147483647)/2147483647;
+  for (let i = 0; i < w; i += 18){ const hh = 6 + r()*26; ctx.fillRect(x + i, y - hh, 14, hh); }
+}
+
+// =========== TAB 1: the escape ===========
+const R = {beta:.995, rel:true, scale:3.5, mu:[], bursts:[], launched:0, reached:0, decayed:0, acc:0, lead:null, missions:{off:false, on:false, half:false}, sinceChange:0, reachedSince:0};
+function resetCounts(){ R.mu = []; R.bursts = []; R.launched = 0; R.reached = 0; R.decayed = 0; R.sinceChange = 0; R.reachedSince = 0; R.lead = null; }
+function setupRain(){
+  $('#dock').innerHTML = `<button id="bRel">相對論：開</button>
+    <div class="sl"><span>速度</span><input id="bS" type="range" min="0" max="1000" value="${sFromB(R.beta)}"><output id="bO"></output></div>
+    <div class="sl" style="flex-basis:160px;max-width:220px"><span>慢動作</span><input id="tS" type="range" min="1" max="10" value="${R.scale}"><output id="tO" style="min-width:40px"></output></div>
+    <button id="bReset">清除計數</button>
+    <div class="missions" id="mis"></div>`;
+  $('#bRel').onclick = () => { R.rel = !R.rel; resetCounts(); syncRain(); toast(R.rel ? '相對論打開：μ 子的時間變慢了' : '相對論關掉：μ 子的時間和我們一樣快'); };
+  $('#bS').oninput = e => { R.beta = bFromS(+e.target.value); R.sinceChange = 0; R.reachedSince = 0; syncRain(); };
+  $('#tS').oninput = e => { R.scale = +e.target.value; syncRain(); };
+  $('#bReset').onclick = resetCounts;
+  syncRain();
+}
+function syncRain(){
+  const b = $('#bRel'); if (!b) return;
+  b.textContent = '相對論：' + (R.rel ? '開' : '關'); b.className = R.rel ? 'on' : 'off';
+  $('#bO').textContent = `${fmtB(R.beta)} c`;
+  $('#tO').textContent = R.scale + '×';
+  const m = R.missions;
+  $('#mis').innerHTML = `<span class="${m.off ? 'done' : ''}">① 關掉相對論，看幾顆能到地面</span><span class="${m.on ? 'done' : ''}">② 打開相對論，讓 μ 子抵達地面</span><span class="${m.half ? 'done' : ''}">③ 調速度，讓一半以上抵達</span>`;
+}
+function expectFrac(){ const tLab = H0/(R.beta*C), life = R.rel ? gammaOf(R.beta)*TAU : TAU; return Math.exp(-tLab/life); }
+function updateRain(dt){
+  const usPerSec = R.scale*1.2, dtu = dt*usPerSec, g = gammaOf(R.beta);
+  R.acc += dt*7;
+  while (R.acc > 1){ R.acc--; const tau = -TAU*Math.log(1 - Math.random());
+    const m = {x:.06 + Math.random()*.88, t:0, tau, life:R.rel ? g*tau : tau, beta:R.beta, rel:R.rel}; R.mu.push(m); R.launched++; R.sinceChange++; if (!R.lead) R.lead = m; }
+  for (const m of R.mu){
+    m.t += dtu; m.alt = H0 - m.beta*C*m.t;
+    if (m.alt <= 0){ m.dead = 'ground'; R.reached++; R.reachedSince++; R.bursts.push({x:m.x, alt:0, k:'g', a:1}); }
+    else if (m.t >= m.life){ m.dead = 'decay'; R.decayed++; R.bursts.push({x:m.x, alt:m.alt, k:'d', a:1}); }
+  }
+  if (R.lead && R.lead.dead) R.lead = R.mu.find(m => !m.dead) || null;
+  R.mu = R.mu.filter(m => !m.dead);
+  R.bursts.forEach(b => b.a -= dt*1.4); R.bursts = R.bursts.filter(b => b.a > 0);
+  const M = R.missions; let changed = false;
+  if (!R.rel && R.launched >= 25 && R.reached === 0 && !M.off){ M.off = true; changed = true; toast('一顆都到不了！只活 2.2 微秒，最多飛 660 公尺左右'); }
+  if (R.rel && R.reached >= 1 && !M.on){ M.on = true; changed = true; toast('有 μ 子抵達地面了！它的時間變慢，活得更久'); }
+  if (R.rel && R.sinceChange >= 40 && R.reachedSince/R.sinceChange >= .5 && !M.half){ M.half = true; changed = true; toast(`成功！速度 ${fmtB(R.beta)} 倍光速時，時間變慢 ${gammaOf(R.beta).toFixed(0)} 倍`); }
+  if (changed) syncRain();
+  const pct = R.launched ? R.reached/Math.max(1, R.reached + R.decayed)*100 : 0;
+  const L = R.lead, lead = L ? `<div class="sub">追蹤一顆 μ 子：地球時鐘 ${L.t.toFixed(1)} 微秒 · μ 子手錶 ${(L.rel ? L.t/gammaOf(L.beta) : L.t).toFixed(2)} 微秒</div>` : '';
+  $('#read').innerHTML = `<div class="big">${Math.round(pct)}%<small>抵達地面</small></div>
+    <div class="line">抵達 <b>${R.reached}</b> · 半路衰變 <b>${R.decayed}</b></div>
+    <div class="line">時間變慢 γ = <b>${R.rel ? gammaOf(R.beta).toFixed(1) : '1（關掉）'}</b> · 理論預測 <b>${(expectFrac()*100).toFixed(expectFrac() < .01 ? 3 : 1)}%</b></div>
+    <div class="sub">平均能飛 ${(R.beta*C*(R.rel ? gammaOf(R.beta) : 1)*TAU).toFixed(R.rel ? 1 : 2)} 公里</div>${lead}`;
+}
+function drawRain(){
+  const dockH = $('#dock').offsetHeight || 80, x0 = 0, y0 = 0, w = W, h = H - dockH - 40;
+  sky(x0, y0, w, h + 40);
+  const kmY = alt => y0 + 30 + (16 - alt)/16*(h - 30);
+  const gy = kmY(0);
+  // altitude ruler
+  ctx.font = '12px "Noto Sans TC", sans-serif';
+  for (let a = 0; a <= 15; a += 5){ const y = kmY(a); ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.beginPath(); ctx.moveTo(48, y); ctx.lineTo(w, y); ctx.stroke(); ctx.fillStyle = 'rgba(238,242,255,.75)'; ctx.fillText(a + ' 公里', 6, y + 4); }
+  // landmarks
+  const ly = kmY(8.85); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.moveTo(w*.14, gy); ctx.lineTo(w*.24, ly); ctx.lineTo(w*.34, gy); ctx.closePath(); ctx.fillStyle = 'rgba(160,175,205,.35)'; ctx.fill();
+  ctx.fillStyle = 'rgba(238,242,255,.7)'; ctx.fillText('聖母峰 8.8 公里', w*.24 - 40, ly - 6);
+  const py = kmY(10.5); ctx.fillStyle = 'rgba(238,242,255,.85)'; ctx.font = '18px sans-serif'; ctx.fillText('✈', w*.6, py); ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('客機巡航高度', w*.6 + 22, py - 2);
+  ctx.fillStyle = 'rgba(255,181,71,.85)'; ctx.fillText('宇宙射線撞上空氣，產生 μ 子', 56, kmY(15) - 8);
+  // 660 m line (how far it would go without relativity)
+  const y660 = kmY(H0 - C*TAU); ctx.strokeStyle = 'rgba(255,122,110,.6)'; ctx.setLineDash([6, 5]); ctx.beginPath(); ctx.moveTo(48, y660); ctx.lineTo(w, y660); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,122,110,.9)'; ctx.fillText('沒有相對論：平均只能飛到這裡（約 660 公尺）', 56, y660 + 16);
+  ground(0, gy, w);
+  ctx.fillStyle = 'rgba(238,242,255,.85)'; ctx.fillText('地面', 6, gy + 18);
+  // muons
+  for (const m of R.mu){
+    const x = m.x*w, y = kmY(m.alt);
+    const tr = ctx.createLinearGradient(x, y - 26, x, y); tr.addColorStop(0, 'rgba(255,181,71,0)'); tr.addColorStop(1, 'rgba(255,181,71,.7)');
+    ctx.strokeStyle = tr; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y - 26); ctx.lineTo(x, y); ctx.stroke();
+    ctx.fillStyle = m === R.lead ? '#fff' : '#ffb547'; ctx.beginPath(); ctx.arc(x, y, m === R.lead ? 5 : 3.5, 0, Math.PI*2); ctx.fill();
+    if (m === R.lead){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.stroke(); }
+  }
+  for (const b of R.bursts){
+    const x = b.x*w, y = kmY(b.alt);
+    if (b.k === 'd'){ ctx.strokeStyle = `rgba(255,122,110,${b.a})`; ctx.lineWidth = 1.5;
+      for (let k = 0; k < 3; k++){ const a = k*2.1 + 1; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a)*(1 - b.a)*22, y + Math.sin(a)*(1 - b.a)*22); ctx.stroke(); } }
+    else { ctx.strokeStyle = `rgba(95,208,168,${b.a})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, (1 - b.a)*18 + 3, 0, Math.PI*2); ctx.stroke(); }
+  }
+  ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillStyle = 'rgba(238,242,255,.8)';
+  ctx.fillStyle = '#ff7a6e'; ctx.fillText('✕ 半路衰變', w - 190, gy + 30); ctx.fillStyle = '#5fd0a8'; ctx.fillText('○ 抵達地面', w - 100, gy + 30);
+}
+
+// =========== TAB 2: two points of view ===========
+const V = {beta:.999, t0:0};
+function setupFrames(){
+  $('#dock').innerHTML = `<div class="sl" style="max-width:560px"><span>μ 子速度</span><input id="vS" type="range" min="0" max="1000" value="${sFromB(V.beta)}"><output id="vO"></output></div><button id="vRe" class="pri">從頭播放</button>`;
+  $('#vS').oninput = e => { V.beta = bFromS(+e.target.value); V.t0 = performance.now(); $('#vO').textContent = fmtB(V.beta) + ' c'; };
+  $('#vRe').onclick = () => V.t0 = performance.now();
+  $('#vO').textContent = fmtB(V.beta) + ' c'; V.t0 = performance.now();
+}
+function clockFace(x, y, r, frac, label, val, col){
+  ctx.fillStyle = 'rgba(10,15,36,.8)'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+  const a = -Math.PI/2 + frac*Math.PI*2*3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a)*r*.8, y + Math.sin(a)*r*.8); ctx.stroke();
+  ctx.fillStyle = col; ctx.font = '700 13px "Rubik", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(val, x, y + r + 16);
+  ctx.fillStyle = 'rgba(238,242,255,.8)'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText(label, x, y - r - 6); ctx.textAlign = 'start';
+}
+function drawFrames(now){
+  const dockH = $('#dock').offsetHeight || 60, top = 64, h = H - dockH - top - 60, gap = 16, pw = (W - gap*3)/2;
+  const g = gammaOf(V.beta), T = H0/(V.beta*C), tau = T/g;
+  const dur = 6, u = Math.min(1, ((now - V.t0)/1000)/dur), t = u*T, tm = t/g;
+  const survive = Math.exp(-tau/TAU);
+  ctx.fillStyle = '#18203f'; ctx.fillRect(0, 0, W, H);
+  // headers
+  ctx.font = '700 16px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#eef2ff';
+  ctx.fillText('從地面看', gap, 26); ctx.fillText('從 μ 子看', gap*2 + pw, 26);
+  ctx.font = '13px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#9fa9cf';
+  ctx.fillText(`大氣層 15 公里，μ 子的時間變慢 ${g.toFixed(1)} 倍`, gap, 46);
+  ctx.fillText(`大氣層被壓扁成 ${(H0/g).toFixed(H0/g < 1 ? 2 : 1)} 公里，朝 μ 子衝過來`, gap*2 + pw, 46);
+  const kmY = (alt, y0) => y0 + (H0 - alt)/H0*h;
+  // left panel: earth frame
+  const lx = gap, ly = top; sky(lx, ly, pw, h); const gy = kmY(0, ly); ground(lx, gy, pw);
+  const my = kmY(H0 - V.beta*C*t, ly), mx = lx + pw*.42;
+  ctx.fillStyle = '#ffb547'; ctx.beginPath(); ctx.arc(mx, my, 6, 0, Math.PI*2); ctx.fill();
+  clockFace(lx + pw*.78, ly + 70, 26, t/T, '地球時鐘', t.toFixed(1) + ' μs', '#5fd0a8');
+  clockFace(mx + 46, Math.max(ly + 56, Math.min(my, gy - 60)), 20, tm/T, 'μ 子手錶', tm.toFixed(2) + ' μs', '#ffb547');
+  // right panel: muon frame (same km scale)
+  const rx = gap*2 + pw; ctx.fillStyle = '#0b1030'; ctx.fillRect(rx, ly, pw, h);
+  const mY = ly + h*.18, thick = H0/g/H0*h, dist = V.beta*C*t; // ground rises toward the muon
+  const groundY = mY + (H0 - dist)/H0*h*(1/g) + 0; // ground position in contracted units
+  const atmTop = groundY - thick;
+  const gr = ctx.createLinearGradient(0, atmTop, 0, groundY); gr.addColorStop(0, '#24386f'); gr.addColorStop(1, '#8cc3ec');
+  ctx.save(); ctx.beginPath(); ctx.rect(rx, ly, pw, h + 40); ctx.clip();
+  ctx.fillStyle = gr; ctx.fillRect(rx, atmTop, pw, Math.max(1, thick));
+  ground(rx, groundY, pw);
+  ctx.restore();
+  ctx.fillStyle = '#ffb547'; ctx.beginPath(); ctx.arc(rx + pw*.42, mY, 6, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(238,242,255,.85)'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('μ 子（自己不動）', rx + pw*.42 + 12, mY + 4);
+  if (groundY > mY + 30){ ctx.strokeStyle = 'rgba(238,242,255,.5)'; ctx.beginPath(); ctx.moveTo(rx + pw*.2, groundY - 6); ctx.lineTo(rx + pw*.2, groundY - 30); ctx.stroke(); ctx.fillText('↑ 地球衝過來', rx + pw*.08, groundY - 36); }
+  clockFace(rx + pw*.78, ly + 70, 26, tm/T, 'μ 子手錶（正常速度）', tm.toFixed(2) + ' μs', '#ffb547');
+  // verdict
+  ctx.font = '700 14px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  const vy = ly + h + 52;
+  ctx.fillStyle = u >= 1 ? '#5fd0a8' : 'rgba(238,242,255,.75)';
+  ctx.fillText(u >= 1 ? `抵達地面！兩邊的 μ 子手錶都顯示 ${tau.toFixed(2)} 微秒：結果一模一樣。存活機率約 ${(survive*100).toFixed(survive < .01 ? 2 : 0)}%` : '播放中……比較兩邊的 μ 子手錶', W/2, vy);
+  ctx.textAlign = 'start';
+  $('#read').innerHTML = '';
+}
+
+// =========== TAB 3: Mount Washington ===========
+const MT = {guess:200, state:'guess', t:0, top:0, bot:0, rain:[]};
+const MT_TOP = 563, MT_MEAS = 408, MT_H = 1.907, MT_B = .9952;
+const MT_T = MT_H/(MT_B*C), MT_CLASS = Math.round(MT_TOP*Math.exp(-MT_T/TAU)), MT_REL = Math.round(MT_TOP*Math.exp(-MT_T/gammaOf(MT_B)/TAU));
+function setupMount(){
+  $('#dock').innerHTML = `<div class="sl" style="max-width:520px"><span>你猜海平面一小時會測到幾個？</span><input id="gS" type="range" min="0" max="563" value="${MT.guess}"><output id="gO">${MT.guess} 個</output></div>
+    <button id="gGo" class="pri">開始實驗（快轉一小時）</button><button id="gRe">重來</button>`;
+  $('#gS').oninput = e => { MT.guess = +e.target.value; $('#gO').textContent = MT.guess + ' 個'; };
+  $('#gGo').onclick = () => { if (MT.state !== 'guess') return; MT.state = 'run'; MT.t = 0; MT.top = 0; MT.bot = 0; $('#gS').disabled = true; };
+  $('#gRe').onclick = () => { MT.state = 'guess'; MT.t = 0; MT.top = 0; MT.bot = 0; MT.rain = []; $('#gS').disabled = false; };
+}
+function updateMount(dt){
+  if (MT.state === 'run'){
+    MT.t = Math.min(1, MT.t + dt/7);
+    MT.top = Math.round(MT_TOP*MT.t); MT.bot = Math.round(MT_MEAS*MT.t);
+    if (Math.random() < dt*30) MT.rain.push({x:Math.random(), y:0, v:.6 + Math.random()*.3, dies:Math.random() > MT_MEAS/MT_TOP ? .3 + Math.random()*.6 : 2});
+    if (MT.t >= 1){ MT.state = 'done'; const d = Math.abs(MT.guess - MT_MEAS);
+      toast(d <= 40 ? `厲害！你猜 ${MT.guess} 個，實測 408 個，你用的是相對論的直覺！` : MT.guess < 100 ? `你猜 ${MT.guess} 個，很接近「沒有相對論」的預測（約 ${MT_CLASS} 個），但實測是 408 個！` : `你猜 ${MT.guess} 個，實測是 408 個。`, 7000); }
+  }
+  MT.rain.forEach(r => r.y += dt*r.v); MT.rain = MT.rain.filter(r => r.y < Math.min(1, r.dies));
+  $('#read').innerHTML = `<div class="big">${MT.top}<small>山頂偵測器（每小時）</small></div>
+    <div class="line">海平面偵測器：<b>${MT.state === 'guess' ? '？' : MT.bot}</b> 個</div>
+    <div class="sub">只計算速度約 0.995 倍光速的 μ 子</div>`;
+}
+function drawMount(){
+  const dockH = $('#dock').offsetHeight || 60, h = H - dockH - 20;
+  sky(0, 0, W, h + 20);
+  const sea = h - 40, peakY = sea - (h - 120)*.82, peakX = W*.25;
+  // mountain (Mount Washington, New Hampshire)
+  ctx.fillStyle = '#3d4f6e'; ctx.beginPath(); ctx.moveTo(peakX - W*.24, sea); ctx.lineTo(peakX, peakY); ctx.lineTo(peakX + W*.3, sea); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#e8eef8'; ctx.beginPath(); ctx.moveTo(peakX - 30, peakY + 40); ctx.lineTo(peakX, peakY); ctx.lineTo(peakX + 34, peakY + 40); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1d3a5c'; ctx.fillRect(0, sea, W, h - sea + 20);
+  // detectors
+  const det = (x, y, label, n, col) => { ctx.fillStyle = col; ctx.fillRect(x - 18, y - 14, 36, 14); ctx.fillStyle = '#eef2ff'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillText(label, x + 24, y - 2); };
+  det(peakX, peakY, '山頂 1907 公尺', MT.top, '#ffb547');
+  det(peakX + W*.22, sea, '海平面', MT.bot, '#5fd0a8');
+  // muon rain (schematic)
+  for (const r of MT.rain){ const x = peakX - 40 + r.x*(W*.22 + 80), y = peakY - 60 + r.y*(sea - peakY + 60); ctx.fillStyle = '#ffb547'; ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI*2); ctx.fill(); }
+  // comparison bars
+  const bx = W*.66, bw = Math.min(W*.3, 300), by = 120, bh = 22, max = MT_TOP;
+  const bars = [['山頂實測', MT_TOP, '#ffb547', true], ['沒有相對論的預測', MT_CLASS, '#ff7a6e', MT.state === 'done'], ['相對論的預測', MT_REL, '#a98bff', MT.state === 'done'], ['你的猜測', MT.guess, '#eef2ff', true], ['海平面實測', MT_MEAS, '#5fd0a8', MT.state === 'done']];
+  ctx.font = '13px "Noto Sans TC", sans-serif';
+  bars.forEach(([lab, v, col, show], i) => {
+    const y = by + i*(bh + 22);
+    ctx.fillStyle = 'rgba(238,242,255,.85)'; ctx.fillText(lab, bx, y - 4);
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(bx, y, bw, bh);
+    if (show){ ctx.fillStyle = col; ctx.fillRect(bx, y, bw*v/max, bh); ctx.fillStyle = '#0a0f24'; ctx.font = '700 13px "Rubik", sans-serif'; ctx.fillText(v + ' 個', bx + 6, y + 16); ctx.font = '13px "Noto Sans TC", sans-serif'; }
+    else { ctx.fillStyle = 'rgba(238,242,255,.6)'; ctx.fillText('？', bx + 6, y + 16); }
+  });
+  ctx.fillStyle = 'rgba(238,242,255,.7)'; ctx.font = '12px "Noto Sans TC", sans-serif';
+  ctx.fillText(`下山 1907 公尺要飛 ${MT_T.toFixed(1)} 微秒，μ 子的手錶只走了 ${(MT_T/gammaOf(MT_B)).toFixed(2)} 微秒`, bx, by + bars.length*(bh + 22) + 6);
+  if (MT.state === 'done') ctx.fillText('實測比預測少一點，主要是 μ 子穿過空氣時會慢慢減速。', bx, by + bars.length*(bh + 22) + 24);
+}
+
+// =========== shell ===========
+function setTab(t){
+  tab = t; document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  if (t === 'rain') setupRain(); else if (t === 'frames') setupFrames(); else setupMount();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+const view = $('#view');
+function resize(){ const r = view.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); }
+new ResizeObserver(resize).observe(view); resize();
+setTab('rain');
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (tab === 'rain'){ updateRain(dt); drawRain(); }
+  else if (tab === 'frames') drawFrames(now);
+  else { updateMount(dt); drawMount(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

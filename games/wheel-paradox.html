@@ -1,0 +1,444 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>車輪悖論之謎</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: cart workshop — canvas panes with tabs left, explainer rail right; stacks on phones. Single light look. */
+:root{
+  --paper:#f3efe6;
+  --sheet:#fffdf8;
+  --rule:#dbd2bf;
+  --ink:#22262f;
+  --dim:#6c6a64;
+  --big:#c8553d;    /* big circle */
+  --small:#2f6f9f;  /* small circle */
+  --gold:#d99a21;
+  --green:#3c8d5a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--big);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#e9e2d2;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--big)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(255,253,248,.94);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:calc(100% - 24px)}
+.ro b{font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.quiz{position:absolute;right:12px;bottom:10px;width:min(300px,calc(100% - 24px));background:rgba(255,253,248,.97);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;font-size:13.5px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.quiz h3{margin:0 0 4px;font-family:var(--f-disp);font-size:16px}
+.quiz p{margin:0 0 8px}
+.quiz .opts{display:flex;flex-wrap:wrap;gap:6px}
+.quiz .opts button{min-width:44px;background:#fff;border:1px solid var(--rule);border-radius:8px;padding:5px 10px;font-family:var(--f-num);font-weight:700}
+.quiz .opts button.right{background:var(--green);border-color:var(--green);color:#fff}
+.quiz .opts button.wrong{background:#f6dcd5;border-color:var(--big);color:var(--big)}
+.dock{background:#f8f4ea;border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--big);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.6em;text-align:right}
+.seg{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{background:transparent;border:0;padding:7px 12px;font-size:14px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--big);width:16px;height:16px}
+
+.rail{background:#faf6ee;border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.cb{color:var(--big);font-weight:700}.cs{color:var(--small);font-weight:700}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:4.2em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--big)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:56vh;min-height:360px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .quiz{bottom:10px;right:10px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="roll" aria-pressed="true">滾一圈看看<small>兩個圓走一樣遠？</small></button>
+      <button data-tab="poly" aria-pressed="false">伽利略的多邊形<small>祕密藏在空隙裡</small></button>
+      <button data-tab="coin" aria-pressed="false">硬幣繞圈<small>另一個車輪悖論</small></button>
+    </nav>
+    <div class="view">
+      <!-- roll -->
+      <div class="pane" id="p-roll">
+        <div class="cv"><canvas id="c1"></canvas><div class="ro" id="ro1"></div><div class="toast" id="t1"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="rPlay">▶ 滾一圈</button>
+            <button class="btn" id="rReset">↺ 回到起點</button>
+            <div class="seg" id="rMode"><button data-m="big" aria-pressed="true">大圓貼地滾</button><button data-m="small" aria-pressed="false">小圓貼軌道滾</button></div>
+          </div>
+          <div class="row">
+            <label class="sl">小圓半徑<input id="rRatio" type="range" min="20" max="140" value="50"><b id="rRatioV"></b></label>
+            <label class="chk"><input type="checkbox" id="rTrace" checked>畫出點的軌跡</label>
+            <label class="chk"><input type="checkbox" id="rVel" checked>速度箭頭</label>
+          </div>
+        </div>
+      </div>
+      <!-- polygons -->
+      <div class="pane" id="p-poly" hidden>
+        <div class="cv"><canvas id="c2"></canvas><div class="ro" id="ro2"></div><div class="toast" id="t2"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="pPlay">▶ 滾一圈</button>
+            <button class="btn" id="pReset">↺ 回到起點</button>
+            <label class="sl">邊數<input id="pN" type="range" min="3" max="48" value="6"><b id="pNV"></b></label>
+          </div>
+        </div>
+      </div>
+      <!-- coins -->
+      <div class="pane" id="p-coin" hidden>
+        <div class="cv"><canvas id="c3"></canvas><div class="ro" id="ro3"></div><div class="quiz" id="quiz"></div><div class="toast" id="t3"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">大硬幣</span>
+            <div class="seg" id="cK"><button data-k="1" aria-pressed="true">一樣大</button><button data-k="2" aria-pressed="false">2 倍大</button><button data-k="3" aria-pressed="false">3 倍大</button></div>
+            <div class="seg" id="cSide"><button data-s="out" aria-pressed="true">繞外面</button><button data-s="in" aria-pressed="false">繞裡面</button></div>
+          </div>
+          <div class="row">
+            <button class="btn pri" id="cPlay">▶ 繞一圈</button>
+            <button class="btn" id="cReset">↺ 回到起點</button>
+            <label class="chk"><input type="checkbox" id="cGhost" checked>每轉完一圈留下影子</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>車輪悖論之謎</h1>
+    <p class="lede">大圓和小圓黏在一起滾一圈，走的距離一樣長。可是它們的周長明明不一樣啊？</p>
+
+    <div class="card">
+      <h2>兩千多年前的怪問題</h2>
+      <p>古希臘的《機械問題》（傳說是亞里斯多德或他的學生寫的）問：把一個<span class="cs">小圓</span>固定在<span class="cb">大圓</span>中心，一起滾一圈。</p>
+      <p><span class="cb">大圓</span>前進的距離＝大圓周長，很合理。但<span class="cs">小圓</span>也轉了剛好一圈，也前進一樣遠，難道小圓周長＝大圓周長？</p>
+    </div>
+
+    <div class="card">
+      <h2>謎底：小圓一邊滾、一邊滑</h2>
+      <p>只有<b>真的貼著地面</b>的那個圓才是「純滾動」。另一個圓的最低點其實在<b>滑動</b>（看看「滾一圈看看」的速度箭頭）。</p>
+      <p>所以把小圓的顏色「印」在軌道上，每一段都會被<b>拉長</b>；換成小圓貼著軌道滾，大圓的顏色就會被<b>擠短</b>。</p>
+      <div class="fx">最低點的速度 = 前進速度 − 轉速 × 半徑</div>
+      <p>只有半徑剛好等於「貼地圓」的半徑，這個速度才是 0。</p>
+    </div>
+
+    <div class="card">
+      <h2>伽利略的妙招（1638）</h2>
+      <p>伽利略把圓換成多邊形來想：大六邊形一條邊接一條邊貼地翻滾，裡面的小六邊形每翻一次，就會<b>跳過一個小空隙</b>。</p>
+      <p>邊數越多，空隙越小但越多。圓就像有「無限多個無限小的空隙」，加起來剛好補上周長的差。</p>
+    </div>
+
+    <div class="card">
+      <h2>火車上往後跑的點</h2>
+      <p>火車輪子內側有一圈比較大的「輪緣」，伸到鐵軌頂面下面，防止出軌。把小圓半徑拉到大於 1，就會看到：火車往前開時，輪緣最低的那一點竟然在<b>往後</b>移動！</p>
+    </div>
+
+    <div class="card">
+      <h2>硬幣繞圈的陷阱</h2>
+      <p>拿兩枚一樣的硬幣，一枚繞著另一枚滾一圈，它自己轉了幾圈？答案是 <b>2 圈</b>，不是 1 圈！</p>
+      <div class="fx">繞外面：大半徑 ÷ 小半徑 ＋ 1 圈　　繞裡面：− 1 圈</div>
+      <p>1982 年美國的 SAT 考試問：小圓半徑是大圓的 1/3，繞大圓外面一圈會轉幾圈？選項是 3/2、3、6、9/2、9，但正確答案是 <b>4</b>，根本不在選項裡！有學生寫信指出，這題最後只好不計分。</p>
+    </div>
+
+    <div class="card">
+      <h2>地球也一樣</h2>
+      <p>地球繞太陽一圈要 365 天多一點，但相對遠方的星星，地球其實自轉了 366 圈多。多出來的那一圈，就是「繞著走」本身帶來的，和硬幣繞圈一模一樣。</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>約前 300</b><span>《機械問題》寫下大小圓的車輪悖論</span></li>
+        <li><b>1638</b><span>伽利略在《兩門新科學》中用多邊形討論這個問題</span></li>
+        <li><b>1982</b><span>SAT 考題「硬幣繞圈」出錯，沒有正確選項</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const BIG='#c8553d',SMALL='#2f6f9f',INK='#22262f';
+const PAL=['#e8584a','#f08a3c','#f2c14e','#8cc152','#3fb27f','#2ab7b3','#3c96d6','#5a6fd6','#8e62c8','#c45aa6','#d9506d','#a0785a'];
+function arrow(x,a,y0,dx,col,lw=2.5){a.strokeStyle=col;a.fillStyle=col;a.lineWidth=lw;a.beginPath();a.moveTo(x,y0);a.lineTo(x+dx,y0);a.stroke();
+  if(Math.abs(dx)>4){const s=Math.sign(dx);a.beginPath();a.moveTo(x+dx,y0);a.lineTo(x+dx-s*8,y0-5);a.lineTo(x+dx-s*8,y0+5);a.closePath();a.fill();}}
+let TAB='roll';
+
+/* ======================= 1. ROLL ======================= */
+const c1=$('#c1'),x1=c1.getContext('2d');
+const RO={R:1,r:0.5,mode:'big',phi:0,run:false,stampB:[],stampS:[],trB:[],trS:[],done:false};
+function rho(){return RO.mode==='big'?RO.R:RO.r;}
+function rollReset(){RO.phi=0;RO.run=false;RO.done=false;RO.stampB=[];RO.stampS=[];RO.trB=[];RO.trS=[];}
+function colorAt(phi){ // colour index of the material point at the bottom
+  const b=((phi%(2*Math.PI))+2*Math.PI)%(2*Math.PI);return Math.floor(b/(2*Math.PI)*12)%12;}
+function stamp(arr,x,ci){const L=arr[arr.length-1];if(L&&L.c===ci&&Math.abs(L.x1-x)<0.2){L.x1=x;}else arr.push({x0:L?L.x1:x,x1:x,c:ci});}
+function rollView(gm){
+  const p=rho(),xmax=2*Math.PI*p+1.6,xmin=-1.6;
+  const ytop=RO.R+Math.max(RO.R,RO.r)+0.25,ybot=Math.min(0,RO.R-RO.r)-0.55;
+  const top=104,bot=18,s=Math.min((gm.w-30)/(xmax-xmin),(gm.h-top-bot)/(ytop-ybot));
+  const ox=(gm.w-(xmax-xmin)*s)/2-xmin*s,oy=top+(gm.h-top-bot-(ytop-ybot)*s)/2+ytop*s;
+  return{s,X:x=>ox+x*s,Y:y=>oy-y*s};
+}
+function rollStep(dphi){
+  const p=rho();
+  const target=Math.min(2*Math.PI,RO.phi+dphi);
+  const n=Math.max(1,Math.ceil((target-RO.phi)/0.01));
+  for(let i=0;i<n;i++){
+    RO.phi+=(target-RO.phi)/(n-i);
+    const cx=p*RO.phi,ci=colorAt(RO.phi);
+    stamp(RO.stampB,cx,ci);stamp(RO.stampS,cx,ci);
+    const a=-Math.PI/2-RO.phi;
+    RO.trB.push([cx+RO.R*Math.cos(a),RO.R+RO.R*Math.sin(a)]);
+    RO.trS.push([cx+RO.r*Math.cos(a),RO.R+RO.r*Math.sin(a)]);
+  }
+  if(RO.phi>=2*Math.PI-1e-9&&!RO.done){RO.done=true;RO.run=false;rollDone();}
+}
+function rollDone(){
+  const p=rho(),d=2*Math.PI*p,cB=2*Math.PI*RO.R,cS=2*Math.PI*RO.r;
+  if(Math.abs(RO.r-RO.R)<0.01){toast('#t1','兩個圓一樣大，所以兩個都是純滾動，沒有悖論。');return;}
+  const slipper=RO.mode==='big'?'小圓':'大圓',slipC=RO.mode==='big'?cS:cB;
+  toast('#t1',`兩個圓都轉了 1 圈，都前進 ${d.toFixed(2)}。但${slipper}的周長只有 ${slipC.toFixed(2)}，差的 ${Math.abs(d-slipC).toFixed(2)} 是靠<b>滑動</b>補上的！`,5200);
+}
+function drawRoll(){
+  const gm=fit(c1),d=gm.d,V=rollView(gm),a=x1;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const R=RO.R,r=RO.r,p=rho(),cx=p*RO.phi,cy=R,railY=R-r;
+  // ground & rail
+  const gx0=V.X(-1.5),gx1=V.X(2*Math.PI*p+1.5);
+  a.fillStyle='#ece4d2';a.fillRect(gx0,V.Y(0),gx1-gx0,12);
+  a.strokeStyle=BIG;a.lineWidth=2;a.beginPath();a.moveTo(gx0,V.Y(0));a.lineTo(gx1,V.Y(0));a.stroke();
+  a.strokeStyle=SMALL;a.setLineDash(r>R?[6,5]:[]);a.beginPath();a.moveTo(gx0,V.Y(railY));a.lineTo(gx1,V.Y(railY));a.stroke();a.setLineDash([]);
+  a.font='12px "Noto Sans TC",sans-serif';a.fillStyle=BIG;a.fillText(RO.mode==='big'?'地面（大圓貼著滾）':'地面（大圓在這裡滑）',gx0+4,V.Y(0)+26);
+  a.fillStyle=SMALL;a.fillText(r>R?'鐵軌頂面以下（輪緣）':(RO.mode==='small'?'軌道（小圓貼著滾）':'小圓最低點的路線'),gx0+4,V.Y(railY)-8);
+  // start / end marks
+  a.strokeStyle='rgba(34,38,47,.35)';a.lineWidth=1;a.setLineDash([3,4]);
+  for(const x of [0,2*Math.PI*p]){a.beginPath();a.moveTo(V.X(x),V.Y(Math.min(0,railY)-0.4));a.lineTo(V.X(x),V.Y(R+Math.max(R,r)+0.1));a.stroke();}
+  a.setLineDash([]);
+  // stamps (colour prints)
+  const drawStamps=(arr,y,off)=>{for(const s of arr){a.fillStyle=PAL[s.c];a.fillRect(V.X(Math.min(s.x0,s.x1)),V.Y(y)+off,Math.max(1,Math.abs(s.x1-s.x0)*V.s),6);}};
+  drawStamps(RO.stampB,0,3);drawStamps(RO.stampS,railY,-9);
+  // traces
+  if($('#rTrace').checked){
+    const tr=(arr,col)=>{a.strokeStyle=col;a.lineWidth=2;a.globalAlpha=.75;a.beginPath();arr.forEach((q,i)=>i?a.lineTo(V.X(q[0]),V.Y(q[1])):a.moveTo(V.X(q[0]),V.Y(q[1])));a.stroke();a.globalAlpha=1;};
+    tr(RO.trB,BIG);tr(RO.trS,SMALL);
+  }
+  // wheel
+  const ring=(rad,lw)=>{for(let k=0;k<12;k++){const b0=k/12*2*Math.PI,b1=(k+1)/12*2*Math.PI;
+      // body angle b -> world angle b - phi - π/2 measured so that b=0 starts at the bottom at phi=0
+      a.strokeStyle=PAL[k];a.lineWidth=lw;a.beginPath();
+      a.arc(V.X(cx),V.Y(cy),rad*V.s,-(-Math.PI/2-RO.phi+b0),-(-Math.PI/2-RO.phi+b1),true);a.stroke();}};
+  a.fillStyle='rgba(200,85,61,.06)';a.beginPath();a.arc(V.X(cx),V.Y(cy),R*V.s,0,7);a.fill();
+  // spokes
+  a.strokeStyle='rgba(34,38,47,.35)';a.lineWidth=2;
+  for(let k=0;k<6;k++){const ang=-Math.PI/2-RO.phi+k*Math.PI/3,m=Math.max(R,r);a.beginPath();a.moveTo(V.X(cx),V.Y(cy));a.lineTo(V.X(cx+m*Math.cos(ang)),V.Y(cy+m*Math.sin(ang)));a.stroke();}
+  ring(R,9);ring(r,7);
+  a.strokeStyle=BIG;a.lineWidth=1.5;a.beginPath();a.arc(V.X(cx),V.Y(cy),R*V.s+5.5,0,7);a.stroke();
+  a.strokeStyle=SMALL;a.beginPath();a.arc(V.X(cx),V.Y(cy),r*V.s+4.5,0,7);a.stroke();
+  a.fillStyle=INK;a.beginPath();a.arc(V.X(cx),V.Y(cy),5,0,7);a.fill();
+  // velocity arrows at the lowest points (ω = 1 unit)
+  if($('#rVel').checked){
+    const k=34; // px per unit speed
+    const vC=p,vb=p-R,vs=p-r;
+    arrow(V.X(cx),a,V.Y(cy)-14,vC*k,INK,2.5);
+    a.fillStyle=INK;a.font='11.5px "Noto Sans TC",sans-serif';a.fillText('中心',V.X(cx)+4,V.Y(cy)-20);
+    const lab=(v,y,col,name)=>{arrow(V.X(cx),a,y,v*k,col,3);a.fillStyle=col;a.font='700 11.5px "Noto Sans TC",sans-serif';
+      const t=Math.abs(v)<1e-6?`${name}最低點：速度 0（純滾動）`:v>0?`${name}最低點：往前滑`:`${name}最低點：往後跑！`;a.fillText(t,V.X(cx)+Math.max(R,r)*V.s+14,y+4);};
+    lab(vb,V.Y(0)-16,BIG,'大圓');lab(vs,V.Y(railY)+(r>R?18:-18),SMALL,'小圓');
+  }
+  const turns=RO.phi/(2*Math.PI),dist=p*RO.phi;
+  $('#ro1').innerHTML=`<div class="big">轉了 <b>${turns.toFixed(2)}</b> 圈，前進 <b>${dist.toFixed(2)}</b></div>`+
+   `<div><span class="cb">大圓周長 ${(2*Math.PI*R).toFixed(2)}</span>　<span class="cs">小圓周長 ${(2*Math.PI*r).toFixed(2)}</span></div>`+
+   `<div style="color:var(--dim)">彩色印子＝圓周「印」在線上的樣子：${RO.mode==='big'?'大圓的印子剛好，小圓的被拉長':'小圓的印子剛好，大圓的被擠短'}</div>`;
+}
+let lastT=performance.now();
+function rollTick(dt){if(RO.run)rollStep(dt*2*Math.PI/6);drawRoll();}
+$('#rPlay').onclick=()=>{if(RO.done||RO.phi>=2*Math.PI-1e-9)rollReset();RO.run=!RO.run;};
+$('#rReset').onclick=rollReset;
+$('#rRatio').oninput=()=>{RO.r=+$('#rRatio').value/100;$('#rRatioV').textContent=RO.r.toFixed(2)+' 倍';rollReset();if(RO.r>1.001)toast('#t1','小圓比大圓還大了：這就像火車輪的「輪緣」，注意它最低點往哪裡跑！');};
+document.querySelectorAll('#rMode button').forEach(b=>b.onclick=()=>{RO.mode=b.dataset.m;document.querySelectorAll('#rMode button').forEach(x=>x.setAttribute('aria-pressed',x===b));rollReset();});
+$('#rTrace').onchange=$('#rVel').onchange=()=>{};
+
+/* ======================= 2. POLYGONS ======================= */
+const c2=$('#c2'),x2=c2.getContext('2d');
+const PG={n:6,k:0.5,step:0,alpha:0,run:false,flats:[]};
+function polyReset(){PG.step=0;PG.alpha=0;PG.run=false;PG.flats=[0];}
+function polyState(){ // centre + rotation for current step/alpha
+  const n=PG.n,S=2*Math.sin(Math.PI/n),ap=Math.cos(Math.PI/n);
+  const c0=[PG.step*S,ap],piv=[c0[0]+S/2,0];
+  const t=-PG.alpha; // clockwise
+  const dx=c0[0]-piv[0],dy=c0[1]-piv[1];
+  const c=[piv[0]+dx*Math.cos(t)-dy*Math.sin(t),piv[1]+dx*Math.sin(t)+dy*Math.cos(t)];
+  const rot=-PG.step*2*Math.PI/n+t;
+  return{c,rot,S,ap};
+}
+function polyVerts(c,rot,R){const n=PG.n,V=[];for(let i=0;i<n;i++){const a=-Math.PI/2+Math.PI/n+i*2*Math.PI/n+rot;V.push([c[0]+R*Math.cos(a),c[1]+R*Math.sin(a)]);}return V;}
+function polyView(gm){const n=PG.n,S=2*Math.sin(Math.PI/n),L=n*S;const xmin=-1.3,xmax=L+1.3,ytop=2.25,ybot=-0.45;
+  const top=110,bot=18,s=Math.min((gm.w-30)/(xmax-xmin),(gm.h-top-bot)/(ytop-ybot));
+  const ox=(gm.w-(xmax-xmin)*s)/2-xmin*s,oy=top+(gm.h-top-bot-(ytop-ybot)*s)/2+ytop*s;return{s,X:x=>ox+x*s,Y:y=>oy-y*s};}
+function polyTick(dt){
+  if(PG.run){
+    PG.alpha+=dt*2*Math.PI/6*Math.max(1,PG.n/8)*0.9;
+    const turn=2*Math.PI/PG.n;
+    while(PG.alpha>=turn){PG.alpha-=turn;PG.step++;PG.flats.push(PG.step);
+      if(PG.step>=PG.n){PG.step=PG.n;PG.alpha=0;PG.run=false;polyDone();break;}}
+  }
+  drawPoly();
+}
+function polyDone(){const n=PG.n,S=2*Math.sin(Math.PI/n);toast('#t2',`小${n}邊形跳過了 ${n} 個空隙，加起來 ${(n*S*(1-PG.k)).toFixed(2)}，剛好補上兩個周長的差！`,4800);}
+function drawPoly(){
+  const gm=fit(c2),d=gm.d,V=polyView(gm),a=x2;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const n=PG.n,k=PG.k,st=polyState(),S=st.S,ap=st.ap,L=n*S,railY=ap*(1-k);
+  a.strokeStyle=BIG;a.lineWidth=2;a.beginPath();a.moveTo(V.X(-1.2),V.Y(0));a.lineTo(V.X(L+1.2),V.Y(0));a.stroke();
+  a.strokeStyle='rgba(47,111,159,.4)';a.setLineDash([4,4]);a.beginPath();a.moveTo(V.X(-1.2),V.Y(railY));a.lineTo(V.X(L+1.2),V.Y(railY));a.stroke();a.setLineDash([]);
+  // prints of flat sides
+  for(const j of PG.flats){const cx=j*S;
+    a.fillStyle=PAL[j%12];a.fillRect(V.X(cx-S/2),V.Y(0)+2,S*V.s,7);
+    a.fillRect(V.X(cx-k*S/2),V.Y(railY)-9,k*S*V.s,7);}
+  // gaps labels (only when few)
+  if(n<=10){a.fillStyle='#8a8578';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='center';
+    for(const j of PG.flats){if(j===0)continue;a.fillText('空隙',V.X(j*S-S/2),V.Y(railY)-14);}a.textAlign='left';}
+  // polygons
+  const big=polyVerts(st.c,st.rot,1),sm=polyVerts(st.c,st.rot,k);
+  a.fillStyle='rgba(200,85,61,.10)';a.strokeStyle=BIG;a.lineWidth=3.5;a.beginPath();big.forEach((p,i)=>i?a.lineTo(V.X(p[0]),V.Y(p[1])):a.moveTo(V.X(p[0]),V.Y(p[1])));a.closePath();a.fill();a.stroke();
+  a.fillStyle='rgba(47,111,159,.12)';a.strokeStyle=SMALL;a.lineWidth=3;a.beginPath();sm.forEach((p,i)=>i?a.lineTo(V.X(p[0]),V.Y(p[1])):a.moveTo(V.X(p[0]),V.Y(p[1])));a.closePath();a.fill();a.stroke();
+  for(let i=0;i<n;i++){a.strokeStyle='rgba(34,38,47,.25)';a.lineWidth=1;a.beginPath();a.moveTo(V.X(st.c[0]),V.Y(st.c[1]));a.lineTo(V.X(big[i][0]),V.Y(big[i][1]));a.stroke();}
+  // pivot
+  const piv=[PG.step*S+S/2,0];if(PG.step<n){a.fillStyle=INK;a.beginPath();a.arc(V.X(piv[0]),V.Y(0),4.5,0,7);a.fill();}
+  // ghost circles
+  a.strokeStyle='rgba(34,38,47,.15)';a.setLineDash([3,4]);a.beginPath();a.arc(V.X(st.c[0]),V.Y(st.c[1]),V.s,0,7);a.stroke();a.beginPath();a.arc(V.X(st.c[0]),V.Y(st.c[1]),k*V.s,0,7);a.stroke();a.setLineDash([]);
+  const gaps=Math.max(0,PG.flats.length-1);
+  $('#ro2').innerHTML=`<div class="big">${n} 邊形版本的車輪</div>`+
+    `<div><span class="cb">大${n}邊形一邊長 ${S.toFixed(3)}</span>，<span class="cs">小${n}邊形一邊長 ${(k*S).toFixed(3)}</span></div>`+
+    `<div>每翻一次，小${n}邊形跳過一個 <b>${(S*(1-k)).toFixed(3)}</b> 的空隙；已經跳了 <b>${gaps}</b> 次</div>`+
+    `<div style="color:var(--dim)">邊數越多：空隙越小，但越多。總和永遠是 <b>${(n*S*(1-k)).toFixed(3)}</b>（圓的話是 ${(2*Math.PI*(1-k)).toFixed(3)}）</div>`;
+}
+$('#pPlay').onclick=()=>{if(PG.step>=PG.n)polyReset();PG.run=!PG.run;};
+$('#pReset').onclick=polyReset;
+$('#pN').oninput=()=>{PG.n=+$('#pN').value;$('#pNV').textContent=PG.n+' 邊';polyReset();};
+
+/* ======================= 3. COINS ======================= */
+const c3=$('#c3'),x3=c3.getContext('2d');
+const CO={K:1,side:'out',psi:0,run:false,answered:false,ghosts:[]};
+function coinTurns(){return CO.side==='out'?CO.K+1:CO.K-1;}
+function coinReset(){CO.psi=0;CO.run=false;CO.ghosts=[];}
+function coinQuiz(){
+  const right=coinTurns(),q=$('#quiz');
+  if(CO.side==='in'&&CO.K===1){q.innerHTML='<h3>一樣大的硬幣</h3><p>一樣大的硬幣塞不進去裡面繞，請選「2 倍大」或「3 倍大」。</p>';return;}
+  const opts=[...new Set([right,CO.K,CO.K*2,CO.K+2,Math.max(1,CO.K-1),CO.K+1,CO.K-1].filter(v=>v>0))].sort((a,b)=>a-b).slice(0,5);
+  if(!opts.includes(right)){opts.pop();opts.push(right);opts.sort((a,b)=>a-b);}
+  q.innerHTML=`<h3>先猜猜看</h3><p>小硬幣${CO.side==='out'?'繞著外面':'沿著裡面'}滾一整圈（不打滑），它自己會轉幾圈？</p><div class="opts">${opts.map(v=>`<button data-v="${v}">${v}</button>`).join('')}</div>`;
+  CO.answered=false;
+  q.querySelectorAll('button').forEach(b=>b.onclick=()=>{if(CO.answered)return;CO.answered=true;const v=+b.dataset.v;
+    b.classList.add(v===right?'right':'wrong');q.querySelector(`[data-v="${right}"]`).classList.add('right');
+    q.insertAdjacentHTML('beforeend',`<p style="margin:8px 0 0">${v===right?'答對了！':'答案是 '+right+' 圈。'}按「繞一圈」驗證，數數箭頭轉了幾次。</p>`);});
+}
+function coinView(gm){const K=CO.K,ext=CO.side==='out'?K+2:K;const top=96,bot=16,s=Math.min((gm.w-40)/(2*ext+0.4),(gm.h-top-bot)/(2*ext+0.4));return{s,cx:gm.w/2,cy:top+(gm.h-top-bot)/2};}
+function coinPose(psi){ // rolling coin radius 1, fixed radius K. psi = travel angle (0 at top), clockwise
+  const K=CO.K,D=CO.side==='out'?K+1:K-1;
+  const pos=[D*Math.sin(psi),D*Math.cos(psi)];
+  const rot=CO.side==='out'?psi*(K+1):-psi*(K-1); // clockwise rotation of the coin itself
+  return{pos,rot};
+}
+function drawCoinShape(a,x,y,R,rot,col,alpha,face){
+  a.globalAlpha=alpha;a.fillStyle=col;a.beginPath();a.arc(x,y,R,0,7);a.fill();
+  a.strokeStyle='rgba(0,0,0,.25)';a.lineWidth=2;a.stroke();
+  a.strokeStyle='rgba(255,255,255,.5)';a.lineWidth=1.5;a.beginPath();a.arc(x,y,R*0.82,0,7);a.stroke();
+  if(face){ // arrow pointing "up" in the coin frame
+    a.save();a.translate(x,y);a.rotate(rot);
+    a.fillStyle='#fff';a.strokeStyle='#fff';a.lineWidth=Math.max(2,R*0.12);
+    a.beginPath();a.moveTo(0,R*0.45);a.lineTo(0,-R*0.35);a.stroke();
+    a.beginPath();a.moveTo(0,-R*0.72);a.lineTo(-R*0.28,-R*0.3);a.lineTo(R*0.28,-R*0.3);a.closePath();a.fill();
+    a.restore();}
+  a.globalAlpha=1;
+}
+function drawCoin(){
+  const gm=fit(c3),d=gm.d,V=coinView(gm),a=x3;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const K=CO.K,ok=!(CO.side==='in'&&K===1);
+  // fixed coin
+  if(CO.side==='in'){a.fillStyle='#efe6cf';a.beginPath();a.arc(V.cx,V.cy,K*V.s,0,7);a.fill();a.strokeStyle='#b49a5a';a.lineWidth=4;a.stroke();}
+  else drawCoinShape(a,V.cx,V.cy,K*V.s,0,'#c9a548',1,false);
+  if(!ok){$('#ro3').innerHTML='<div class="big">一樣大的硬幣塞不進去</div>';return;}
+  // path of centre
+  const D=CO.side==='out'?K+1:K-1;a.strokeStyle='rgba(34,38,47,.18)';a.setLineDash([4,5]);a.lineWidth=1.2;a.beginPath();a.arc(V.cx,V.cy,D*V.s,0,7);a.stroke();a.setLineDash([]);
+  // ghosts
+  if($('#cGhost').checked)for(const gp of CO.ghosts){const P=coinPose(gp);drawCoinShape(a,V.cx+P.pos[0]*V.s,V.cy-P.pos[1]*V.s,V.s,P.rot,'#7a9cc0',0.35,true);}
+  // contact trail on the fixed coin
+  const P=coinPose(CO.psi);
+  a.strokeStyle='#d99a21';a.lineWidth=4;a.beginPath();a.arc(V.cx,V.cy,K*V.s+(CO.side==='out'?0:0),-Math.PI/2,-Math.PI/2+CO.psi,false);a.stroke();
+  drawCoinShape(a,V.cx+P.pos[0]*V.s,V.cy-P.pos[1]*V.s,V.s,P.rot,'#2f6f9f',1,true);
+  const turns=Math.abs(P.rot)/(2*Math.PI),lap=CO.psi/(2*Math.PI);
+  $('#ro3').innerHTML=`<div class="big">繞了 <b>${lap.toFixed(2)}</b> 圈，小硬幣自己轉了 <b style="color:var(--small)">${turns.toFixed(2)}</b> 圈</div>`+
+    `<div>${CO.side==='out'?`沿著邊滾：${K} 圈　＋　繞著走一圈：1 圈　＝　<b>${K+1}</b> 圈`:`沿著邊滾：${K} 圈　−　反方向繞一圈：1 圈　＝　<b>${K-1}</b> 圈`}</div>`;
+}
+function coinTick(dt){
+  if(CO.run){const prevTurns=Math.floor(Math.abs(coinPose(CO.psi).rot)/(2*Math.PI)+1e-9);
+    CO.psi=Math.min(2*Math.PI,CO.psi+dt*2*Math.PI/(4+2*CO.K));
+    const t=Math.abs(coinPose(CO.psi).rot)/(2*Math.PI);
+    if(Math.floor(t+1e-9)>prevTurns){ // completed a full self-rotation: find exact psi
+      const per=2*Math.PI/coinTurns();CO.ghosts.push(per*Math.floor(t+1e-9));}
+    if(CO.psi>=2*Math.PI){CO.run=false;toast('#t3',`繞完一圈，小硬幣自己轉了 <b>${coinTurns()}</b> 圈！`);}}
+  drawCoin();
+}
+$('#cPlay').onclick=()=>{if(CO.side==='in'&&CO.K===1)return;if(CO.psi>=2*Math.PI)coinReset();CO.run=!CO.run;};
+$('#cReset').onclick=coinReset;
+document.querySelectorAll('#cK button').forEach(b=>b.onclick=()=>{CO.K=+b.dataset.k;document.querySelectorAll('#cK button').forEach(x=>x.setAttribute('aria-pressed',x===b));coinReset();coinQuiz();});
+document.querySelectorAll('#cSide button').forEach(b=>b.onclick=()=>{CO.side=b.dataset.s;document.querySelectorAll('#cSide button').forEach(x=>x.setAttribute('aria-pressed',x===b));coinReset();coinQuiz();});
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['roll','poly','coin'])$('#p-'+t).hidden=t!==TAB;});
+function frame(now){const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
+  if(TAB==='roll')rollTick(dt);else if(TAB==='poly')polyTick(dt);else coinTick(dt);
+  requestAnimationFrame(frame);}
+$('#rRatioV').textContent=RO.r.toFixed(2)+' 倍';$('#pNV').textContent=PG.n+' 邊';
+rollReset();polyReset();coinQuiz();
+
+requestAnimationFrame(frame);
+})();
+</script>

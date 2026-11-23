@@ -1,0 +1,369 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>太空到底冷不冷</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: thermal lab — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#090b12;
+  --panel:#11141f;
+  --panel2:#191d2c;
+  --rule:#2b3147;
+  --ink:#eceef6;
+  --dim:#9aa1b8;
+  --hot:#ff7043;
+  --cold:#4fc3f7;
+  --gold:#ffd166;
+  --ok:#5fd38d;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--gold)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#171b2e 0,#090b12 70%)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(9,11,18,.84);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(400px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--gold)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--gold);color:#221800;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:#221800;font-weight:700}
+.btn.sel{border-color:var(--gold);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px}
+.sl input{flex:1;accent-color:var(--gold);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:7em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+/* ladder */
+.lad{position:absolute;inset:0;overflow-y:auto;padding:100px 16px 16px}
+.lad .wrap{max-width:640px;margin:0 auto}
+.it{display:grid;grid-template-columns:30px 1fr 7.5em;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;border:1px solid var(--rule);background:var(--panel2);margin-bottom:6px;position:relative;overflow:hidden}
+.it .bar{position:absolute;left:0;top:0;bottom:0;opacity:.18}
+.it .ic{font-size:20px;text-align:center;position:relative}
+.it b{position:relative;font-size:14.5px}
+.it small{display:block;color:var(--dim);font-size:12px;position:relative}
+.it .t{position:relative;text-align:right;font-family:var(--f-num);font-weight:700;font-size:13.5px}
+.it .t span{display:block;color:var(--dim);font-weight:500;font-size:11.5px}
+.quiz{max-width:640px;margin:14px auto 0;background:var(--panel2);border:1px solid var(--rule);border-radius:12px;padding:10px 14px}
+.quiz h3{margin:0 0 6px;font-family:var(--f-disp);font-size:17px}
+.qrow{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:8px}
+.qrow .vs{color:var(--dim);font-size:12px}
+.qrow button{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:7px 10px;font-size:13.5px}
+.qrow button.right{border-color:var(--ok);background:#173826}
+.qrow button.wrong{border-color:var(--hot);background:#3a1c14}
+.qa{font-size:12.5px;color:var(--dim);margin:-4px 0 10px}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:56vh;min-height:360px}
+  #p-ladder .cv{height:auto;min-height:0}
+  .lad{position:relative;padding-top:110px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="gas" aria-pressed="true">溫度是什麼？<small>分子跑多快</small></button>
+      <button data-tab="sun" aria-pressed="false">太空中的東西多熱？<small>曬太陽 vs 躲陰影</small></button>
+      <button data-tab="ladder" aria-pressed="false">宇宙溫度計<small>從最冷到最熱</small></button>
+    </nav>
+    <div class="view">
+      <!-- gas -->
+      <div class="pane" id="p-gas">
+        <div class="cv"><canvas id="cG"></canvas><div class="ro" id="roG"></div><div class="toast" id="tG"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">地點</span><span class="row" id="gPre"></span></div>
+          <div class="row">
+            <label class="sl">氣體溫度<input id="gT" type="range" min="-100" max="3000" step="5" value="25"><b id="gTV"></b></label>
+            <label class="sl">氣體密度<input id="gN" type="range" min="0" max="200" value="193"><b id="gNV"></b></label>
+          </div>
+          <div class="row"><button class="btn" id="gReset">🌡️ 溫度計放回 25°C</button><span class="note">溫度計靠「被分子撞」來變熱，也會一直放出紅外線而變冷。</span></div>
+        </div>
+      </div>
+      <!-- sun -->
+      <div class="pane" id="p-sun" hidden>
+        <div class="cv"><canvas id="cS"></canvas><div class="ro" id="roS"></div><div class="toast" id="tS"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">在哪裡</span><span class="row" id="sDist"></span></div>
+          <div class="row"><span class="lab">表面</span><span class="row" id="sCoat"></span></div>
+          <div class="row">
+            <span class="lab">形狀</span><span class="row" id="sShape"></span>
+            <button class="btn pri" id="shade">🌑 躲進陰影</button>
+          </div>
+        </div>
+      </div>
+      <!-- ladder -->
+      <div class="pane" id="p-ladder" hidden>
+        <div class="cv"><div class="lad" id="lad"></div><div class="ro" id="roL"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>太空到底冷不冷？</h1>
+    <p class="lede">常聽人說「太空很冷」，但其實空空的太空<b>本身沒有溫度</b>。有溫度的，是太空裡的東西。</p>
+
+    <div class="card">
+      <h2>溫度＝分子跑得多快</h2>
+      <p>溫度是物質裡的原子、分子亂跑亂撞的劇烈程度。分子跑得越快，溫度越高。</p>
+      <p>真空裡幾乎沒有分子，就沒有東西可以「跑」，所以談不上溫度。就像一個空教室，談不上「學生很吵」。</p>
+    </div>
+
+    <div class="card">
+      <h2>2000°C 卻會凍僵？</h2>
+      <p>地球上空約 100～600 公里的<b>熱氣層</b>，氣體溫度可達一兩千度，比熔岩還熱。但那裡的空氣稀薄到幾乎是真空，分子很久才撞到你一次，根本沒辦法讓你變熱。</p>
+      <p>國際太空站就在熱氣層裡飛，太空人出艙時並不會被燙傷。</p>
+    </div>
+
+    <div class="card">
+      <h2>熱怎麼傳？</h2>
+      <p>熱有三種傳法：<b>傳導</b>（直接碰觸）、<b>對流</b>（空氣或水流動帶走）、<b>輻射</b>（放出紅外線等光）。</p>
+      <p>真空中沒有東西可以碰、也沒有空氣可以流動，只剩<b>輻射</b>。保溫瓶裡的真空夾層，就是用同樣的原理讓熱水不容易變冷。</p>
+      <div class="fx">在太空中，溫度由「吸收多少陽光」和「放出多少紅外線」決定</div>
+    </div>
+
+    <div class="card">
+      <h2>同一個地方，兩個極端</h2>
+      <p>太空站外面，被太陽照到的地方可以超過 <b>120°C</b>，陰影裡卻可以低於 <b>−150°C</b>。所以太空衣和衛星常常是白色或包著金色、銀色的隔熱毯，用來控制吸收和放出的熱。</p>
+      <p>太空站其實更常煩惱<b>太熱</b>：機器和人一直產生熱，只能靠大型散熱板把熱用紅外線「丟」到太空。</p>
+    </div>
+
+    <div class="card">
+      <h2>宇宙的「背景溫度」</h2>
+      <p>宇宙到處充滿大霹靂留下的微弱電波，叫做<b>宇宙微波背景輻射</b>。它的溫度約 <b>2.7 K</b>（約 −270°C），只比絕對零度高一點點。一個東西在遠離所有恆星的地方放很久，最後就會冷到這個溫度。</p>
+    </div>
+
+    <div class="card">
+      <h2>迷思：人在太空會瞬間結冰？</h2>
+      <p>電影常演太空人一出艙就瞬間凍成冰塊，這是錯的。真空就像保溫瓶，身體只能靠輻射慢慢散熱，不會瞬間結冰。真正致命的是<b>沒有氧氣</b>和<b>沒有氣壓</b>。</p>
+    </div>
+
+    <div class="card">
+      <h2>韋伯太空望遠鏡的遮陽傘</h2>
+      <p>韋伯望遠鏡有一面網球場大小、五層的遮陽板。面向太陽的一側很熱，背面卻可以冷到約 <b>−230°C</b>，讓紅外線相機不被自己的熱干擾。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const C2K=c=>c+273.15,K2C=k=>k-273.15,SIG=5.670e-8;
+function tempColor(k){ // blue (cold) → white → red (hot)
+  const c=K2C(k);if(c<0){const t=Math.min(1,-c/250);return`rgb(${Math.round(220-150*t)},${Math.round(235-80*t)},255)`;}
+  const t=Math.min(1,c/600);return`rgb(255,${Math.round(235-150*t)},${Math.round(220-200*t)})`;}
+function fmtN(n){if(n>=1e8){const e=Math.floor(Math.log10(n));return (n/10**e).toFixed(1)+' × 10'+sup(e);}if(n>=1)return Math.round(n).toLocaleString();return n.toPrecision(1);}
+function sup(e){return String(e).split('').map(c=>'⁰¹²³⁴⁵⁶⁷⁸⁹'['0123456789'.indexOf(c)]||'⁻').join('');}
+let TAB='gas';
+
+/* ======================= 1. GAS & THERMOMETER ======================= */
+// density slider: 10^(s/10 - 1) molecules per cm³  (0 → 0.1 ; 200 → 10^19)
+const GP=[
+  {n:'地面空氣',T:25,s:193,env:298,desc:'空氣很密，分子不停撞溫度計，溫度計很快就和空氣一樣熱。'},
+  {n:'熱氣層（太空站高度）',T:1500,s:100,env:170,desc:'氣體超熱，但每立方公分只有約十億個分子（地面的百億分之一），溫度計幾乎被冷到只剩輻射決定。'},
+  {n:'行星之間',T:100000,s:17,env:3,desc:'太陽風的粒子有十萬度，但每立方公分只有幾個。'},
+  {n:'星際空間',T:8000,s:10,env:2.7,desc:'每立方公分大約一個原子。'}
+];
+const GS={Tg:298,n:2.5e19,env:298,Tth:298,parts:[],hits:0,hitRate:0,pre:0};
+function nFromS(s){return Math.pow(10,s/10-1);}
+function buildGPre(){const r=$('#gPre');r.innerHTML='';GP.forEach((p,i)=>{const b=document.createElement('button');b.className='btn'+(i===GS.pre?' sel':'');b.textContent=p.n;b.onclick=()=>{GS.pre=i;$('#gT').max=Math.max(3000,p.T);$('#gT').value=Math.min(p.T,3000);GS.TgOverride=p.T>3000?p.T:null;$('#gN').value=p.s;GS.env=p.env;syncGas();buildGPre();toast('#tG',p.desc,4200);};r.appendChild(b);});}
+function syncGas(){
+  const Tc=GS.TgOverride??+$('#gT').value;GS.Tg=C2K(Tc);GS.n=nFromS(+$('#gN').value);
+  $('#gTV').textContent=GS.TgOverride?'約 10 萬°C':Tc+'°C';$('#gNV').textContent=fmtN(GS.n)+' 個/cm³';
+  // number of drawn particles: a compressed scale so you can still see "very few"
+  const want=Math.max(1,Math.min(260,Math.round(260*Math.pow(GS.n/2.5e19,0.12))));
+  while(GS.parts.length<want)GS.parts.push({x:Math.random(),y:Math.random(),a:Math.random()*6.283});
+  GS.parts.length=want;
+}
+$('#gT').oninput=()=>{GS.TgOverride=null;syncGas();};$('#gN').oninput=syncGas;
+$('#gReset').onclick=()=>{GS.Tth=298;};
+function gasTick(dt){
+  // thermometer energy balance (time is sped up so you can watch it):
+  // heating by molecule hits ∝ density × speed × (Tgas − Tth); cooling by infrared ∝ Tth⁴ − Tenv⁴
+  const n=GS.n/2.5e19,vs=Math.sqrt(GS.Tg/298);
+  const kc=0.9*n*vs,kr=1e-9;
+  const dT=kc*(GS.Tg-GS.Tth)-kr*(Math.pow(GS.Tth,4)-Math.pow(GS.env,4));
+  const sub=10;for(let i=0;i<sub;i++){const kc2=0.9*n*vs;GS.Tth+=dt/sub*(kc2*(GS.Tg-GS.Tth)-kr*(Math.pow(GS.Tth,4)-Math.pow(GS.env,4)));}
+  GS.Tth=Math.max(2.7,GS.Tth);
+  GS.hitRate=n*vs; // relative to ground air
+  drawGas(dt);
+}
+function drawGas(dt){
+  const cv=$('#cG'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=Math.min(160,h*0.3),bx=20,by=top,bw=w-40-90,bh=h-top-20;
+  a.strokeStyle='rgba(255,255,255,.25)';a.lineWidth=2;a.strokeRect(bx,by,bw,bh);
+  // particles
+  const sp=0.12*Math.sqrt(GS.Tg/298)*Math.min(4,1);const col=tempColor(GS.Tg);
+  const thX=bx+bw*0.62,thBulbY=by+bh*0.7,thR=Math.min(28,bh*0.09);
+  let hitsThisFrame=0;
+  for(const p of GS.parts){
+    const v=Math.min(1.6,sp*Math.min(6,Math.sqrt(GS.Tg/298)));p.x+=Math.cos(p.a)*v*dt*(bh/bw);p.y+=Math.sin(p.a)*v*dt;
+    if(p.x<0){p.x=-p.x;p.a=Math.PI-p.a;}if(p.x>1){p.x=2-p.x;p.a=Math.PI-p.a;}if(p.y<0){p.y=-p.y;p.a=-p.a;}if(p.y>1){p.y=2-p.y;p.a=-p.a;}
+    const X=bx+p.x*bw,Y=by+p.y*bh;
+    if(Math.hypot(X-thX,Y-thBulbY)<thR+3){p.a+=Math.PI+(Math.random()-0.5);hitsThisFrame++;}
+    a.fillStyle=col;a.beginPath();a.arc(X,Y,3.2,0,7);a.fill();
+    a.strokeStyle=col;a.globalAlpha=0.35;a.lineWidth=1.5;a.beginPath();a.moveTo(X,Y);a.lineTo(X-Math.cos(p.a)*v*40,Y-Math.sin(p.a)*v*40);a.stroke();a.globalAlpha=1;
+  }
+  // thermometer in the box
+  const tTop=by+bh*0.12;
+  a.fillStyle='rgba(255,255,255,.12)';a.fillRect(thX-7,tTop,14,thBulbY-tTop);a.strokeStyle='rgba(255,255,255,.5)';a.lineWidth=1.5;a.strokeRect(thX-7,tTop,14,thBulbY-tTop);
+  const frac=Math.max(0,Math.min(1,(K2C(GS.Tth)+200)/2200));
+  a.fillStyle=tempColor(GS.Tth);a.fillRect(thX-4,thBulbY-(thBulbY-tTop)*frac,8,(thBulbY-tTop)*frac);
+  a.beginPath();a.arc(thX,thBulbY,thR,0,7);a.fill();a.strokeStyle='#fff';a.stroke();
+  // infrared glow leaving the thermometer
+  const ir=Math.min(1,Math.pow(GS.Tth/400,4));for(let i=0;i<6;i++){const an=i/6*6.283+performance.now()/1500;a.strokeStyle=`rgba(255,120,80,${0.12+0.3*ir})`;a.beginPath();a.arc(thX,thBulbY,thR+8+((performance.now()/30+i*12)%30),an,an+0.6);a.stroke();}
+  // side gauges
+  const gx=w-95;a.font='12px "Noto Sans TC",sans-serif';a.fillStyle='#9aa1b8';
+  const gauge=(y,label,val,colr)=>{a.fillStyle='#9aa1b8';a.fillText(label,gx,y);a.fillStyle=colr;a.font='700 17px Lexend,sans-serif';a.fillText(val,gx,y+22);a.font='12px "Noto Sans TC",sans-serif';};
+  gauge(top+14,'氣體溫度',`${Math.round(K2C(GS.Tg)).toLocaleString()}°C`,tempColor(GS.Tg));
+  gauge(top+74,'溫度計讀數',`${Math.round(K2C(GS.Tth))}°C`,tempColor(GS.Tth));
+  gauge(top+134,'撞擊溫度計',GS.hitRate>=0.01?`×${GS.hitRate>=10?Math.round(GS.hitRate):GS.hitRate.toPrecision(2)}`:'幾乎 0',GS.hitRate>0.01?'#ffd166':'#4fc3f7');
+  a.fillStyle='#9aa1b8';a.fillText('（和地面空氣比）',gx,top+176);
+  const diff=K2C(GS.Tg)-K2C(GS.Tth);
+  $('#roG').innerHTML=`<div class="big">分子越快＝氣體越熱；但撞得太少，溫度計熱不起來</div><div>畫面上的點只是示意，${GS.n<1e10?'真實的分子比地面<b>少非常非常多</b>':'真實的分子數量多到畫不完'}。</div>`+
+    (Math.abs(diff)>200?`<div style="color:#4fc3f7">氣體 ${Math.round(K2C(GS.Tg)).toLocaleString()}°C，溫度計卻只有 ${Math.round(K2C(GS.Tth))}°C！分子太少，溫度計主要靠輻射決定溫度。</div>`:'');
+}
+
+/* ======================= 2. SUNLIGHT & SHADE ======================= */
+const DIST=[{n:'水星',d:0.39},{n:'金星',d:0.72},{n:'地球',d:1},{n:'火星',d:1.52},{n:'木星',d:5.2},{n:'冥王星',d:39.5}];
+const COAT=[{n:'黑漆',a:0.95,e:0.9,c:'#1d1d22'},{n:'白漆',a:0.2,e:0.9,c:'#f2f2f2'},{n:'拋光鋁',a:0.15,e:0.05,c:'#c9ced8'},{n:'金箔',a:0.3,e:0.03,c:'#e8b84a'}];
+const SHAPE=[{n:'平板正對太陽（背面隔熱）',k:1},{n:'慢慢旋轉的球',k:4}];
+const SU={di:2,ci:0,si:0,shade:false,T:C2K(20),hist:[],t:0};
+function eqT(){const S=1361/Math.pow(DIST[SU.di].d,2),c=COAT[SU.ci],k=SHAPE[SU.si].k;return Math.pow(c.a*S/(k*c.e*SIG),0.25);}
+function buildSun(){
+  const mk=(id,list,cur,set)=>{const r=$(id);r.innerHTML='';list.forEach((x,i)=>{const b=document.createElement('button');b.className='btn'+(i===cur?' sel':'');b.textContent=x.n;b.onclick=()=>{set(i);buildSun();};r.appendChild(b);});};
+  mk('#sDist',DIST,SU.di,i=>SU.di=i);mk('#sCoat',COAT,SU.ci,i=>SU.ci=i);mk('#sShape',SHAPE,SU.si,i=>SU.si=i);
+  $('#shade').textContent=SU.shade?'☀️ 回到陽光下':'🌑 躲進陰影';
+}
+$('#shade').onclick=()=>{SU.shade=!SU.shade;buildSun();if(SU.shade)toast('#tS','進入陰影：沒有陽光可以吸收，只剩一直放出紅外線，溫度慢慢往下掉…');};
+function sunTick(dt){
+  // thin aluminium panel, ~2 mm: heat capacity per area ≈ 2700 kg/m³ × 0.002 m × 900 J/kg·K ≈ 4900 J/m²·K
+  const Cpa=4900,simDt=dt*600; // 1 s on screen = 10 minutes
+  const S=1361/Math.pow(DIST[SU.di].d,2),c=COAT[SU.ci],k=SHAPE[SU.si].k;
+  const n=20;for(let i=0;i<n;i++){const pin=SU.shade?0:c.a*S/k,pout=c.e*SIG*(Math.pow(SU.T,4)-Math.pow(2.7,4));SU.T+=simDt/n*(pin-pout)/Cpa;}
+  SU.T=Math.max(2.7,SU.T);SU.t+=simDt;
+  if(!SU.hist.length||SU.t-SU.hist[SU.hist.length-1][0]>120){SU.hist.push([SU.t,SU.T,SU.shade]);if(SU.hist.length>360)SU.hist.shift();}
+  drawSun();
+}
+function drawSun(){
+  const cv=$('#cS'),gm=fit(cv),a=cv.getContext('2d'),dp=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(dp,0,0,dp,0,0);
+  const w=gm.w,h=gm.h,top=100,chartH=Math.min(120,h*0.26),cy=top+(h-top-chartH-30)/2,ox=w*0.62;
+  const D=DIST[SU.di].d,sunR=Math.max(6,60/Math.sqrt(D));
+  // sun
+  if(!SU.shade){const g=a.createRadialGradient(40,cy,2,40,cy,sunR*2.2);g.addColorStop(0,'#fffbe0');g.addColorStop(0.4,'#ffd166');g.addColorStop(1,'rgba(255,170,60,0)');a.fillStyle=g;a.beginPath();a.arc(40,cy,sunR*2.2,0,7);a.fill();
+    // rays
+    a.strokeStyle=`rgba(255,220,120,${Math.min(0.6,0.6/D)})`;a.lineWidth=2;for(let i=-3;i<=3;i++){a.beginPath();a.moveTo(40+sunR,cy+i*14);a.lineTo(ox-50,cy+i*14*0.6);a.stroke();}}
+  else{a.fillStyle='rgba(30,40,70,.6)';a.beginPath();a.arc(70,cy,80,0,7);a.fill();a.fillStyle='#9aa1b8';a.font='12px "Noto Sans TC",sans-serif';a.fillText('行星擋住了太陽',30,cy+100);}
+  // object
+  const col=COAT[SU.ci].c,glow=tempColor(SU.T);
+  const gg=a.createRadialGradient(ox,cy,10,ox,cy,90);gg.addColorStop(0,glow.replace('rgb','rgba').replace(')',',.35)'));gg.addColorStop(1,'rgba(0,0,0,0)');a.fillStyle=gg;a.beginPath();a.arc(ox,cy,90,0,7);a.fill();
+  a.fillStyle=col;a.strokeStyle=glow;a.lineWidth=3;
+  if(SHAPE[SU.si].k===1){a.fillRect(ox-8,cy-48,16,96);a.strokeRect(ox-8,cy-48,16,96);a.fillStyle='#555';a.fillRect(ox+8,cy-48,6,96);}
+  else{a.beginPath();a.arc(ox,cy,40,0,7);a.fill();a.stroke();}
+  // infrared arrows out
+  const ir=Math.min(1,Math.pow(SU.T/350,4));a.strokeStyle=`rgba(255,110,80,${0.15+0.6*ir})`;a.lineWidth=2;
+  for(let i=0;i<8;i++){const an=i/8*6.283+0.2,r0=56,r1=r0+20+30*ir;if(SHAPE[SU.si].k===1&&Math.cos(an)>0.3)continue;a.beginPath();a.moveTo(ox+Math.cos(an)*r0,cy+Math.sin(an)*r0);a.lineTo(ox+Math.cos(an)*r1,cy+Math.sin(an)*r1);a.stroke();}
+  a.fillStyle='#ffb199';a.font='12px "Noto Sans TC",sans-serif';a.fillText('紅外線散熱',ox+50,cy-60);
+  // thermometer text
+  a.font='700 26px Lexend,sans-serif';a.fillStyle=glow;a.textAlign='center';a.fillText(`${Math.round(K2C(SU.T))}°C`,ox,cy+86);a.textAlign='left';
+  // chart
+  const x0=50,x1=w-16,y0=h-chartH-12,y1=h-14;a.fillStyle='rgba(9,11,18,.7)';a.fillRect(16,y0-6,w-32,chartH+6);
+  const Tmin=-273,Tmax=Math.max(150,K2C(eqT())+30),Y=c=>y1-(c-Tmin)/(Tmax-Tmin)*(y1-y0);
+  a.strokeStyle='rgba(255,255,255,.15)';a.lineWidth=1;for(const c of [-200,-100,0,100,200,300]){if(c>Tmax)continue;a.beginPath();a.moveTo(x0,Y(c));a.lineTo(x1,Y(c));a.stroke();a.fillStyle='#9aa1b8';a.font='10.5px Lexend';a.fillText(c+'°',20,Y(c)+3);}
+  if(SU.hist.length>1){const tA=SU.hist[0][0],tB=Math.max(tA+3600,SU.hist[SU.hist.length-1][0]);a.lineWidth=2.2;
+    for(let i=1;i<SU.hist.length;i++){const p=SU.hist[i-1],q=SU.hist[i];a.strokeStyle=q[2]?'#4fc3f7':'#ff7043';a.beginPath();a.moveTo(x0+(p[0]-tA)/(tB-tA)*(x1-x0),Y(K2C(p[1])));a.lineTo(x0+(q[0]-tA)/(tB-tA)*(x1-x0),Y(K2C(q[1])));a.stroke();}
+    a.fillStyle='#9aa1b8';a.font='11px "Noto Sans TC",sans-serif';a.fillText(`最近 ${Math.round((tB-tA)/3600)} 小時（1 秒＝10 分鐘）`,x1-170,y0+8);}
+  const E=K2C(eqT());
+  $('#roS').innerHTML=`<div class="big">${DIST[SU.di].n}附近的${COAT[SU.ci].n}${SHAPE[SU.si].k===1?'平板':'球'}</div>`+
+    `<div>${SU.shade?'在陰影裡：一直變冷，最後會接近 <b>−270°C</b>（宇宙背景溫度）':`曬太陽最後會停在 <b>${Math.round(E)}°C</b>（吸收＝放出）`}</div>`+
+    `<div style="color:var(--dim)">吸收陽光 ${Math.round(COAT[SU.ci].a*100)}%　放出紅外線的能力 ${Math.round(COAT[SU.ci].e*100)}%</div>`;
+}
+
+/* ======================= 3. LADDER ======================= */
+const LAD=[
+  ['🧊','實驗室最低溫紀錄','2021 年德國科學家讓原子雲自由落下，冷到約 3.8×10⁻¹¹ K',3.8e-11],
+  ['🪃','迴力棒星雲','宇宙中已知最冷的自然地方，比背景輻射還冷',1],
+  ['📡','宇宙微波背景','大霹靂留下的餘溫，充滿整個宇宙',2.725],
+  ['🔭','韋伯望遠鏡的冷側','遮陽板背面',43],
+  ['🪐','冥王星表面','離太陽太遠，陽光非常弱',40],
+  ['🌑','月球的夜晚','沒有空氣保溫，熱量一下就散光',100],
+  ['🛰️','太空站外面（陰影）','只剩紅外線散熱',C2K(-157)],
+  ['🐧','地球最低氣溫','1983 年南極東方站',C2K(-89.2)],
+  ['🌍','地球平均氣溫','大氣層像棉被一樣保溫',C2K(15)],
+  ['🛰️','太空站外面（陽光下）','陽光直射又沒有空氣散熱',C2K(121)],
+  ['🌕','月球的白天','正午時的月面',C2K(127)],
+  ['🔥','金星表面','厚厚的二氧化碳造成強烈溫室效應',C2K(464)],
+  ['🌫️','熱氣層的氣體','分子超熱，但稀薄到你不會覺得熱',C2K(1500)],
+  ['☀️','太陽表面','我們看到的發光表面',C2K(5500)],
+  ['👑','日冕','太陽外層大氣，比表面熱幾百倍，原因還在研究',1.5e6],
+  ['💥','太陽核心','核融合發生的地方',1.5e7]
+].sort((x,y)=>x[3]-y[3]);
+const QZ=[
+  {a:'熱氣層的氣體',b:'太空站外面（陽光下）',hot:0,why:'熱氣層的氣體有上千度！但分子太少，太空站外面的溫度主要由陽光決定。'},
+  {a:'太陽表面',b:'日冕',hot:1,why:'日冕有一兩百萬度，比太陽表面熱很多，科學家還在研究為什麼。'},
+  {a:'冥王星表面',b:'宇宙微波背景',hot:0,why:'冥王星約 −233°C，宇宙背景約 −270°C，冥王星還是暖一點。'},
+  {a:'月球的白天',b:'金星表面',hot:1,why:'金星比月球白天熱上 300 多度，因為厚大氣的溫室效應。'},
+  {a:'月球的夜晚',b:'地球最低氣溫',hot:1,why:'月球夜晚約 −173°C，比南極最冷時還冷很多。'}
+];
+function fmtTemp(k){const c=K2C(k);if(k<1)return{main:k<1e-6?(k*1e12).toFixed(0)+' pK':k.toPrecision(2)+' K',sub:'−273.15°C 再高一點點'};
+  if(k>1e5)return{main:(c/1e4).toFixed(0)+' 萬°C',sub:''};return{main:Math.round(c).toLocaleString()+'°C',sub:(k>=100?Math.round(k).toLocaleString():k.toPrecision(3))+' K'};}
+function buildLadder(){
+  const lmin=Math.log10(3.8e-11),lmax=Math.log10(1.5e7);
+  let html='<div class="wrap">';
+  for(const it of [...LAD].reverse()){const f=(Math.log10(it[3])-lmin)/(lmax-lmin),t=fmtTemp(it[3]);
+    html+=`<div class="it"><div class="bar" style="width:${(8+f*92).toFixed(1)}%;background:${tempColor(it[3])}"></div><div class="ic">${it[0]}</div><div><b>${it[1]}</b><small>${it[2]}</small></div><div class="t">${t.main}<span>${t.sub}</span></div></div>`;}
+  html+='</div><div class="quiz"><h3>猜猜看：哪個比較熱？</h3>'+QZ.map((q,i)=>`<div class="qrow" data-q="${i}"><button data-c="0">${q.a}</button><span class="vs">VS</span><button data-c="1">${q.b}</button></div><div class="qa" id="qa${i}"></div>`).join('')+'</div>';
+  $('#lad').innerHTML=html;
+  document.querySelectorAll('.qrow').forEach(r=>r.querySelectorAll('button').forEach(b=>b.onclick=()=>{const q=QZ[+r.dataset.q];if(r.dataset.done)return;r.dataset.done=1;
+    const ok=+b.dataset.c===q.hot;b.classList.add(ok?'right':'wrong');r.querySelectorAll('button')[q.hot].classList.add('right');$('#qa'+r.dataset.q).textContent=(ok?'答對！':'答錯了！')+q.why;}));
+  $('#roL').innerHTML='<div class="big">宇宙溫度計：從最冷到最熱</div><div>長條長度用「乘幾倍」的比例畫，不然最冷和最熱差太多放不進來。</div>';
+}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['gas','sun','ladder'])$('#p-'+t).hidden=t!==TAB;});
+let last=performance.now();
+function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;if(TAB==='gas')gasTick(dt);else if(TAB==='sun')sunTick(dt);requestAnimationFrame(frame);}
+buildGPre();syncGas();buildSun();buildLadder();
+requestAnimationFrame(frame);
+})();
+</script>

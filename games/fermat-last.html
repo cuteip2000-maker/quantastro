@@ -1,0 +1,347 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>費馬最後定理</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: old-library math desk — canvas/work panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#0b0a09;
+  --panel:#151311;
+  --panel2:#1e1b18;
+  --rule:#3a332c;
+  --ink:#f3ede4;
+  --dim:#b0a698;
+  --acc:#7ee0a8;
+  --gold:#f2c66d;
+  --a:#7cc4ff;
+  --b:#ff9fb8;
+  --c:#f2c66d;
+  --bad:#ff8a7a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--gold)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#080706}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.work{flex:1;min-height:0;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+.ro{position:absolute;left:12px;top:10px;background:rgba(11,10,9,.88);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(360px,calc(100% - 24px))}
+.ro b{color:var(--gold);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .ok{color:var(--acc)}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--acc);color:#05261a;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+#tA{top:auto;bottom:12px}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:#2a1d00;font-weight:700}
+.btn.sel{border-color:var(--gold);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);font-weight:700}
+.btn.sq{min-width:2.4em;font-family:var(--f-num)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 200px}
+.sl input{flex:1;accent-color:var(--gold);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+
+/* ② work area */
+.eqbig{font-family:var(--f-num);font-size:clamp(22px,4.4vw,34px);font-weight:700;margin:4px 0 8px}
+.eqbig .a{color:var(--a)}.eqbig .b{color:var(--b)}.eqbig .c{color:var(--c)}
+.num{font-family:var(--f-mono);font-size:14px;word-break:break-all;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:8px 12px;margin:4px 0 10px;line-height:1.55}
+.num .lab{display:block;font-family:var(--f-body);font-size:12px;color:var(--dim)}
+.diff{font-size:15px;margin:6px 0 12px}
+.diff b{font-family:var(--f-mono);color:var(--bad)}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:14px}
+.box h3{margin:0 0 4px;font-family:var(--f-disp);font-size:16px}
+.box p{margin:0 0 6px}.box p:last-child{margin:0}
+.calc{display:inline-block;background:#c9d2b8;color:#1b2414;font-family:var(--f-mono);font-size:20px;font-weight:700;padding:6px 14px;border-radius:6px;border:3px solid #6e7660;letter-spacing:.04em;margin:4px 0}
+.list{font-family:var(--f-mono);font-size:13.5px;margin:0;padding-left:1.2em}
+.list li{margin:2px 0}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.quote{font-family:var(--f-disp);border-left:3px solid var(--gold);padding:4px 10px;margin:6px 0;color:var(--ink);font-size:14.5px}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:62vh;min-height:440px}
+  .work{height:64vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 平方很好找<small>收集畢氏三元數</small></button>
+      <button data-tab="B" aria-pressed="false">② 立方找不到<small>差一點點的數</small></button>
+      <button data-tab="C" aria-pressed="false">③ 358 年接力<small>一個一個證明</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl"><span style="color:var(--a)">a</span><input id="aa" type="range" min="1" max="99" step="1" value="3"><b id="aaV"></b></label>
+            <span class="row"><button class="btn sq" data-d="a,-1">−</button><button class="btn sq" data-d="a,1">＋</button></span>
+          </div>
+          <div class="row">
+            <label class="sl"><span style="color:var(--b)">b</span><input id="bb" type="range" min="1" max="99" step="1" value="4"><b id="bbV"></b></label>
+            <span class="row"><button class="btn sq" data-d="b,-1">−</button><button class="btn sq" data-d="b,1">＋</button></span>
+          </div>
+          <div class="row">
+            <button class="btn" id="euclid">🪄 用公式變一組出來</button>
+            <span class="note">任務：找出最長邊不超過 100 的 16 組「最簡」畢氏三元數（三個數沒有共同的因數）。</span>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="work" id="wB"></div>
+        <div class="toast" id="tB"></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">次方 n</span>
+            <button class="btn sq" data-n="2">2</button><button class="btn sq sel" data-n="3">3</button><button class="btn sq" data-n="4">4</button><button class="btn sq" data-n="5">5</button>
+          </div>
+          <div class="row">
+            <label class="sl"><span style="color:var(--a)">a</span><input id="ba" type="range" min="1" max="200" step="1" value="6"><b id="baV"></b></label>
+            <label class="sl"><span style="color:var(--b)">b</span><input id="bbb" type="range" min="1" max="200" step="1" value="8"><b id="bbbV"></b></label>
+          </div>
+          <div class="row">
+            <button class="btn pri" id="search">🔍 請電腦找最接近的</button>
+            <button class="btn" id="simpson">🧮 計算機說相等？</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn sq" id="yDn">◀</button>
+            <label class="sl">年份<input id="yr" type="range" min="0" max="10" step="1" value="0"><b id="yrV"></b></label>
+            <button class="btn sq" id="yUp">▶</button>
+            <button class="btn pri" id="yPlay">▶ 播放</button>
+          </div>
+          <div class="note">每一格是一個次方 n（3 到 100）。亮起來代表「已經證明 aⁿ ＋ bⁿ ＝ cⁿ 沒有正整數解」。點格子看看是誰證明的。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>寫在書邊的一句話，難倒人類 358 年</h1>
+    <p class="lede">a² ＋ b² ＝ c² 有無限多組整數解，例如 3² ＋ 4² ＝ 5²。但只要把 2 換成 3、4、5 或任何更大的整數，就一組都找不到。這就是費馬最後定理。</p>
+
+    <div class="card">
+      <h2>費馬最後定理</h2>
+      <div class="fx">n ≥ 3 時，aⁿ ＋ bⁿ ＝ cⁿ 沒有正整數解</div>
+      <p>大約 1637 年，法國數學家<b>費馬</b>在一本古希臘數學書的頁邊寫下這個結論，旁邊還加了一句：</p>
+      <div class="quote">「我發現了一個真正美妙的證明，可惜這裡的空白太小，寫不下。」</div>
+      <p>費馬死後，他的兒子把這些筆記出版。費馬留下的其他猜想陸續被證明或推翻，只剩這一個沒人解得開，所以叫「最後」定理。</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼平方就有？</h2>
+      <p>畢氏定理說：直角三角形兩股的平方和，等於斜邊的平方。所以每一組畢氏三元數，都是一個三邊都是整數的直角三角形。</p>
+      <p>而且可以用公式一直做出來：任選兩個整數 m ＞ n，</p>
+      <div class="fx">a ＝ m² − n²，b ＝ 2mn，c ＝ m² ＋ n²</div>
+      <p>例如 m ＝ 2、n ＝ 1，就得到 3、4、5。</p>
+    </div>
+
+    <div class="card">
+      <h2>只要證明一部分就夠</h2>
+      <p>如果 n ＝ 3 沒有解，那 n ＝ 6、9、12 … 也一定沒有，因為 a⁶ 可以看成 (a²)³。</p>
+      <p>所以數學家只需要證明 <b>n ＝ 4</b> 和<b>所有大於 2 的質數</b>。但質數有無限多個，一個一個證明永遠證不完，這就是它困難的地方。</p>
+    </div>
+
+    <div class="card">
+      <h2>最後的勝利：懷爾斯</h2>
+      <p>英國數學家<b>安德魯・懷爾斯</b> 10 歲時在圖書館讀到這個問題，就立志要解開它。</p>
+      <p>他把自己關起來偷偷研究了 7 年，1993 年宣布證明完成，卻被同行發現一個漏洞。他和學生泰勒又花了一年多補好，1995 年正式發表，全文一百多頁。</p>
+      <p>他用的工具是 20 世紀的「橢圓曲線」和「模形式」，費馬那個年代根本還沒有。所以大多數數學家認為，費馬當年其實並沒有正確的證明。</p>
+    </div>
+
+    <div class="card">
+      <h2>一點點數字小知識</h2>
+      <p>9³ ＋ 10³ ＝ 1729 ＝ 12³ ＋ 1，只差 1！1729 也是「計程車數」：它是最小可以用兩種方法寫成兩個立方和的數（1³＋12³ 和 9³＋10³）。</p>
+      <p>電視卡通也開過費馬的玩笑：一般計算機會說 3987¹² ＋ 4365¹² ＝ 4472¹²，但它們其實不相等。到「② 立方找不到」按「計算機說相等？」看看怎麼拆穿。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const fmt=x=>x.toLocaleString('zh-TW');
+const grp=s=>s.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const gcd=(a,b)=>{while(b){[a,b]=[b,a%b];}return a;};
+let TAB='A';
+
+/* ================= A: Pythagorean triples ================= */
+const PRIM=[];for(let c=1;c<=100;c++)for(let a=1;a<c;a++){const b2=c*c-a*a,b=Math.round(Math.sqrt(b2));if(b>a&&b*b===b2&&gcd(gcd(a,b),c)===1)PRIM.push([a,b,c]);}
+const A={a:3,b:4,found:new Set(),em:2,en:1};
+function setAB(a,b){A.a=Math.max(1,Math.min(99,a));A.b=Math.max(1,Math.min(99,b));$('#aa').value=A.a;$('#bb').value=A.b;roA();}
+$('#aa').oninput=e=>setAB(+e.target.value,A.b);$('#bb').oninput=e=>setAB(A.a,+e.target.value);
+$$('[data-d]').forEach(btn=>btn.onclick=()=>{const[k,d]=btn.dataset.d.split(',');k==='a'?setAB(A.a+ +d,A.b):setAB(A.a,A.b+ +d);});
+$('#euclid').onclick=()=>{// walk through coprime m>n of opposite parity whose triple fits the sliders
+  for(let t=0;t<50;t++){A.en++;if(A.en>=A.em){A.em++;A.en=1;}if(A.em>9){A.em=2;A.en=1;}
+    const m=A.em,n=A.en;if((m-n)%2===0||gcd(m,n)!==1)continue;const a=m*m-n*n,b=2*m*n,c=m*m+n*n;if(a>99||b>99)continue;
+    setAB(Math.min(a,b),Math.max(a,b));toast('#tA',`m＝${m}、n＝${n}：a＝${m}²−${n}²＝${a}，b＝2×${m}×${n}＝${b}，c＝${m}²＋${n}²＝${c}`,5000);return;}};
+function roA(){const{a,b}=A,c2=a*a+b*b,c=Math.round(Math.sqrt(c2)),ok=c*c===c2;
+  $('#aaV').textContent=a;$('#bbV').textContent=b;
+  let msg=`<span class="big"><span style="color:var(--a)">${a}²</span> ＋ <span style="color:var(--b)">${b}²</span> ＝ ${fmt(a*a)} ＋ ${fmt(b*b)} ＝ <b>${fmt(c2)}</b></span>`;
+  if(ok){const g=gcd(gcd(a,b),c),key=[Math.min(a,b),Math.max(a,b),c].join(',');
+    msg+=`<span class="st ok">＝ <span style="color:var(--c)">${c}²</span>！斜邊剛好是整數 ✓</span>`;
+    if(g>1)msg+=`<span class="st">不過它是 (${a/g}, ${b/g}, ${c/g}) 放大 ${g} 倍，不算新的「最簡」三元數</span>`;
+    else if(c<=100&&!A.found.has(key)){A.found.add(key);toast('#tA',A.found.size===PRIM.length?'🏆 16 組全部找到了！':`找到第 ${A.found.size} 組：(${key.replace(/,/g,', ')})`);}}
+  else msg+=`<span class="st">斜邊 ＝ √${fmt(c2)} ≈ ${Math.sqrt(c2).toFixed(3)}，不是整數</span>`;
+  msg+=`<span class="st">最簡畢氏三元數：已找到 <b>${A.found.size}</b> / ${PRIM.length}</span>`;
+  $('#roA').innerHTML=msg;}
+function drawA(a,w,h){
+  a.fillStyle='#080706';a.fillRect(0,0,w,h);
+  const top=$('#roA').offsetHeight+18,wide=w>=700;
+  const{a:A_,b:B_}=A,C_=Math.sqrt(A_*A_+B_*B_),ok=Number.isInteger(C_)||Math.abs(C_-Math.round(C_))<1e-9;
+  // triangle with squares; right angle at origin O, leg a vertical, leg b horizontal
+  const dw=wide?w*0.6:w,dh=wide?h-top:(h-top)*0.62;
+  const s=Math.min((dw-30)/(2*A_+B_),(dh-30)/(A_+2*B_));
+  const ox=(dw-(2*A_+B_)*s)/2+A_*s,oy=top+(dh-(A_+2*B_)*s)/2+(A_+B_)*s;
+  // O=(ox,oy). Leg b: O→(ox+b,oy). Leg a: O→(ox,oy-a)
+  const P=(x,y)=>[ox+x*s,oy-y*s];
+  const tri=[[0,0],[B_,0],[0,A_]];
+  const sqA=[[0,0],[0,A_],[-A_,A_],[-A_,0]],sqB=[[0,0],[B_,0],[B_,-B_],[0,-B_]];
+  // square on hypotenuse (outward): from (B,0) to (0,A); outward normal points away from origin
+  const sqC=[[B_,0],[B_+A_,B_],[A_,A_+B_],[0,A_]];
+  const poly=(pts,fill,stroke)=>{a.beginPath();pts.forEach(([x,y],i)=>{const[X,Y]=P(x,y);i?a.lineTo(X,Y):a.moveTo(X,Y);});a.closePath();a.fillStyle=fill;a.fill();if(stroke){a.strokeStyle=stroke;a.lineWidth=2;a.stroke();}};
+  poly(sqA,'rgba(124,196,255,.22)','#7cc4ff');poly(sqB,'rgba(255,159,184,.22)','#ff9fb8');poly(sqC,ok?'rgba(242,198,109,.3)':'rgba(242,198,109,.12)','#f2c66d');
+  // unit grid in small squares
+  if(s>=6){a.strokeStyle='rgba(255,255,255,.12)';a.lineWidth=1;a.beginPath();
+    for(let i=1;i<A_;i++){let[x0,y0]=P(-A_,i),[x1,y1]=P(0,i);a.moveTo(x0,y0);a.lineTo(x1,y1);[x0,y0]=P(-i,0);[x1,y1]=P(-i,A_);a.moveTo(x0,y0);a.lineTo(x1,y1);}
+    for(let i=1;i<B_;i++){let[x0,y0]=P(i,0),[x1,y1]=P(i,-B_);a.moveTo(x0,y0);a.lineTo(x1,y1);[x0,y0]=P(0,-i);[x1,y1]=P(B_,-i);a.moveTo(x0,y0);a.lineTo(x1,y1);}a.stroke();}
+  poly(tri,'#f3ede4');
+  const lab=(x,y,t,col)=>{const[X,Y]=P(x,y);a.fillStyle=col;a.font='700 15px Lexend,sans-serif';a.textAlign='center';a.textBaseline='middle';a.fillText(t,X,Y);};
+  lab(-A_/2,A_/2,A_+'²',' #7cc4ff'.trim());lab(B_/2,-B_/2,B_+'²','#ff9fb8');lab((B_+A_)/2,(A_+B_)/2,ok?Math.round(C_)+'²':'c²','#f2c66d');
+  // collection list
+  const lx=wide?dw+10:14,ly=wide?top:top+dh+8,lw=wide?w-dw-24:w-28,lh=wide?h-top-12:h-ly-10;
+  a.fillStyle='#151311';a.strokeStyle='#3a332c';a.lineWidth=1;a.beginPath();a.roundRect(lx,ly,lw,lh,8);a.fill();a.stroke();
+  a.fillStyle='#f3ede4';a.font='600 12.5px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('最簡畢氏三元數收集冊',lx+10,ly+8);
+  const cols=wide?2:4,rowH=Math.min(22,(lh-34)/Math.ceil(PRIM.length/cols)),cw=(lw-20)/cols;
+  PRIM.forEach(([p,q,r],i)=>{const got=A.found.has([p,q,r].join(',')),x=lx+10+(i%cols)*cw,y=ly+30+Math.floor(i/cols)*rowH;
+    a.fillStyle=got?'#7ee0a8':'#4a4238';a.font=`${got?700:500} ${Math.min(13,rowH*0.62)}px JetBrains Mono,monospace`;a.fillText(got?`${p},${q},${r}`:'?, ?, '+r,x,y);});
+}
+
+/* ================= B: higher powers ================= */
+const B={n:3,a:6,b:8};
+const pw=(x,n)=>BigInt(x)**BigInt(n);
+function nearestRoot(v,n){let c=BigInt(Math.round(Math.pow(Number(v),1/n)));// fix floating error
+  while(c**BigInt(n)>v)c--;while((c+1n)**BigInt(n)<=v)c++;const lo=c,hi=c+1n;return(v-lo**BigInt(n))<=(hi**BigInt(n)-v)?lo:hi;}
+function renderB(extra=''){const{n,a,b}=B,L=pw(a,n)+pw(b,n),c=nearestRoot(L,n),R=c**BigInt(n),d=L-R;
+  $('#baV').textContent=a;$('#bbbV').textContent=b;
+  const sup=['⁰','¹','²','³','⁴','⁵'][n];
+  const ok=d===0n;
+  $('#wB').innerHTML=`<div class="eqbig"><span class="a">${a}${sup}</span> ＋ <span class="b">${b}${sup}</span> ${ok?'＝':'≠'} <span class="c">${c}${sup}</span></div>
+   <div class="num"><span class="lab">左邊 ${a}${sup} ＋ ${b}${sup}</span>${grp(L.toString())}</div>
+   <div class="num"><span class="lab">最接近的 c${sup}：${c}${sup}</span>${grp(R.toString())}</div>
+   <div class="diff">${ok?`<span style="color:var(--acc);font-weight:700">剛好相等！${n===2?'平方很容易找到。':''}</span>`:`差了 <b>${d>0n?'+':''}${grp(d.toString())}</b>${(d===1n||d===-1n)?'　只差 1！好可惜！':''}`}</div>
+   ${n>=3?`<div class="box"><h3>${n} 次方永遠差一點</h3><p>費馬說 n ＝ ${n} 時，不管 a、b 怎麼選，都不可能剛好相等。用滑桿試試看，或請電腦幫你找「最接近」的組合。</p></div>`:'<div class="box"><h3>n ＝ 2 很簡單</h3><p>試試 3 和 4、5 和 12、8 和 15……平方的世界有無限多組解。</p></div>'}
+   ${extra}`;}
+$$('[data-n]').forEach(b=>b.onclick=()=>{B.n=+b.dataset.n;$$('[data-n]').forEach(x=>x.classList.toggle('sel',x===b));renderB();});
+$('#ba').oninput=e=>{B.a=+e.target.value;renderB();};$('#bbb').oninput=e=>{B.b=+e.target.value;renderB();};
+$('#search').onclick=()=>{const n=B.n,res=[];
+  for(let a=2;a<=200;a++)for(let b=a;b<=200;b++){const L=pw(a,n)+pw(b,n),c=nearestRoot(L,n),d=L-c**BigInt(n),ad=d<0n?-d:d;res.push([ad,a,b,c,d,Number(ad)/Number(pw(a,n))]);}
+  res.sort((x,y)=>x[5]-y[5]);// closest relative to the smaller term, so 2ⁿ+bⁿ≈bⁿ doesn't count
+  const top=res.filter(r=>n===2||r[0]>0n).slice(0,8);
+  const sup=['⁰','¹','²','³','⁴','⁵'][n];
+  const html=`<div class="box"><h3>🔍 a、b 都在 2～200 之間，「差距」和 aⁿ 比起來最小的組合</h3><ol class="list">${top.map(([ad,a,b,c,d])=>`<li>${a}${sup} ＋ ${b}${sup} ＝ ${c}${sup} ${d===0n?'（相等）':(d>0n?'＋ ':'− ')+grp(ad.toString())}</li>`).join('')}</ol>
+    <p class="note">${n>=3?`一共檢查了 ${fmt(res.length)} 組，沒有一組剛好相等。不過電腦只能檢查有限多組，要「永遠」沒有，只能靠證明。`:'平方的話，差 0 的到處都是。'}</p></div>`;
+  B.a=top[0][1];B.b=top[0][2];$('#ba').value=B.a;$('#bbb').value=B.b;renderB(html);};
+$('#simpson').onclick=()=>{const L=pw(3987,12)+pw(4365,12),R=pw(4472,12);
+  const sci=v=>{const s=v.toString();return `${s[0]}.${s.slice(1,10)} × 10^${s.length-1}`;};
+  const html=`<div class="box"><h3>🧮 計算機說：相等？</h3><p>一般計算機只能顯示 10 位左右的數字：</p>
+   <p>3987¹² ＋ 4365¹² ＝ <span class="calc">${sci(L)}</span></p><p>4472¹² ＝ <span class="calc">${sci(R)}</span></p>
+   <p>看起來一模一樣！但把每一位都算出來：</p><div class="num"><span class="lab">3987¹² ＋ 4365¹²</span>${grp(L.toString())}</div><div class="num"><span class="lab">4472¹²</span>${grp(R.toString())}</div>
+   <p>其實差了 <b style="font-family:var(--f-mono);color:var(--bad)">${grp((L-R).toString())}</b>。</p>
+   <p><b>不用電腦也能拆穿：</b>3987 的各位數字和是 27、4365 是 18，都是 3 的倍數，所以左邊一定是 3 的倍數；但 4472 的各位數字和是 17，不是 3 的倍數，所以右邊不是 3 的倍數。兩邊不可能相等！</p></div>`;
+  B.n=3;$$('[data-n]').forEach(x=>x.classList.toggle('sel',x.dataset.n==='3'));renderB(html);};
+
+/* ================= C: timeline ================= */
+const EV=[
+  {y:1637,t:'費馬在書邊寫下猜想',d:'費馬自己證明了 n ＝ 4（用「無窮遞降法」：如果有一組解，就能做出一組更小的解，無限往下，不可能）。',ps:[4]},
+  {y:1770,t:'歐拉證明 n ＝ 3',d:'瑞士數學家歐拉證明了 n ＝ 3。證明裡有個小漏洞，後來被補上。',ps:[3]},
+  {y:1825,t:'狄利克雷、勒讓德證明 n ＝ 5',d:'在這之前，法國數學家<b>蘇菲・熱爾曼</b>用男性化名和大數學家通信，提出對很多質數都有用的方法，為 n ＝ 5 鋪了路。',ps:[5]},
+  {y:1832,t:'狄利克雷證明 n ＝ 14',d:'n ＝ 14 被證明了，可是 n ＝ 7 還沒有。',ps:[14]},
+  {y:1839,t:'拉梅證明 n ＝ 7',d:'法國數學家拉梅證明了 n ＝ 7。',ps:[7]},
+  {y:1847,t:'庫默一口氣解決一大批',d:'德國數學家庫默發明新工具，證明了所謂「正則質數」都成立：100 以內的質數只剩 37、59、67 不行。',ps:[11,13,17,19,23,29,31,41,43,47,53,61,71,73,79,83,89,97]},
+  {y:1857,t:'庫默處理 37、59、67',d:'100 以內全部解決！但質數有無限多個，這樣一個一個做永遠做不完。',ps:[37,59,67]},
+  {y:1955,t:'谷山－志村猜想',d:'兩位日本數學家谷山豐和志村五郎提出一個大膽的猜想：兩種看起來完全無關的數學物件（橢圓曲線和模形式）其實一一對應。當時沒人想到它和費馬有關。',ps:[]},
+  {y:1986,t:'里貝特接上關鍵的一環',d:'弗雷提出、里貝特證明：只要谷山－志村猜想成立，費馬最後定理就一定成立。問題變成要證明谷山－志村猜想。',ps:[]},
+  {y:1993,t:'懷爾斯宣布證明……但有漏洞',d:'懷爾斯秘密研究 7 年，在劍橋連續三天演講，最後寫下「所以費馬最後定理成立」。可是審稿時被發現一個漏洞。',ps:[]},
+  {y:1995,t:'懷爾斯和泰勒補好漏洞',d:'修補了一年多，1995 年正式發表。所有 n ≥ 3 全部成立，358 年的難題終於解開！',ps:'all'},
+];
+const C={k:0,pick:null,play:false,last:0};
+function provedBy(n,k){// earliest event index ≤ k that covers n (n has a proven exponent as a divisor)
+  for(let i=0;i<=k;i++){const ps=EV[i].ps;if(ps==='all')return i;if(ps.some(p=>n%p===0))return i;}return -1;}
+function setK(k){C.k=Math.max(0,Math.min(EV.length-1,k));$('#yr').value=C.k;roC();}
+$('#yr').oninput=e=>setK(+e.target.value);$('#yDn').onclick=()=>setK(C.k-1);$('#yUp').onclick=()=>setK(C.k+1);
+$('#yPlay').onclick=()=>{C.play=!C.play;if(C.play&&C.k>=EV.length-1)setK(0);$('#yPlay').textContent=C.play?'⏸ 暫停':'▶ 播放';};
+function roC(){const e=EV[C.k];$('#yrV').textContent=e.y;
+  let cnt=0;for(let n=3;n<=100;n++)if(provedBy(n,C.k)>=0)cnt++;
+  let t=`<span class="big">${e.y} 年：${e.t}</span><span class="st">${e.d}</span><span class="st">n ＝ 3～100 已經證明：<b>${cnt}</b> / 98</span>`;
+  if(C.pick){const i=provedBy(C.pick,C.k);t+=`<span class="st" style="color:var(--ink)">n ＝ ${C.pick}：${i<0?'還沒證明':`${EV[i].y} 年證明${EV[i].ps==='all'?'（懷爾斯一次全部解決）':EV[i].ps.includes(C.pick)?'':`（因為它是 ${EV[i].ps.find(p=>C.pick%p===0)} 的倍數）`}`}</span>`;}
+  $('#roC').innerHTML=t;}
+const cvC=$('#cC');
+cvC.addEventListener('click',e=>{const g=drawC.g;if(!g)return;const r=cvC.getBoundingClientRect(),x=e.clientX-r.left-g.x0,y=e.clientY-r.top-g.y0;
+  const c=Math.floor(x/g.cs),rr=Math.floor(y/g.cs);if(c<0||c>=g.cols||rr<0)return;const n=3+rr*g.cols+c;if(n>=3&&n<=100){C.pick=n;roC();}});
+function drawC(a,w,h,now){
+  if(C.play&&now-C.last>1400){C.last=now;if(C.k<EV.length-1)setK(C.k+1);else{C.play=false;$('#yPlay').textContent='▶ 播放';}}
+  a.fillStyle='#080706';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+20,cols=w>=520?14:10,rows=Math.ceil(98/cols);
+  const cs=Math.min((w-28)/cols,(h-top-16)/rows),x0=(w-cs*cols)/2,y0=top;drawC.g={x0,y0,cs,cols};
+  for(let n=3;n<=100;n++){const i=n-3,c=i%cols,r=Math.floor(i/cols),x=x0+c*cs,y=y0+r*cs,pi=provedBy(n,C.k);
+    const isNew=pi===C.k&&pi>=0;
+    a.fillStyle=pi<0?'#1e1b18':isNew?'#f2c66d':EV[pi].ps==='all'?'#7ee0a8':'#5b8f74';a.beginPath();a.roundRect(x+2,y+2,cs-4,cs-4,5);a.fill();
+    if(C.pick===n){a.strokeStyle='#fff';a.lineWidth=2;a.stroke();}
+    const prime=(()=>{for(let d=2;d*d<=n;d++)if(n%d===0)return false;return true;})();
+    a.fillStyle=pi<0?'#6e655a':'#0b0a09';a.font=`${prime||n===4?700:500} ${Math.min(15,cs*0.36)}px Lexend,sans-serif`;a.textAlign='center';a.textBaseline='middle';a.fillText(n,x+cs/2,y+cs/2);
+    if((prime||n===4)&&cs>26){a.fillStyle=pi<0?'#8a7f70':'#0b0a09';a.font=`${Math.min(10,cs*0.22)}px "Noto Sans TC",sans-serif`;a.fillText(n===4?'關鍵':'質數',x+cs/2,y+cs*0.8);}}
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){if(TAB!=='B'){const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);TAB==='A'?drawA(a,w,h):drawC(a,w,h,now);}requestAnimationFrame(loop);}
+roA();renderB();roC();requestAnimationFrame(loop);
+})();
+</script>

@@ -1,0 +1,262 @@
+<!doctype html>
+<title>6174 數字黑洞</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* Layout: a green enamel desk calculator on the left, its printed manual on the right. */
+:root{color-scheme:dark;
+  --enamel:#1f2d28;--body:#2c3e36;--plate:#384d43;--line:#4c6558;
+  --key:#e8dfc6;--key-ink:#1d2622;--paper:#f2ead6;--paper-ink:#37342b;
+  --amber:#ffbd59;--coral:#ff8266;--mint:#8fe0b8;--text:#eef2e8;--mute:#b4c4b8;
+  --serif:"Noto Serif TC","Songti TC",serif;--sans:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;--mono:"JetBrains Mono",Consolas,monospace}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0;background:var(--enamel);color:var(--text);font:400 16px/1.7 var(--sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.top{max-width:1220px;margin:0 auto 14px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 18px}
+h1{margin:0;font:800 clamp(42px,7vw,68px)/1 var(--mono);color:var(--amber);letter-spacing:.04em}
+.sub{min-width:0;flex:1 1 280px}
+.sub b{display:block;font:900 20px/1.3 var(--serif)}
+.sub span{color:var(--mute);font-size:14.5px}
+.tabs{max-width:1220px;margin:0 auto 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tabs button{min-width:0;padding:10px 6px;border:1px solid var(--line);background:var(--body);border-radius:6px;font-weight:700;font-size:15px;line-height:1.3}
+.tabs button[aria-selected=true]{background:var(--key);color:var(--key-ink);border-color:var(--key)}
+.wrap{max-width:1220px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
+.pane{background:var(--body);border:1px solid var(--line);border-radius:10px;padding:clamp(12px,2vw,20px);display:grid;gap:14px;min-width:0}
+.hint{margin:0;color:var(--mute);font-size:15px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:42px;padding:7px 14px;border:1px solid var(--line);border-radius:6px;background:var(--plate);font-weight:700;font-size:15px}
+.btn.go{background:var(--amber);border-color:var(--amber);color:var(--key-ink)}
+.btn:disabled{opacity:.42;cursor:default}
+.toast{min-height:50px;padding:10px 13px;border-radius:6px;background:var(--enamel);color:var(--text);font-size:15.5px;line-height:1.55}
+.toast b{color:var(--amber)}
+
+/* machine */
+.m{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,270px);gap:14px}
+.calc{display:grid;gap:7px;background:var(--plate);border-radius:8px;padding:12px;min-width:0}
+.line{display:grid;grid-template-columns:82px minmax(0,1fr);align-items:center;gap:8px}
+.line label,.line>span{font-size:13.5px;color:var(--mute);line-height:1.25}
+.digits{display:grid;grid-template-columns:repeat(4,minmax(0,62px));gap:6px}
+.d{aspect-ratio:1/1.12;display:grid;place-items:center;background:var(--key);color:var(--key-ink);border-radius:5px;font:800 clamp(25px,4.6vw,38px)/1 var(--mono);box-shadow:0 3px 0 #9e967f}
+.res .d{background:var(--enamel);color:var(--amber);box-shadow:inset 0 0 0 1px var(--line)}
+.res.hit .d{background:var(--amber);color:var(--key-ink)}
+.cur .d{background:var(--paper)}
+.rule{height:2px;background:var(--key);margin-left:90px;max-width:266px}
+.inp{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.inp input{width:112px;min-height:42px;padding:4px 8px;text-align:center;background:var(--enamel);border:1px solid var(--line);border-radius:6px;font:800 22px var(--mono);letter-spacing:.08em}
+.guess{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.guess span{font-size:14px;color:var(--mute);margin-right:3px}
+.guess button{width:36px;height:36px;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--enamel);font:700 15px var(--mono)}
+.guess button.on{background:var(--mint);color:var(--key-ink);border-color:var(--mint)}
+.tape{background:var(--paper);color:var(--paper-ink);border-radius:3px;padding:10px 10px 16px;min-width:0;max-height:386px;overflow:auto;font:700 13.5px/1.75 var(--mono);clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),92% 100%,84% calc(100% - 6px),76% 100%,68% calc(100% - 6px),60% 100%,52% calc(100% - 6px),44% 100%,36% calc(100% - 6px),28% 100%,20% calc(100% - 6px),12% 100%,4% calc(100% - 6px),0 100%)}
+.tape h3{margin:0 0 4px;font:700 13px var(--sans);color:#6a6450}
+.tape div{white-space:nowrap}
+.tape div b{color:#b4411f}
+
+/* map */
+.mapbox{display:grid;grid-template-columns:minmax(0,560px) minmax(170px,1fr);gap:14px}
+#map{display:block;width:100%;aspect-ratio:1;border-radius:4px;background:#17211d;cursor:crosshair;touch-action:manipulation}
+.side{display:grid;gap:10px;align-content:start;min-width:0}
+.stat b{display:block;font:800 30px/1.1 var(--mono);color:var(--amber)}
+.stat span{font-size:13.5px;color:var(--mute)}
+.hist{display:grid;gap:3px}
+.hist button{display:grid;grid-template-columns:40px minmax(0,1fr) 44px;gap:5px;align-items:center;padding:2px 3px;border:1px solid transparent;border-radius:3px;background:none;font:500 12.5px var(--mono);text-align:left}
+.hist button.on{border-color:var(--key)}
+.hist i{display:block;height:13px;min-width:2px}
+input[type=range]{width:100%;accent-color:var(--amber)}
+#pathRo{font:700 14px/1.6 var(--mono);overflow-wrap:anywhere}
+
+/* board */
+.big{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.big strong{font:800 40px/1 var(--mono);color:var(--amber);letter-spacing:.06em}
+.formula{font:700 14.5px/1.6 var(--mono);color:var(--mint);overflow-wrap:anywhere;min-height:24px}
+.boardwrap{overflow-x:auto}
+.board{display:grid;grid-template-columns:22px repeat(10,minmax(0,1fr));gap:1px;max-width:720px}
+.axis{font-size:13.5px;color:var(--mute);margin-bottom:3px}
+.board span{display:grid;place-items:center;font:700 clamp(10px,1.5vw,13px) var(--mono);color:var(--mute)}
+.board button{min-height:36px;padding:0;border:0;border-radius:3px;background:var(--plate);font:700 clamp(9.5px,1.45vw,13px) var(--mono)}
+.board button:hover{background:var(--line)}
+.board button.been{background:#6f5a2e}
+.board button.now{background:var(--key);color:var(--key-ink)}
+.board button.hole{background:var(--amber);color:var(--key-ink)}
+.board button.bad{background:var(--coral);color:var(--key-ink)}
+.board button.tip{box-shadow:inset 0 0 0 2px var(--mint)}
+
+/* manual */
+.rail{display:grid;gap:12px;min-width:0}
+.rail article{background:var(--plate);border-radius:8px;padding:14px 15px}
+.rail h2{margin:0 0 5px;font:900 18px/1.4 var(--serif);color:var(--amber);text-wrap:balance}
+.rail p{margin:0 0 7px;font-size:15.5px}
+.rail p:last-child{margin:0}
+.rail code{font:700 14px var(--mono);color:var(--mint)}
+.rail table{width:100%;border-collapse:collapse;font-size:14px}
+.rail td,.rail th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+@media(max-width:980px){.wrap{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:680px){.m,.mapbox{grid-template-columns:minmax(0,1fr)}.tape{max-height:210px}.line{grid-template-columns:62px minmax(0,1fr)}.rule{margin-left:70px}.tabs button{font-size:14px}.guess{gap:3px}.guess button{width:31px;height:34px;border-radius:6px}.guess span{font-size:13px;margin-right:1px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="top">
+  <h1>6174</h1>
+  <div class="sub"><b>四位數的數字黑洞</b><span>四個數字不全相同的四位數，最多 7 步，都會掉進來。</span></div>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tabA" aria-selected="true">① 黑洞計算機</button>
+  <button role="tab" id="tabB" aria-selected="false">② 一萬個數</button>
+  <button role="tab" id="tabC" aria-selected="false">③ 54 格密道</button>
+</nav>
+
+<div class="wrap">
+<main>
+  <section class="pane" id="paneA">
+    <p class="hint">數字由大排到小，減掉由小排到大，再拿答案重複做。先猜幾步會到 6174。</p>
+    <div class="inp">
+      <input id="num" inputmode="numeric" maxlength="4" value="3524" aria-label="輸入四位數">
+      <button class="btn" id="rand">隨機</button>
+      <button class="btn" id="long">找一個 7 步的</button>
+      <button class="btn" id="zero">補零陷阱 1000</button>
+    </div>
+    <div class="guess" id="guess"><span>我猜要</span></div>
+    <div class="m">
+      <div class="calc">
+        <div class="line"><span>現在的數</span><div class="digits cur" id="rCur"></div></div>
+        <div class="line"><span>大到小</span><div class="digits" id="rD"></div></div>
+        <div class="line"><span>− 小到大</span><div class="digits" id="rA"></div></div>
+        <div class="rule"></div>
+        <div class="line"><span>= 差</span><div class="digits res" id="rR"></div></div>
+      </div>
+      <div class="tape" id="tape" aria-live="polite"></div>
+    </div>
+    <div class="ctl">
+      <button class="btn go" id="step">算下一步</button>
+      <button class="btn" id="auto">自動跑完</button>
+    </div>
+    <div class="toast" id="tA"></div>
+  </section>
+
+  <section class="pane" id="paneB" hidden>
+    <p class="hint">每一小格是一個數，0000 在左上，9999 在右下。顏色代表幾步到 6174。點任一格，看它的路線。</p>
+    <div class="mapbox">
+      <canvas id="map" width="700" height="700" aria-label="0000 到 9999 的步數地圖"></canvas>
+      <div class="side">
+        <div class="stat"><b id="arr">9990</b><span>個數已經到達 6174</span></div>
+        <div class="stat"><b id="kinds">1</b><span>種不同的數還留在場上</span></div>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+    <div class="ctl">
+      <button class="btn go" id="play">一萬個數一起跑</button>
+      <label style="flex:1 1 210px;font-size:14px">第 <b id="rn">7</b> 輪<input type="range" id="round" min="0" max="7" value="7"></label>
+    </div>
+    <div class="toast" id="pathRo"></div>
+  </section>
+
+  <section class="pane" id="paneC" hidden>
+    <p class="hint">把數字排成 a≥b≥c≥d。差只由 a−d 和 b−c 決定，所以全部的路都走在這 54 格裡。算出現在這個數的 a−d、b−c，點對應的格子，一路走到 6174。</p>
+    <div class="big"><strong id="cNow">8352</strong><button class="btn" id="cHint">提示</button><button class="btn" id="cNew">新一局</button></div>
+    <div class="formula" id="cF"></div>
+    <div class="boardwrap"><div class="axis">左邊的數字是 a−d，上面的數字是 b−c</div><div class="board" id="board"></div></div>
+    <div class="toast" id="tC"></div>
+  </section>
+</main>
+
+<aside class="rail">
+  <article><h2>規則只有一句</h2><p>把四個數字排成最大的數和最小的數，大減小。答案再做一次。</p><p><code>7641 − 1467 = 6174</code>，走到這裡就永遠不動了，這種數叫「不動點」。</p></article>
+  <article><h2>0 不能丟掉</h2><p>1000 算一次得到 0999。這裡一定要當成四位數 0、9、9、9，下一步是 <code>9990 − 0999</code>。如果寫成 999，就會走到 495，掉進三位數的黑洞。</p></article>
+  <article><h2>為什麼會收斂得這麼快</h2><p>設 a≥b≥c≥d，相減後：</p><p><code>999(a−d) + 90(b−c)</code></p><p>原本有 9990 個數，只看這兩個差，第一步後就只剩 54 種結果。接下來只是在 54 格之間跳，而這些路全都通往 6174。</p></article>
+  <article><h2>7 步是算出來的</h2><p>電腦把 9990 個數全部檢查過，最長剛好 7 步，走滿 7 步的有 2184 個。這個結果靠窮舉證明，因為數量有限，一個一個查完就是證明。</p></article>
+  <article><h2>換位數會怎樣</h2><table><tr><th>位數</th><th>結果</th></tr><tr><td>2 位</td><td>沒有黑洞，繞圈 09→81→63→27→45→09</td></tr><tr><td>3 位</td><td>掉進 495，最多 6 步</td></tr><tr><td>4 位</td><td>掉進 6174，最多 7 步</td></tr><tr><td>5 位</td><td>沒有不動點，只會繞圈</td></tr><tr><td>6 位</td><td>有 549945 和 631764 兩個不動點，還有一個圈</td></tr></table></article>
+  <article><h2>發現它的老師</h2><p>印度數學老師卡布列克（D. R. Kaprekar）在 1949 年前後提出這個現象，所以 6174 也叫卡布列克常數。他沒有數學博士學位，一輩子喜歡研究數字的遊戲。</p></article>
+</aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pad=n=>String(n).padStart(4,'0'),asc=s=>[...s].sort().join(''),desc=s=>[...s].sort().reverse().join('');
+const K=n=>{const s=pad(n);return +desc(s)-+asc(s);};
+const rep=n=>new Set(pad(n)).size===1;
+const STEPS=new Int8Array(10000).fill(-1);
+for(let n=0;n<10000;n++){if(rep(n))continue;let x=n,c=0;while(x!==6174){x=K(x);c++;}STEPS[n]=c;}
+const path=n=>{const a=[n];while(a[a.length-1]!==6174)a.push(K(a[a.length-1]));return a;};
+const COL=['#ffffff','#fde7a8','#f9c66b','#ef9a4f','#dc6a52','#c04f77','#9050a4','#5f58c8'];
+
+/* tabs */
+const TABS=[['#tabA','#paneA'],['#tabB','#paneB'],['#tabC','#paneC']];
+TABS.forEach(([t,p])=>$(t).onclick=()=>{TABS.forEach(([x,y])=>{$(x).setAttribute('aria-selected',x===t);$(y).hidden=y!==p;});if(p==='#paneB')drawMap();});
+
+/* ① machine */
+const A={cur:3524,start:3524,n:0,g:null,busy:false,auto:false,run:0,score:0,plays:0};
+function setRow(el,s){el.innerHTML=[...s].map(c=>`<div class="d">${c}</div>`).join('');}
+function fly(from,to,src,dst,dur){const fs=[...from.children],ts=[...to.children],used=new Set();ts.forEach((el,i)=>{let j=-1;for(let k=0;k<4;k++)if(!used.has(k)&&src[k]===dst[i]){j=k;break;}used.add(j);const a=fs[j].getBoundingClientRect(),b=el.getBoundingClientRect();if(!reduce)el.animate([{transform:`translate(${a.left-b.left}px,${a.top-b.top}px)`},{transform:'none'}],{duration:dur,easing:'cubic-bezier(.3,.8,.3,1)'});});}
+function preview(){const s=pad(A.cur);setRow($('#rCur'),s);setRow($('#rD'),desc(s));setRow($('#rA'),asc(s));setRow($('#rR'),'????');$('#rR').classList.remove('hit');}
+function tapeHead(){$('#tape').innerHTML=`<h3>計算紙帶 · 起點 ${pad(A.start)}</h3>`;}
+function btns(){const bad=rep(A.cur);$('#step').disabled=A.busy||bad||(A.cur===6174&&A.n>0&&A.done);$('#auto').disabled=bad||(A.cur===6174&&!A.auto);$('#auto').textContent=A.auto?'停止':'自動跑完';document.querySelectorAll('#guess button').forEach(b=>b.disabled=A.n>0||bad);}
+function setStart(n){A.run++;A.auto=false;A.busy=false;A.done=false;A.cur=A.start=n;A.n=0;A.g=null;document.querySelectorAll('#guess button').forEach(b=>b.classList.remove('on'));$('#num').value=pad(n);preview();tapeHead();
+  $('#tA').innerHTML=rep(n)?`<b>${pad(n)}</b> 四個數字都一樣，大減小等於 0000，掉不進 6174。換一個數吧。`:n===6174?'這就是 6174 本身，已經在黑洞裡，0 步。按「算下一步」看它為什麼不動。':`起點 <b>${pad(n)}</b>。先點上面的數字猜步數，再開始算。`;btns();}
+async function step(){if(A.busy||rep(A.cur))return;const id=A.run,s=pad(A.cur),d=desc(s),a=asc(s),r=pad(+d-+a),dur=A.auto?300:520;A.busy=true;btns();
+  setRow($('#rD'),d);setRow($('#rA'),a);setRow($('#rR'),'    ');$('#rR').classList.remove('hit');fly($('#rCur'),$('#rD'),s,d,dur);fly($('#rCur'),$('#rA'),s,a,dur);
+  await wait(reduce?40:dur+60);if(id!==A.run)return;setRow($('#rR'),r);if(!reduce)[...$('#rR').children].forEach((x,i)=>x.animate([{transform:'rotateX(90deg)'},{transform:'none'}],{duration:220,delay:i*45,fill:'backwards'}));
+  const was=A.cur===6174;if(!was)A.n++;const row=document.createElement('div');row.innerHTML=`${A.n}. ${d}−${a}=${r==='6174'?'<b>6174</b>':r}`;$('#tape').append(row);$('#tape').scrollTop=1e5;
+  await wait(reduce?40:A.auto?360:330);if(id!==A.run)return;A.cur=+r;setRow($('#rCur'),r);A.busy=false;
+  if(A.cur===6174){$('#rR').classList.add('hit');if(was){A.done=true;$('#tA').innerHTML='<b>7641 − 1467 = 6174</b>。算出來還是自己，所以再也出不去。';}else finish();}
+  else $('#tA').innerHTML=`第 ${A.n} 步得到 <b>${r}</b>，繼續。${r[0]==='0'?'開頭的 0 要留著，它還是四位數。':''}`;btns();}
+function finish(){A.done=true;A.auto=false;let m=`<b>${pad(A.start)}</b> 用 <b>${A.n}</b> 步掉進 6174。`;if(A.g!==null){A.plays++;if(A.g===A.n){A.score++;m+=' 你猜對了！';}else m+=` 你猜 ${A.g} 步，差了 ${Math.abs(A.g-A.n)} 步。`;m+=` 目前猜中 ${A.score} / ${A.plays}。`;}$('#tA').innerHTML=m;}
+async function auto(){if(A.auto){A.auto=false;btns();return;}A.auto=true;const id=A.run;btns();while(A.auto&&id===A.run&&A.cur!==6174){if(A.busy)await wait(60);else await step();}if(id===A.run){A.auto=false;btns();}}
+for(let i=1;i<=7;i++){const b=document.createElement('button');b.textContent=i;b.setAttribute('aria-label',`猜 ${i} 步`);b.onclick=()=>{A.g=i;document.querySelectorAll('#guess button').forEach(x=>x.classList.toggle('on',x===b));$('#tA').innerHTML=`你猜 <b>${i}</b> 步。按「算下一步」驗證。`;};$('#guess').append(b);}
+$('#guess').insertAdjacentHTML('beforeend','<span style="margin-left:3px">步</span>');
+const randN=()=>{let n;do n=Math.floor(Math.random()*9000)+1000;while(rep(n));return n;};
+$('#rand').onclick=()=>setStart(randN());
+$('#long').onclick=()=>{let n;do n=randN();while(STEPS[n]!==7);setStart(n);};
+$('#zero').onclick=()=>setStart(1000);
+$('#num').oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);if(e.target.value.length===4)setStart(+e.target.value);};
+$('#num').onblur=e=>{if(e.target.value.length<4)setStart(+(e.target.value||0));};
+$('#step').onclick=step;$('#auto').onclick=auto;
+
+/* ② map */
+const B={t:7,f:null,sel:3524,timer:0};
+const ARR=[],KINDS=[];{let cur=[];for(let n=0;n<10000;n++)if(STEPS[n]>=0)cur.push(n);for(let t=0;t<=7;t++){ARR[t]=cur.filter(x=>x===6174).length;KINDS[t]=new Set(cur).size;cur=cur.map(K);}}
+const COUNT=Array(8).fill(0);STEPS.forEach(s=>{if(s>=0)COUNT[s]++;});
+const MAXC=Math.max(...COUNT);
+$('#hist').innerHTML=COUNT.map((c,i)=>`<button data-s="${i}" aria-label="只看 ${i} 步的數，共 ${c} 個"><span>${i} 步</span><i style="width:${c/MAXC*100}%;background:${COL[i]}"></i><span>${c}</span></button>`).join('');
+document.querySelectorAll('#hist button').forEach(b=>b.onclick=()=>{const s=+b.dataset.s;B.f=B.f===s?null:s;document.querySelectorAll('#hist button').forEach(x=>x.classList.toggle('on',+x.dataset.s===B.f));drawMap();});
+const hex=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));
+const RGB=COL.map(hex);
+const off=document.createElement('canvas');off.width=off.height=100;const oc=off.getContext('2d'),img=oc.createImageData(100,100);
+function drawMap(){const cv=$('#map'),w=cv.clientWidth;if(!w)return;const dpr=Math.min(devicePixelRatio||1,2),px=Math.round(w*dpr);if(cv.width!==px){cv.width=cv.height=px;}
+  for(let n=0;n<10000;n++){const s=STEPS[n],on=s>=0&&s<=B.t&&(B.f===null||B.f===s),c=s<0?[12,16,14]:on?RGB[s]:[46,64,55],i=n*4;img.data[i]=c[0];img.data[i+1]=c[1];img.data[i+2]=c[2];img.data[i+3]=255;}
+  oc.putImageData(img,0,0);const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(off,0,0,px,px);
+  const u=px/100,xy=n=>[(n%100+.5)*u,(Math.floor(n/100)+.5)*u];
+  if(B.sel!==null&&STEPS[B.sel]>=0){const p=path(B.sel);g.lineWidth=Math.max(4,u*.75);g.strokeStyle='#10231c';g.beginPath();p.forEach((n,i)=>{const[x,y]=xy(n);i?g.lineTo(x,y):g.moveTo(x,y);});g.stroke();g.lineWidth=Math.max(2,u*.34);g.strokeStyle='#fff';g.stroke();p.forEach((n,i)=>{const[x,y]=xy(n);g.fillStyle=i?'#fff':'#8fe0b8';g.beginPath();g.arc(x,y,u*(i?.55:.9),0,7);g.fill();});}
+  const[x,y]=xy(6174);g.strokeStyle='#fff';g.lineWidth=Math.max(2,u*.3);g.beginPath();g.arc(x,y,u*1.8,0,7);g.stroke();
+  $('#rn').textContent=B.t;$('#round').value=B.t;$('#arr').textContent=ARR[B.t];$('#kinds').textContent=KINDS[B.t];
+  $('#pathRo').innerHTML=B.sel===null?'':STEPS[B.sel]<0?`${pad(B.sel)}：四個數字相同，唯一進不去的數。`:`${pad(B.sel)} · ${STEPS[B.sel]} 步<br>${path(B.sel).map(pad).join(' → ')}`;}
+function pick(e){const r=$('#map').getBoundingClientRect(),x=Math.max(0,Math.min(99,Math.floor((e.clientX-r.left)/r.width*100))),y=Math.max(0,Math.min(99,Math.floor((e.clientY-r.top)/r.height*100)));B.sel=y*100+x;drawMap();}
+$('#map').addEventListener('pointerdown',pick);$('#map').addEventListener('pointermove',e=>{if(e.pointerType==='mouse')pick(e);});
+$('#round').oninput=e=>{stopPlay();B.t=+e.target.value;drawMap();};
+function stopPlay(){clearInterval(B.timer);B.timer=0;$('#play').textContent='一萬個數一起跑';}
+$('#play').onclick=()=>{if(B.timer){stopPlay();return;}B.f=null;document.querySelectorAll('#hist button').forEach(x=>x.classList.remove('on'));B.t=0;drawMap();$('#play').textContent='暫停';B.timer=setInterval(()=>{B.t++;drawMap();if(B.t>=7)stopPlay();},reduce?150:800);};
+new ResizeObserver(()=>drawMap()).observe($('#map'));
+
+/* ③ board */
+const pq=n=>{const s=desc(pad(n));return[+s[0]-+s[3],+s[1]-+s[2]];},val=(p,q)=>999*p+90*q;
+const C={cur:0,err:0,moves:0,been:new Set(),done:false};
+const cells={};
+{let h='<span></span>';for(let q=0;q<10;q++)h+=`<span>${q}</span>`;for(let p=1;p<10;p++){h+=`<span>${p}</span>`;for(let q=0;q<10;q++)h+=q<=p?`<button data-p="${p}" data-q="${q}" aria-label="a−d 等於 ${p}，b−c 等於 ${q}，得 ${pad(val(p,q))}">${pad(val(p,q))}</button>`:'<span></span>';}$('#board').innerHTML=h;
+document.querySelectorAll('#board button').forEach(b=>{cells[b.dataset.p+','+b.dataset.q]=b;b.onclick=()=>tapC(+b.dataset.p,+b.dataset.q,b);});}
+const cellOf=n=>{const[p,q]=pq(n);return cells[p+','+q];};
+function paintC(){Object.values(cells).forEach(b=>{const v=val(+b.dataset.p,+b.dataset.q);b.className=v===6174?'hole':C.been.has(v)?'been':'';if(v===C.cur&&v!==6174)b.className='now';});$('#cNow').textContent=pad(C.cur);}
+function newC(){const all=Object.values(cells).map(b=>val(+b.dataset.p,+b.dataset.q)).filter(v=>STEPS[v]>=3);C.cur=all[Math.floor(Math.random()*all.length)];C.err=0;C.moves=0;C.done=false;C.been=new Set([C.cur]);paintC();$('#cF').textContent='';$('#tC').innerHTML=`現在的數是 <b>${pad(C.cur)}</b>。把它由大到小排好，算 a−d 和 b−c，從左邊找 a−d，從上面找 b−c。`;}
+function tapC(p,q,b){if(C.done)return;const[tp,tq]=pq(C.cur);if(p!==tp||q!==tq){C.err++;b.classList.add('bad');setTimeout(()=>b.classList.remove('bad'),500);const s=desc(pad(C.cur));$('#tC').innerHTML=`還不是這格。${pad(C.cur)} 排好是 <b>${s}</b>，a−d = ${s[0]}−${s[3]}，b−c = ${s[1]}−${s[2]}。`;return;}
+  const s=desc(pad(C.cur)),next=val(p,q);$('#cF').textContent=`${s} − ${asc(pad(C.cur))} = 999×${p} + 90×${q} = ${pad(next)}`;C.cur=next;C.moves++;C.been.add(next);paintC();
+  if(next===6174){C.done=true;$('#tC').innerHTML=`<b>到了！</b>走了 ${C.moves} 格，錯 ${C.err} 次。${C.err?'':'完全沒走錯，你已經會用這條捷徑了。'}`;}else $('#tC').innerHTML=`正確，來到 <b>${pad(next)}</b>。再算下一格。`;}
+$('#cNew').onclick=newC;
+$('#cHint').onclick=()=>{if(C.done)return;const b=cellOf(C.cur);b.classList.add('tip');C.err++;$('#tC').innerHTML='綠框就是下一格，這次提示算一次錯誤。';setTimeout(()=>b.classList.remove('tip'),1600);};
+
+setStart(3524);newC();drawMap();
+</script>

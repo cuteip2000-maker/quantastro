@@ -1,0 +1,458 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夜空為什麼是黑的</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Sora:wght@500;700&display=swap">
+<style>
+/* Layout: star-map stage with mode tabs and sky panorama left, explainer rail right; stacks on phones */
+:root{
+  --night:#070912;
+  --deck:#0e1220;
+  --deck2:#151a2d;
+  --rule:#262d48;
+  --ink:#eef1fb;
+  --dim:#9aa2c2;
+  --star:#ffd98a;
+  --reach:#7cd3ff;
+  --dust:#ff9a4d;
+  --good:#7be0a6;
+  --bad:#ff7d72;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Sora","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--star);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--night)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--deck);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--deck2);color:var(--ink);box-shadow:inset 0 3px 0 var(--star)}
+.view{position:relative;flex:1;min-height:0;background:var(--deck2);border-top:1px solid var(--rule);overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+
+.read{position:absolute;top:12px;left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;text-shadow:0 1px 5px #000;display:flex;flex-direction:column;gap:2px;max-width:min(58%,400px)}
+.read .big{font-family:var(--f-disp);font-weight:900;font-size:24px;line-height:1.25}
+.read .line{font-size:14px}
+.read .line b{font-family:var(--f-num);color:var(--star)}
+.read .sub{font-size:13px;color:var(--dim)}
+.meter{position:absolute;top:12px;right:max(14px,env(safe-area-inset-right,0px));width:150px;pointer-events:none;text-align:right;font-size:12px;color:var(--dim)}
+.meter .bar{height:10px;border-radius:5px;background:linear-gradient(90deg,#05060c,#2a2f55 25%,#c98a3a 70%,#fff4d6);position:relative;margin:4px 0}
+.meter .pin{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--ink);transform:translateX(-2px);transition:left .25s}
+
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;
+  padding-block:8px max(10px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:rgba(14,18,32,.94);border-top:1px solid var(--rule)}
+.dock .sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 280px;max-width:560px}
+.dock .sl input{flex:1;min-width:0;accent-color:var(--star)}
+.dock .sl output{font-family:var(--f-num);color:var(--ink);min-width:96px;text-align:right;font-size:13px}
+.tog{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.tog button{background:var(--deck);border:1px solid var(--rule);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--dim)}
+.tog button[aria-pressed="true"]{background:var(--star);border-color:var(--star);color:#2a1c00;font-weight:700}
+.tog button.dust[aria-pressed="true"]{background:var(--dust);border-color:var(--dust)}
+.presets{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+.presets button{background:transparent;border:1px dashed var(--rule);border-radius:9px;padding:4px 10px;font-size:12.5px;color:var(--dim)}
+.presets button:hover{color:var(--ink);border-color:var(--dim)}
+.toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--night);font-weight:700;border-radius:10px;padding:8px 16px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:84%;text-align:center}
+.toast.show{opacity:1}
+
+.quiz{position:absolute;inset:0;overflow-y:auto;padding-block:24px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;justify-content:center}
+.qcard{width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
+.qcard .prog{font-family:var(--f-num);color:var(--dim);font-size:13px}
+.qcard h3{margin:0;font-family:var(--f-disp);font-size:22px;line-height:1.4}
+.qcard .opts{display:flex;flex-direction:column;gap:8px}
+.qcard .opts button{text-align:left;background:var(--deck);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:15px}
+.qcard .opts button:hover:not(:disabled){border-color:var(--star)}
+.qcard .opts button.right{border-color:var(--good);background:rgba(123,224,166,.12)}
+.qcard .opts button.wrong{border-color:var(--bad);background:rgba(255,125,114,.12)}
+.qcard .exp{background:var(--deck);border-left:3px solid var(--star);border-radius:8px;padding:10px 14px;font-size:14px;color:#d6dbef}
+.qcard .next{align-self:flex-end;background:var(--star);border:0;border-radius:10px;padding:10px 18px;font-weight:700;color:#2a1c00}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-num);font-weight:700;font-size:12px;letter-spacing:.2em;color:var(--star);text-transform:uppercase}
+h1{margin:2px 0 0;font-family:var(--f-disp);font-weight:900;font-size:30px;line-height:1.25;text-wrap:balance}
+.lede{margin:8px 0 0;color:#cfd4ea;font-size:14.5px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+.card{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#d6dbef}
+.card b{color:var(--ink)}
+table.shell{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+.shell th,.shell td{padding:5px 6px;border-bottom:1px solid var(--rule);text-align:center;font-variant-numeric:tabular-nums}
+.shell th{color:var(--dim);font-weight:500;font-size:12.5px}
+.shell td:last-child{color:var(--star);font-weight:700}
+.answers{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.answers li{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;font-size:14px;color:#d6dbef}
+.answers li b{display:block;color:var(--ink)}
+.answers .tag{display:inline-block;font-size:11px;border-radius:999px;padding:0 8px;margin-left:6px;vertical-align:2px}
+.tag.main{background:var(--good);color:#06240f}
+.tag.help{background:#3a4170;color:var(--ink)}
+.tag.no{background:var(--bad);color:#2a0400}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:50px 1fr;gap:10px;font-size:13.5px;color:#d6dbef}
+.tl time{font-family:var(--f-num);font-weight:700;color:var(--star)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:84vh;min-height:600px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .read{max-width:62%}
+  .read .big{font-size:20px}
+  .meter{width:110px}
+}
+@media (prefers-reduced-motion:reduce){.toast,.meter .pin{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="forest" aria-pressed="true">無限的星空<small>佯謬是什麼</small></button>
+      <button data-t="build" aria-pressed="false">打造你的宇宙<small>讓夜空變黑</small></button>
+      <button data-t="quiz" aria-pressed="false">小測驗<small>6 題</small></button>
+    </div>
+    <div class="view" id="view">
+      <canvas id="cv" aria-label="星空地圖與夜空環景"></canvas>
+      <div class="read" id="read"></div>
+      <div class="meter" id="meter">夜空亮度<div class="bar"><div class="pin" id="pin"></div></div><span id="mText"></span></div>
+      <div class="toast" id="toast"></div>
+      <div class="dock" id="dock"></div>
+      <div class="quiz" id="quiz" hidden></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">Olbers' Paradox</div>
+      <h1>奧伯斯佯謬：夜空為什麼是黑的？</h1>
+      <p class="lede">這聽起來像小孩子的問題，卻困擾了天文學家好幾百年。如果宇宙無限大、永遠存在、到處都均勻地分布著星星，那麼不管往哪個方向看，視線最後都會碰到一顆星星。整片夜空應該像太陽表面一樣亮才對！</p>
+    </div>
+
+    <section>
+      <h2>森林的比喻</h2>
+      <div class="card">站在一座<b>無邊無際的森林</b>中間，往任何方向看，視線最後一定會撞上某棵樹的樹幹，你根本看不到森林外面。把樹換成星星，就是奧伯斯佯謬。</div>
+    </section>
+
+    <section>
+      <h2>遠的星星比較暗，不就好了？</h2>
+      <div class="card">
+        遠的星星確實比較暗，但遠處的星星也比較多。把宇宙想成一層一層的洋蔥殼：
+        <table class="shell">
+          <thead><tr><th>距離</th><th>殼裡的星星數</th><th>每顆的亮度</th><th>這層總亮度</th></tr></thead>
+          <tbody>
+            <tr><td>1 倍</td><td>1 倍</td><td>1</td><td>1</td></tr>
+            <tr><td>2 倍</td><td>4 倍</td><td>1/4</td><td>1</td></tr>
+            <tr><td>3 倍</td><td>9 倍</td><td>1/9</td><td>1</td></tr>
+            <tr><td>10 倍</td><td>100 倍</td><td>1/100</td><td>1</td></tr>
+          </tbody>
+        </table>
+        <p class="note" style="margin-top:6px">每一層殼貢獻的亮度都一樣。殼有無限多層，加起來的亮度就大到不得了。</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>答案在這裡</h2>
+      <ul class="answers">
+        <li><b>宇宙有年齡<span class="tag main">最主要的原因</span></b>宇宙大約 138 億歲，光從遠方傳過來需要時間。太遠的星星，它們的光到現在都還沒抵達地球，所以那些方向看起來是黑的。</li>
+        <li><b>恆星不會永遠發光<span class="tag help">有幫助</span></b>像太陽這樣的恆星大約只能亮 100 億年，宇宙裡也沒有足夠的能量讓每個方向都排滿發光的星星。</li>
+        <li><b>宇宙在膨脹<span class="tag help">有幫助</span></b>遠方的光在旅途中被「拉長」（紅移），能量變少、看起來更暗更紅。</li>
+        <li><b>塵埃擋住了光<span class="tag no">行不通</span></b>塵埃吸收星光後會變熱，時間夠久就會和星星一樣熱，自己發出光來。</li>
+      </ul>
+      <p class="note">在真實宇宙裡，視線要延伸到大約 10²³ 光年以上，才有機會在每個方向都碰到一顆星星。這比宇宙誕生以來光能走的距離遠了上兆倍。</p>
+    </section>
+
+    <section>
+      <h2>彩蛋：天空其實真的在發光</h2>
+      <div class="card">1965 年，彭齊亞斯（Penzias）和威爾森（Wilson）發現整片天空在微波波段微微發光，這就是<b>宇宙微波背景輻射</b>。它是宇宙剛誕生時留下的光，原本像太陽表面一樣炙熱，經過 138 億年的膨脹被拉長成微波，溫度只剩約零下 270 度，眼睛看不見。從某個角度看，「天空很亮」的預測其實沒錯，只是那道光被宇宙膨脹拉長了。</div>
+    </section>
+
+    <section>
+      <h2>誰想過這個問題</h2>
+      <ul class="tl">
+        <li><time>1610</time><span>克卜勒認為夜空是黑的，代表星星的數量有限。</span></li>
+        <li><time>1744</time><span>瑞士天文學家謝塞（de Chéseaux）把這個矛盾寫得很清楚。</span></li>
+        <li><time>1823</time><span>德國醫生兼天文學家奧伯斯再次提出，後來這個問題就以他命名。</span></li>
+        <li><time>1848</time><span>作家愛倫坡在散文詩《我發現了》（Eureka）中猜到答案：遠方的光還沒傳過來。</span></li>
+        <li><time>1901</time><span>克耳文男爵第一次用數學算出：宇宙的年齡太短，光來不及填滿天空。</span></li>
+        <li><time>1965</time><span>發現宇宙微波背景輻射，證實宇宙有一個起點。</span></li>
+      </ul>
+    </section>
+    <p class="note">畫面是二維的示意模型：為了讓你看得見，星星畫得非常大、非常密。真實的星星小得多，結論仍然相同。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, tab = 'forest';
+let toastT; function toast(m){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), 3200); }
+
+// ---------- star field (units: 億光年) ----------
+const RW = 3000, SR = 3, DENS = 3.5e-4, AGE = 138, RFIN = 60;
+const N = Math.round(DENS*Math.PI*RW*RW);
+const sx = new Float32Array(N), sy = new Float32Array(N), sb = new Float32Array(N), sl = new Float32Array(N), sph = new Float32Array(N), kc = new Uint8Array(N);
+const SCOL = [[255,244,224],[255,214,150],[180,205,255],[255,170,130],[255,255,255]];
+let seed = 20240607; const rnd = () => (seed = (seed*16807) % 2147483647)/2147483647;
+for (let i = 0; i < N; i++){
+  let x, y; do { x = (rnd()*2 - 1)*RW; y = (rnd()*2 - 1)*RW; } while (x*x + y*y > RW*RW || x*x + y*y < 64);
+  sx[i] = x; sy[i] = y; sb[i] = 2 + rnd()*(AGE - 4); sl[i] = Math.exp(Math.log(8) + rnd()*Math.log(250)); sph[i] = rnd(); kc[i] = Math.floor(rnd()*SCOL.length);
+}
+// spatial grid (each star listed in every cell its disk touches)
+const G = 25, GN = Math.ceil(2*RW/G), OFF = RW;
+const cellCount = new Int32Array(GN*GN);
+const cellsOf = i => { const a = []; const x0 = Math.floor((sx[i] - SR + OFF)/G), x1 = Math.floor((sx[i] + SR + OFF)/G), y0 = Math.floor((sy[i] - SR + OFF)/G), y1 = Math.floor((sy[i] + SR + OFF)/G);
+  for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) if (cx >= 0 && cy >= 0 && cx < GN && cy < GN) a.push(cy*GN + cx); return a; };
+const lists = []; let total = 0;
+for (let i = 0; i < N; i++){ const c = cellsOf(i); lists.push(c); c.forEach(k => { cellCount[k]++; total++; }); }
+const cellStart = new Int32Array(GN*GN + 1); for (let k = 0; k < GN*GN; k++) cellStart[k + 1] = cellStart[k] + cellCount[k];
+const fill = new Int32Array(GN*GN), items = new Int32Array(total);
+for (let i = 0; i < N; i++) lists[i].forEach(k => { items[cellStart[k] + fill[k]++] = i; });
+
+// ---------- universe settings ----------
+const U = {size:'inf', age:'eternal', life:false, expand:false, dust:false};
+let lookR = 40;           // tab 1: how far the sight line reaches
+let dustOn = 0;           // seconds since dust was switched on (for heating)
+function starExists(i){ return U.size === 'inf' || sx[i]*sx[i] + sy[i]*sy[i] <= RFIN*RFIN; }
+function shining(i, t){   // is star i glowing at the moment its light (distance t) set off?
+  if (U.age === 'young'){
+    const te = AGE - t; if (te < sb[i]) return false;
+    return U.life ? te <= sb[i] + sl[i] : true;
+  }
+  if (U.life) return ((sph[i] + t*0.0011) % 1) < 0.32;
+  return true;
+}
+function reach(){ return tab === 'forest' ? lookR : U.age === 'young' ? AGE : RW; }
+
+const RAYS = 720;
+const hitT = new Float32Array(RAYS), hitI = new Int32Array(RAYS), hitB = new Float32Array(RAYS);
+function cast(th, R){
+  const dx = Math.cos(th), dy = Math.sin(th);
+  let cx = Math.floor(OFF/G), cy = Math.floor(OFF/G);
+  const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1;
+  const tdx = Math.abs(G/(dx || 1e-9)), tdy = Math.abs(G/(dy || 1e-9));
+  let tmx = dx > 0 ? ((cx + 1)*G - OFF)/dx : (OFF - cx*G)/(-dx || 1e-9);
+  let tmy = dy > 0 ? ((cy + 1)*G - OFF)/dy : (OFF - cy*G)/(-dy || 1e-9);
+  let best = Infinity, bi = -1, tc = 0;
+  while (tc <= R){
+    const k = cy*GN + cx;
+    for (let p = cellStart[k]; p < cellStart[k + 1]; p++){
+      const i = items[p], b = sx[i]*dx + sy[i]*dy; if (b <= 0) continue;
+      const c2 = sx[i]*sx[i] + sy[i]*sy[i] - b*b; if (c2 >= SR*SR) continue;
+      const t = b - Math.sqrt(SR*SR - c2);
+      if (t > 0 && t < best && t <= R && starExists(i) && shining(i, t)){ best = t; bi = i; }
+    }
+    const tn = Math.min(tmx, tmy);
+    if (best <= tn) break;
+    if (tmx < tmy){ cx += stepX; tc = tmx; tmx += tdx; } else { cy += stepY; tc = tmy; tmy += tdy; }
+    if (cx < 0 || cy < 0 || cx >= GN || cy >= GN) break;
+  }
+  return [bi, best];
+}
+let sky = 0, covered = 0, dirty = true;
+function compute(){
+  const R = reach(); let sum = 0, cov = 0;
+  for (let r = 0; r < RAYS; r++){
+    const [i, t] = cast(r/RAYS*Math.PI*2, R); hitI[r] = i; hitT[r] = t;
+    let b = 0;
+    if (i >= 0){ cov++; b = 1;
+      if (U.expand && tab === 'build') b /= Math.pow(1 + t/AGE, 4);
+      if (U.dust && tab === 'build') b *= Math.exp(-t/45);
+    }
+    hitB[r] = b; sum += b;
+  }
+  covered = cov/RAYS; sky = sum/RAYS; dirty = false;
+}
+function dustGlow(){ if (!(U.dust && tab === 'build')) return 0; const full = U.age === 'eternal' ? 1 : .06; return full*Math.min(1, dustOn/7); }
+
+// ---------- readouts ----------
+function skyWords(B){
+  if (B > .93) return ['整片天空像太陽表面一樣亮', '#fff4d6'];
+  if (B > .5) return ['天空亮得刺眼', '#f3c477'];
+  if (B > .18) return ['到處都是星星，亮得睡不著', '#c98a3a'];
+  return ['黑暗的夜空，點綴著星星', '#9aa2c2'];
+}
+function updateRead(){
+  const B = Math.min(1, sky + dustGlow()*(1 - sky)), [w] = skyWords(B);
+  $('#pin').style.left = (B*100) + '%'; $('#mText').textContent = w;
+  if (tab === 'forest'){
+    $('#read').innerHTML = `<div class="big">視線能看到 ${fmtR(lookR)}</div>
+      <div class="line">天空被星星蓋住的比例：<b>${Math.round(covered*100)}%</b></div>
+      <div class="sub">${covered > .97 ? '每個方向都撞上星星了！這就是奧伯斯佯謬。' : '把下面的滑桿往右拉，讓視線看得更遠。'}</div>`;
+  } else if (tab === 'build'){
+    const dark = B < .18;
+    $('#read').innerHTML = `<div class="big">${dark ? '成功：夜空是黑的！' : '夜空還太亮'}</div>
+      <div class="line">星星蓋住的方向：<b>${Math.round(covered*100)}%</b>　夜空亮度：<b>${Math.round(B*100)}%</b></div>
+      <div class="sub">${hint(B)}</div>`;
+  }
+}
+function hint(B){
+  if (U.dust && U.age === 'eternal') return dustGlow() > .5 ? '塵埃吸收星光後越來越熱，現在自己也在發光了！' : '塵埃先把光擋住了……但等等，看看它會不會變熱。';
+  if (U.age === 'young' && B < .18) return '宇宙才 138 億歲，遠方星星的光還在路上。';
+  if (U.expand && U.age === 'eternal' && B < .18) return '永恆但膨脹的宇宙也能變暗：遠方的光被拉長到幾乎沒有能量。';
+  if (U.size === 'fin' && B < .18) return '星星只在有限範圍內，外面的方向都是空的。';
+  if (U.life && U.age === 'eternal') return '恆星會熄滅，但永恆的宇宙裡總有新的恆星接班，天空還是很亮。';
+  return '試試看把「宇宙年齡」改成 138 億年。';
+}
+const fmtR = r => r >= 10000 ? (r/10000).toFixed(1) + ' 兆光年' : Math.round(r) + ' 億光年';
+
+// ---------- drawing ----------
+function draw(now){
+  const R = reach(), panoH = Math.min(86, H*.14), dockH = $('#dock').offsetHeight || 60;
+  const mapTop = 0, mapBot = H - dockH - panoH - 18, mcx = W/2, mcy = (mapTop + mapBot)/2 + 20;
+  const viewR = tab === 'forest' ? Math.max(40, R*1.15) : U.age === 'young' ? AGE*1.35 : U.size === 'fin' ? RFIN*2.2 : 420;
+  const sc = Math.min(W*.46, (mapBot - mapTop)*.46)/viewR;
+  const bgB = Math.min(1, sky + dustGlow()*(1 - sky));
+  ctx.fillStyle = '#05060c'; ctx.fillRect(0, 0, W, H);
+  // dust haze
+  if (U.dust && tab === 'build'){ const g = dustGlow(); ctx.fillStyle = `rgba(${Math.round(70 + 180*g)},${Math.round(40 + 80*g)},${Math.round(30 + 20*g)},${.18 + .25*g})`; ctx.fillRect(0, 0, W, mapBot); }
+  // horizon / light-reach circle
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, mapBot); ctx.clip();
+  if (tab === 'build' && U.age === 'young' || tab === 'forest'){
+    ctx.strokeStyle = 'rgba(124,211,255,.75)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(mcx, mcy, R*sc, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#7cd3ff'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(tab === 'forest' ? '視線能到的地方' : '光走 138 億年能到的範圍', mcx, mcy - R*sc - 8); ctx.textAlign = 'start';
+  }
+  if (tab === 'build' && U.size === 'fin'){ ctx.strokeStyle = 'rgba(255,217,138,.4)'; ctx.beginPath(); ctx.arc(mcx, mcy, RFIN*sc, 0, Math.PI*2); ctx.stroke(); }
+  // rays (every 4th)
+  for (let r = 0; r < RAYS; r += 4){
+    const th = r/RAYS*Math.PI*2, t = hitI[r] >= 0 ? hitT[r] : Math.min(R, viewR*1.5);
+    ctx.strokeStyle = hitI[r] >= 0 ? `rgba(255,217,138,${.12 + .3*hitB[r]})` : 'rgba(124,211,255,.07)';
+    ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(mcx, mcy); ctx.lineTo(mcx + Math.cos(th)*t*sc, mcy - Math.sin(th)*t*sc); ctx.stroke();
+  }
+  // stars
+  const lim = viewR*1.6, rad = Math.max(.8, SR*sc);
+  for (let i = 0; i < N; i++){
+    if (Math.abs(sx[i]) > lim || Math.abs(sy[i]) > lim) continue;
+    if (!starExists(i)) continue;
+    const x = mcx + sx[i]*sc, y = mcy - sy[i]*sc; if (x < -5 || x > W + 5 || y < -5 || y > mapBot + 5) continue;
+    const d = Math.hypot(sx[i], sy[i]), on = shining(i, d) && (tab !== 'build' || U.age === 'eternal' || d <= AGE);
+    const c = SCOL[kc[i]];
+    ctx.fillStyle = on ? `rgba(${c[0]},${c[1]},${c[2]},.95)` : 'rgba(120,128,160,.28)';
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI*2); ctx.fill();
+  }
+  // observer
+  ctx.fillStyle = '#7be0a6'; ctx.beginPath(); ctx.arc(mcx, mcy, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#7be0a6'; ctx.font = '700 12px "Noto Sans TC", sans-serif'; ctx.fillText('你在這裡', mcx + 8, mcy + 4);
+  ctx.restore();
+  // scale
+  ctx.fillStyle = '#9aa2c2'; ctx.font = '12px "Noto Sans TC", sans-serif';
+  const sb10 = Math.pow(10, Math.floor(Math.log10(viewR*.5))), sbPx = sb10*sc;
+  ctx.fillRect(16, mapBot - 14, sbPx, 2); ctx.fillText(fmtR(sb10), 16, mapBot - 20);
+  // panorama: the night sky in every direction
+  const py = mapBot + 10, pw = W - 32, px0 = 16;
+  ctx.fillStyle = '#9aa2c2'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillText('你看到的夜空（360° 環景，從東往北、西、南繞一圈）', px0, py - 2);
+  const g = dustGlow();
+  ctx.fillStyle = g > 0 ? `rgb(${Math.round(5 + 245*g)},${Math.round(6 + 170*g)},${Math.round(12 + 90*g)})` : '#020308';
+  ctx.fillRect(px0, py + 4, pw, panoH);
+  const cw = pw/RAYS;
+  for (let r = 0; r < RAYS; r++){
+    if (hitI[r] < 0 || hitB[r] < .002) continue;
+    const c = SCOL[kc[hitI[r]]], b = hitB[r];
+    let rr = c[0], gg = c[1], bb = c[2];
+    if (U.expand && tab === 'build'){ const z = hitT[r]/AGE, f = Math.min(1, z/1.2); gg *= 1 - .5*f; bb *= 1 - .75*f; }
+    ctx.fillStyle = `rgba(${rr|0},${gg|0},${bb|0},${Math.min(1, .15 + b)})`;
+    ctx.fillRect(px0 + r*cw, py + 4, Math.ceil(cw), panoH);
+  }
+  ctx.strokeStyle = '#262d48'; ctx.strokeRect(px0 + .5, py + 4.5, pw - 1, panoH - 1);
+}
+
+// ---------- tabs ----------
+function setTab(t){
+  tab = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  $('#quiz').hidden = t !== 'quiz'; $('#dock').hidden = t === 'quiz'; $('#read').hidden = t === 'quiz'; $('#meter').hidden = t === 'quiz';
+  if (t === 'forest'){
+    U.size = 'inf'; U.age = 'eternal'; U.life = false; U.expand = false; U.dust = false;
+    $('#dock').innerHTML = `<div class="sl"><span>視線能看多遠</span><input id="rS" type="range" min="0" max="1000" step="1"><output id="rO"></output></div>`;
+    const s = $('#rS'), lo = Math.log(10), hi = Math.log(RW*.98);
+    s.value = Math.round((Math.log(lookR) - lo)/(hi - lo)*1000);
+    s.oninput = () => { lookR = Math.exp(lo + s.value/1000*(hi - lo)); $('#rO').textContent = fmtR(lookR); dirty = true; };
+    $('#rO').textContent = fmtR(lookR);
+  } else if (t === 'build'){
+    $('#dock').innerHTML = `<div class="tog" id="tog">
+        <button data-k="size" data-v="inf">宇宙：無限大</button><button data-k="size" data-v="fin">宇宙：有邊界</button>
+        <button data-k="age" data-v="eternal">永遠存在</button><button data-k="age" data-v="young">年齡 138 億年</button>
+        <button data-k="life">恆星會熄滅</button><button data-k="expand">宇宙在膨脹</button><button data-k="dust" class="dust">加入塵埃</button>
+      </div>
+      <div class="presets"><button data-p="newton">牛頓的宇宙</button><button data-p="dust">用塵埃擋光？</button><button data-p="steady">永恆但膨脹</button><button data-p="ours">我們的宇宙</button></div>`;
+    document.querySelectorAll('#tog button').forEach(b => b.onclick = () => {
+      const k = b.dataset.k;
+      if (b.dataset.v) U[k] = b.dataset.v; else U[k] = !U[k];
+      if (k === 'dust' && U.dust) dustOn = 0;
+      syncTog(); dirty = true;
+    });
+    const P = {newton:{size:'inf', age:'eternal', life:false, expand:false, dust:false}, dust:{size:'inf', age:'eternal', life:false, expand:false, dust:true},
+      steady:{size:'inf', age:'eternal', life:true, expand:true, dust:false}, ours:{size:'inf', age:'young', life:true, expand:true, dust:false}};
+    const T = {newton:'牛頓的宇宙：無限、永恆、靜止。每個方向都是星星。', dust:'用塵埃擋光：一開始變暗了，接著看看塵埃的溫度……', steady:'永恆但會膨脹（「穩態宇宙」的想法）', ours:'我們的宇宙：138 億歲、會膨脹、恆星有壽命。'};
+    document.querySelectorAll('.presets button').forEach(b => b.onclick = () => { Object.assign(U, P[b.dataset.p]); if (U.dust) dustOn = 0; syncTog(); dirty = true; toast(T[b.dataset.p]); });
+    syncTog();
+  } else renderQuiz();
+  dirty = true;
+}
+function syncTog(){ document.querySelectorAll('#tog button').forEach(b => { const k = b.dataset.k; b.setAttribute('aria-pressed', b.dataset.v ? U[k] === b.dataset.v : !!U[k]); }); }
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+
+// ---------- quiz ----------
+const QS = [
+  {q:'奧伯斯佯謬問的是什麼問題？', o:['星星為什麼會一閃一閃？','如果宇宙無限、永恆、到處都有星星，夜空為什麼還是黑的？','月亮為什麼有圓缺？','太陽為什麼是黃色的？'], a:1, e:'它問的是「夜空為什麼是黑的」。照直覺推理，夜空應該亮得像太陽表面。'},
+  {q:'站在一座無邊無際的森林中間，往任何方向看，最後會看到什麼？', o:['森林外面的草原','天空','某棵樹的樹幹','什麼都看不到'], a:2, e:'視線遲早會撞上一棵樹。把樹換成星星，就是這個佯謬的核心。'},
+  {q:'星星的距離變成 2 倍遠時，那一層「殼」的情況是？', o:['星星數量變 4 倍，每顆亮度變 1/4，總亮度不變','星星數量不變，亮度變 1/2','星星數量變 2 倍，亮度不變','總亮度變成 0'], a:0, e:'殼的面積和距離平方成正比，每顆星的亮度和距離平方成反比，兩者剛好抵消。'},
+  {q:'為什麼「宇宙塵埃擋住了遠方的光」不是好答案？', o:['塵埃太少了','塵埃吸收光後會變熱，最後自己也發光','塵埃是透明的','塵埃會被太陽吹走'], a:1, e:'在永恆的宇宙裡，塵埃會被加熱到跟星星一樣熱，然後發出一樣亮的光。'},
+  {q:'夜空是黑的，最主要的原因是？', o:['地球的大氣層擋住了星光','星星的總數太少','宇宙有年齡，太遠的星星發出的光還沒傳到地球','地球自轉太快'], a:2, e:'宇宙約 138 億歲，我們只看得到光在這段時間內走得到的範圍，裡面的星星遠遠不夠蓋滿天空。'},
+  {q:'其實整片天空在某種「看不見的光」中是亮的。那是什麼？', o:['紫外線','宇宙微波背景輻射','X 光','無線電廣播'], a:1, e:'宇宙誕生初期留下的光被膨脹拉長成微波，從每個方向均勻地照過來。'}
+];
+let qi = 0, qs = 0, qAns = false;
+function renderQuiz(){
+  const box = $('#quiz');
+  if (qi >= QS.length){
+    box.innerHTML = `<div class="qcard"><div class="prog">完成！</div><h3>你答對了 ${qs} / ${QS.length} 題</h3>
+      <div class="exp">${qs === QS.length ? '滿分！你已經比 1823 年的天文學家更懂夜空了。' : qs >= 4 ? '很棒！回到「打造你的宇宙」再實驗看看。' : '再讀一次右邊的說明，然後挑戰一次。'}</div>
+      <button class="next" id="qAgain">再做一次</button></div>`;
+    $('#qAgain').onclick = () => { qi = 0; qs = 0; renderQuiz(); }; return;
+  }
+  const Q = QS[qi]; qAns = false;
+  box.innerHTML = `<div class="qcard"><div class="prog">第 ${qi + 1} / ${QS.length} 題 · 答對 ${qs} 題</div><h3>${Q.q}</h3>
+    <div class="opts">${Q.o.map((t, i) => `<button data-i="${i}">${'ABCD'[i]}　${t}</button>`).join('')}</div><div id="qExp"></div></div>`;
+  box.querySelectorAll('.opts button').forEach(b => b.onclick = () => {
+    if (qAns) return; qAns = true; const i = +b.dataset.i, ok = i === Q.a; if (ok) qs++;
+    box.querySelectorAll('.opts button').forEach(x => { x.disabled = true; if (+x.dataset.i === Q.a) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    $('#qExp').innerHTML = `<div class="exp">${ok ? '答對了！' : '再想想。'}${Q.e}</div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="next" id="qNext">${qi + 1 < QS.length ? '下一題' : '看成績'}</button></div>`;
+    $('#qNext').onclick = () => { qi++; renderQuiz(); };
+  });
+}
+
+// ---------- loop ----------
+const view = $('#view');
+function resize(){ const r = view.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); dirty = true; }
+new ResizeObserver(resize).observe(view); resize();
+setTab('forest');
+let last = performance.now(), rT = 0;
+function frame(now){
+  const dt = Math.min(.1, (now - last)/1000); last = now;
+  if (U.dust && tab === 'build'){ const before = dustGlow(); dustOn += dt; if (Math.abs(dustGlow() - before) > 1e-4) rT = 0; }
+  if (tab !== 'quiz'){
+    if (dirty) compute();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); draw(now);
+    if (now - rT > 150){ rT = now; updateRead(); }
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

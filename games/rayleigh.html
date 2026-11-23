@@ -1,0 +1,403 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>太陽真正的顏色</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Outfit:wght@500;700&display=swap">
+<style>
+/* Layout: live sky stage with mode tabs left, explainer rail right; stacks on phones. Single sunlit-paper look. */
+:root{
+  --paper:#fbf8f1;
+  --sheet:#ffffff;
+  --rule:#e3dccb;
+  --ink:#1d2433;
+  --dim:#626a7d;
+  --blue:#2f6fd6;
+  --sunset:#e8622c;
+  --sun:#f4b400;
+  --good:#23925f;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Outfit","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sunset);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#f1ebdc;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--sunset)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.read{position:absolute;top:10px;left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;display:flex;flex-direction:column;gap:1px;max-width:min(64%,440px);
+  background:rgba(255,255,255,.82);border:1px solid rgba(0,0,0,.08);border-radius:10px;padding:8px 12px}
+.read:empty{display:none}
+.read .big{font-family:var(--f-disp);font-weight:900;font-size:20px;line-height:1.3}
+.read .line{font-size:13.5px}
+.read .line b{font-family:var(--f-num);color:var(--sunset)}
+.read .sub{font-size:12.5px;color:var(--dim)}
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;
+  padding-block:8px max(10px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:rgba(251,248,241,.96);border-top:1px solid var(--rule)}
+.dock .sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 260px;max-width:520px}
+.dock .sl input{flex:1;min-width:0;accent-color:var(--sunset)}
+.dock .sl output{font-family:var(--f-num);color:var(--ink);min-width:60px;text-align:right}
+.seg{display:flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:#fff}
+.seg button{background:transparent;border:0;padding:6px 10px;font-size:13px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--dim);cursor:pointer}
+.chk input{accent-color:var(--sunset)}
+.dock button.chip{background:#fff;border:1px solid var(--rule);border-radius:999px;padding:5px 11px;font-size:13px}
+.dock button.chip:hover{border-color:var(--ink)}
+
+.quiz{position:absolute;inset:0;overflow-y:auto;padding-block:24px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;justify-content:center;background:var(--paper)}
+.qcard{width:100%;max-width:620px;display:flex;flex-direction:column;gap:12px}
+.qcard .prog{font-family:var(--f-num);color:var(--dim);font-size:13px}
+.qcard h3{margin:0;font-family:var(--f-disp);font-size:22px;line-height:1.4}
+.qcard .opts{display:flex;flex-direction:column;gap:8px}
+.qcard .opts button{text-align:left;background:#fff;border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:15px}
+.qcard .opts button:hover:not(:disabled){border-color:var(--sunset)}
+.qcard .opts button.right{border-color:var(--good);background:#e8f6ee}
+.qcard .opts button.wrong{border-color:#d9483b;background:#fdebe8}
+.qcard .exp{background:#fff;border-left:3px solid var(--sunset);border-radius:8px;padding:10px 14px;font-size:14px;color:#323a4c}
+.qcard .next{align-self:flex-end;background:var(--ink);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-weight:700}
+
+.rail{background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-num);font-weight:700;font-size:12px;letter-spacing:.2em;color:var(--sunset);text-transform:uppercase}
+h1{margin:2px 0 0;font-family:var(--f-disp);font-weight:900;font-size:29px;line-height:1.3;text-wrap:balance}
+.lede{margin:8px 0 0;font-size:14.5px;color:#3a4256}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:11px 14px 11px 48px;position:relative;font-size:14px;color:#323a4c}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:13px;top:11px;width:24px;height:24px;border-radius:50%;background:var(--sunset);color:#fff;font-family:var(--f-num);font-weight:700;display:grid;place-items:center;font-size:14px}
+.steps b{display:block;color:var(--ink);font-size:15px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#323a4c}
+.card b{color:var(--ink)}
+.card .t{display:block;font-weight:700;color:var(--ink);font-size:15px;margin-bottom:2px}
+.ratio{display:flex;align-items:flex-end;gap:14px;justify-content:center;padding:6px 0 2px}
+.ratio div{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;color:var(--dim)}
+.ratio i{display:block;width:44px;border-radius:6px 6px 0 0}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:48px 1fr;gap:10px;font-size:13.5px;color:#323a4c}
+.tl time{font-family:var(--f-num);font-weight:700;color:var(--sunset)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:84vh;min-height:600px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .read{max-width:92%}
+}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="sky" aria-pressed="true">天空調色盤<small>調整太陽高度</small></button>
+      <button data-t="star" aria-pressed="false">星星的顏色<small>溫度決定顏色</small></button>
+      <button data-t="quiz" aria-pressed="false">小測驗<small>6 題</small></button>
+    </div>
+    <div class="view" id="view">
+      <canvas id="cv" aria-label="天空顏色模擬"></canvas>
+      <div class="read" id="read"></div>
+      <div class="dock" id="dock"></div>
+      <div class="quiz" id="quiz" hidden></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">Rayleigh Scattering</div>
+      <h1>瑞利散射：太陽其實是白色的</h1>
+      <p class="lede">我們畫太陽總是塗黃色或橘色，但太空人在太空中看到的太陽，是刺眼的白色。讓太陽「變色」、讓天空變藍、讓夕陽變紅的，都是同一件事：空氣把陽光「散射」開來。</p>
+    </div>
+
+    <section>
+      <h2>四步驟看懂</h2>
+      <ol class="steps">
+        <li><b>陽光是所有顏色混在一起</b>牛頓用三稜鏡把陽光分成彩虹的顏色。紅、橙、黃、綠、藍、紫全部加在一起，就是白色。</li>
+        <li><b>空氣分子特別愛彈開藍光</b>光碰到比它小很多的空氣分子時，會被彈往四面八方，這叫瑞利散射。波長越短越容易被彈開：藍光被散射的程度大約是紅光的 6 倍。</li>
+        <li><b>藍光散滿天，天空就是藍的</b>被彈開的藍光從天空的每個角落射進你的眼睛，所以抬頭看到的是藍天。太陽本身少了一點藍光，看起來就稍微偏黃。</li>
+        <li><b>傍晚光要穿過厚厚的空氣</b>太陽接近地平線時，陽光要斜斜地穿過比中午多幾十倍的空氣。藍光、綠光幾乎都被散射光了，只剩紅光和橙光能直直抵達，夕陽就變紅了。</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>為什麼藍光被散射得比較多？</h2>
+      <div class="card">瑞利散射的強度和波長的<b>四次方</b>成反比。藍光波長約 450 奈米，紅光約 700 奈米：
+        <div class="ratio">
+          <div><i style="height:70px;background:#3d6fe0"></i>藍光 450 nm<b style="color:#3d6fe0">5.9</b></div>
+          <div><i style="height:30px;background:#4bb35a"></i>綠光 550 nm<b style="color:#4bb35a">2.6</b></div>
+          <div><i style="height:12px;background:#d9443b"></i>紅光 700 nm<b style="color:#d9443b">1</b></div>
+        </div>
+        <p class="note">（以紅光為 1，比較被散射的程度）</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>延伸問題</h2>
+      <div class="card"><span class="t">那天空為什麼不是紫色？</span>紫光散射得更多，但陽光裡的紫光本來就比較少，眼睛對紫色也比較不敏感，所以大腦看到的是天藍色。</div>
+      <div class="card"><span class="t">雲為什麼是白的？</span>雲裡的小水滴比光的波長大得多，不會挑顏色，每種顏色都散射得差不多（叫做米氏散射），混在一起就是白色。霧霾讓天空變白也是同樣的道理。</div>
+      <div class="card"><span class="t">火星的夕陽是藍色的！</span>火星的空氣很稀薄，天空裡飄著細細的紅色塵埃。白天天空偏黃褐色，太陽下山時，塵埃把藍光往前散射，太陽周圍反而出現一圈藍光。好奇號探測車拍過這個景象。</div>
+    </section>
+
+    <section>
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><time>1666</time><span>牛頓用三稜鏡證明白光由各種顏色組成。</span></li>
+        <li><time>1859</time><span>丁達爾發現光穿過細小微粒時，藍光散射得比較多（丁達爾效應）。</span></li>
+        <li><time>1871</time><span>瑞利勳爵用數學算出：散射強度和波長的四次方成反比。</span></li>
+        <li><time>1899</time><span>瑞利指出，就算沒有灰塵，空氣分子本身就能讓天空變藍。</span></li>
+        <li><time>1910</time><span>愛因斯坦用空氣密度的微小起伏，算出天空藍色的亮度。</span></li>
+      </ul>
+    </section>
+    <p class="note">天空顏色以單次散射模型即時計算（空氣分子的瑞利散射，加上可選的霧霾米氏散射），再用 CIE 1931 色彩配對函數轉成螢幕顏色。這是簡化模型：只粗略加入高空臭氧的吸收（讓黃昏的天頂保持藍色），沒有計算多次散射。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, tab = 'sky';
+
+// ---------- color science ----------
+const LAM = []; for (let l = 380; l <= 780; l += 10) LAM.push(l);
+const g3 = (l, m, s1, s2) => { const s = l < m ? s1 : s2, t = (l - m)/s; return Math.exp(-.5*t*t); };
+const CMF = LAM.map(l => [
+  1.056*g3(l, 599.8, 37.9, 31.0) + .362*g3(l, 442.0, 16.0, 26.7) - .065*g3(l, 501.1, 20.4, 26.2),
+  .821*g3(l, 568.8, 46.9, 40.5) + .286*g3(l, 530.9, 16.3, 31.1),
+  1.217*g3(l, 437.0, 11.8, 36.0) + .681*g3(l, 459.0, 26.0, 13.8)]);
+const planck = (l, T) => { const x = l*1e-9; return 1/(Math.pow(x, 5)*(Math.exp(1.4388e-2/(x*T)) - 1)); };
+function spec2xyz(sp){ let X = 0, Y = 0, Z = 0; for (let i = 0; i < LAM.length; i++){ X += sp[i]*CMF[i][0]; Y += sp[i]*CMF[i][1]; Z += sp[i]*CMF[i][2]; } return [X, Y, Z]; }
+const xyz2lin = ([X, Y, Z]) => [3.2406*X - 1.5372*Y - .4986*Z, -.9689*X + 1.8758*Y + .0415*Z, .0557*X - .2040*Y + 1.0570*Z];
+const gam = v => { v = Math.max(0, v); return v <= .0031308 ? 12.92*v : 1.055*Math.pow(v, 1/2.4) - .055; };
+const to255 = rgb => rgb.map(v => Math.round(Math.min(1, gam(v))*255));
+function normMax(rgb){ const m = Math.max(...rgb, 1e-9); return rgb.map(v => Math.max(0, v)/m); }
+// colour of a single wavelength (for spectrum bars)
+function lamColor(l){ // display colour of a wavelength (Bruton's piecewise approximation)
+  let r = 0, g = 0, b = 0;
+  if (l < 440){ r = (440 - l)/60; b = 1; } else if (l < 490){ g = (l - 440)/50; b = 1; } else if (l < 510){ g = 1; b = (510 - l)/20; }
+  else if (l < 580){ r = (l - 510)/70; g = 1; } else if (l < 645){ r = 1; g = (645 - l)/65; } else r = 1;
+  const f = l < 420 ? .3 + .7*(l - 380)/40 : l > 700 ? .3 + .7*(780 - l)/80 : 1;
+  return [r, g, b].map(v => Math.round(255*Math.pow(v*f, .8)));
+}
+
+// ---------- sky model ----------
+const SUN = LAM.map(l => planck(l, 5772)); const sunMax = Math.max(...SUN); for (let i = 0; i < SUN.length; i++) SUN[i] /= sunMax;
+const TAUR = LAM.map(l => { const u = l/1000; return .008569*Math.pow(u, -4)*(1 + .0113*Math.pow(u, -2) + .00013*Math.pow(u, -4)); });
+const S = {h:35, press:1, haze:false, atm:true};
+const PLACES = [['海平面', 1], ['玉山頂 3952 公尺', .62], ['客機 10 公里', .26], ['太空', 0]];
+const airmass = h => { h = Math.max(-1, h); return 1/(Math.sin(h*Math.PI/180) + .50572*Math.pow(h + 6.07995, -1.6364)); };
+function tauAt(i){ const p = S.atm ? S.press : 0; const r = TAUR[i]*p, a = S.haze && p > 0 ? .35*p*Math.pow(LAM[i]/550, -1.3) : 0; return [r, a]; }
+const DEG = Math.PI/180;
+// sky grid
+let GX = 0, GY = 0, skyImg = null, skyC = document.createElement('canvas'), skyX = skyC.getContext('2d');
+const FOVH = 120, ELO = -12, EHI = 72;
+let sunRGB = [1, 1, 1], sunLum = 1, groundLight = [0.3, 0.4, 0.3], dirty = true, specT = [];
+function computeSky(){
+  GX = Math.max(60, Math.round(W/7)); GY = Math.max(40, Math.round(H/7));
+  skyC.width = GX; skyC.height = GY; skyImg = skyX.createImageData(GX, GY); const d = skyImg.data;
+  const h = Math.max(-1, S.h), ms = airmass(h), sh = Math.sin(h*DEG), ch = Math.cos(h*DEG);
+  const night = S.h < -1 ? Math.exp((S.h + 1)*1.1) : 1;
+  const taus = LAM.map((_, i) => tauAt(i));
+  // ozone sits high above the air we look through: it only dims the sunlight on its way in (Chappuis band, ~600 nm)
+  const pO = S.atm && S.press > 0 ? 1 : 0;
+  const oz = LAM.map(l => Math.exp(-pO*.04*Math.exp(-Math.pow((l - 600)/60, 2))*ms));
+  // transmitted sunlight
+  specT = LAM.map((_, i) => { const t = taus[i][0] + taus[i][1]; return Math.exp(-t*ms)*oz[i]; });
+  const sunSp = SUN.map((v, i) => v*specT[i]);
+  const sxyz = spec2xyz(sunSp), s0 = spec2xyz(SUN);
+  sunRGB = normMax(xyz2lin(sxyz)); sunLum = sxyz[1]/s0[1];
+  // exposure reference: zenith brightness at noon at sea level
+  const ref = 0.15;
+  const HG = (c, g) => (1 - g*g)/(4*Math.PI*Math.pow(1 + g*g - 2*g*c, 1.5));
+  let gl = [0, 0, 0];
+  for (let y = 0; y < GY; y++){
+    const e = EHI - (y + .5)/GY*(EHI - ELO);
+    for (let x = 0; x < GX; x++){
+      const p = (y*GX + x)*4;
+      if (e < 0){ d[p + 3] = 0; continue; }
+      const a = ((x + .5)/GX - .5)*FOVH*DEG, se = Math.sin(e*DEG), ce = Math.cos(e*DEG);
+      const cosT = se*sh + ce*ch*Math.cos(a), mv = airmass(Math.max(.3, e));
+      const pR = 3/(16*Math.PI)*(1 + cosT*cosT), pA = HG(cosT, .76);
+      let X = 0, Y = 0, Z = 0;
+      for (let i = 0; i < LAM.length; i++){
+        const [tr, ta] = taus[i], t = tr + ta; if (t <= 0) continue;
+        const src = (tr*pR + ta*.9*pA)/t;
+        const f = Math.abs(mv - ms) < 1e-3 ? t*mv*Math.exp(-t*mv) : mv*(Math.exp(-t*ms) - Math.exp(-t*mv))/(mv - ms);
+        const L = SUN[i]*src*f*oz[i];
+        X += L*CMF[i][0]; Y += L*CMF[i][1]; Z += L*CMF[i][2];
+      }
+      const k = night*.55/ref;
+      const lin0 = xyz2lin([X*k, Y*k, Z*k]), Yl = .2126*lin0[0] + .7152*lin0[1] + .0722*lin0[2];
+      const lin = lin0.map(v => Yl + (v - Yl)*1.3);     // gentle saturation boost for the screen
+      const tm = lin.map(v => 1 - Math.exp(-Math.max(0, v)*1.6));
+      if (y === GY - 1 || e < 3){ gl[0] += lin[0]; gl[1] += lin[1]; gl[2] += lin[2]; }
+      d[p] = Math.round(gam(tm[0])*255); d[p + 1] = Math.round(gam(tm[1])*255); d[p + 2] = Math.round(gam(tm[2])*255); d[p + 3] = 255;
+    }
+  }
+  skyX.putImageData(skyImg, 0, 0);
+  const dir = Math.max(0, sh)*night*sunLum;
+  const amb = Math.min(1, Math.max(0, Math.sin(Math.max(0, h)*DEG)*3))*night;
+  groundLight = sunRGB.map((v, i) => .04 + v*dir*.6 + amb*Math.min(.25, gl[i]/(GX*3)*.2));
+  dirty = false;
+}
+function drawSky(now){
+  if (dirty) computeSky();
+  const dockH = $('#dock').offsetHeight || 60, hh = H - dockH;
+  const eY = e => (EHI - e)/(EHI - ELO)*hh;
+  ctx.imageSmoothingEnabled = true;
+  if (!S.atm || S.press === 0){ ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, hh); for (let i = 0; i < 90; i++){ ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect((i*137.5) % W, (i*71.3) % (eY(0)), 1.4, 1.4); } }
+  else ctx.drawImage(skyC, 0, 0, W, hh);
+  // sun disk
+  const sy = eY(S.h), sx = W/2, r = Math.max(10, hh*.028);
+  if (S.h > -1.5){
+    const [R, G, B] = to255(sunRGB.map(v => v*Math.min(1, .35 + sunLum*4)));
+    const glow = ctx.createRadialGradient(sx, sy, r*.5, sx, sy, r*(S.haze ? 9 : 5));
+    glow.addColorStop(0, `rgba(${R},${G},${B},.55)`); glow.addColorStop(1, `rgba(${R},${G},${B},0)`);
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, r*(S.haze ? 9 : 5), 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = `rgb(${R},${G},${B})`; ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI*2); ctx.fill();
+  }
+  // ground: rolling hills lit by the sun
+  const gy = eY(0); const [gr, gg, gb] = to255([groundLight[0]*.35, groundLight[1]*.6, groundLight[2]*.3]);
+  ctx.fillStyle = `rgb(${gr},${gg},${gb})`; ctx.beginPath(); ctx.moveTo(0, hh);
+  for (let x = 0; x <= W; x += 8) ctx.lineTo(x, gy - 8 - Math.sin(x*.012)*10 - Math.sin(x*.031 + 1)*5);
+  ctx.lineTo(W, hh); ctx.closePath(); ctx.fill();
+  const [hr, hg, hb] = to255([groundLight[0]*.22, groundLight[1]*.36, groundLight[2]*.2]);
+  ctx.fillStyle = `rgb(${hr},${hg},${hb})`; ctx.beginPath(); ctx.moveTo(0, hh);
+  for (let x = 0; x <= W; x += 8) ctx.lineTo(x, gy + 22 - Math.sin(x*.02 + 2)*12);
+  ctx.lineTo(W, hh); ctx.closePath(); ctx.fill();
+  // spectrum of the sunlight that reaches us
+  const bw = Math.min(300, W*.42), bh = 60, bx = W - bw - 16, by = 12;
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(bx - 8, by - 4, bw + 16, bh + 34);
+  ctx.fillStyle = '#1d2433'; ctx.font = '700 12px "Noto Sans TC", sans-serif'; ctx.fillText('陽光抵達這裡時，各色光還剩多少', bx, by + 10);
+  const cw = bw/LAM.length;
+  LAM.forEach((l, i) => { const v = specT[i] ?? 1, [R, G, B] = lamColor(l); ctx.fillStyle = `rgb(${R},${G},${B})`; ctx.fillRect(bx + i*cw, by + 16 + bh*(1 - v)*.8, cw + .5, bh*v*.8); });
+  ctx.fillStyle = '#626a7d'; ctx.font = '11px "Outfit", sans-serif'; ctx.fillText('400 nm', bx, by + bh + 26); ctx.fillText('700 nm', bx + bw - 36, by + bh + 26);
+  // readout
+  const i450 = 7, i650 = 27, b = specT[i450] ?? 1, rr = specT[i650] ?? 1;
+  const mass = S.h > -1 ? airmass(S.h) : 40;
+  const [R, G, B] = to255(sunRGB);
+  const mood = !S.atm || S.press === 0 ? '沒有空氣：天空全黑，太陽是白色的' : S.h < -1 ? '太陽下山了，天色暗下來' : S.h < 4 ? '日出／日落：藍光幾乎被散射光了' : S.h < 15 ? '傍晚：陽光開始變橘' : '白天：天空被散射的藍光填滿';
+  $('#read').innerHTML = `<div class="big">${mood}</div>
+    <div class="line">陽光穿過的空氣：正午的 <b>${S.atm && S.press ? (mass*S.press).toFixed(1) : 0}</b> 倍厚</div>
+    <div class="line">藍光（450 nm）剩 <b>${Math.round(b*100)}%</b> · 紅光（650 nm）剩 <b>${Math.round(rr*100)}%</b></div>
+    <div class="sub">太陽看起來的顏色：<span style="display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;background:rgb(${R},${G},${B});border:1px solid #0002"></span> rgb(${R}, ${G}, ${B})</div>`;
+}
+function setupSky(){
+  $('#dock').innerHTML = `<div class="sl"><span>太陽高度</span><input id="hS" type="range" min="-6" max="90" step="0.5" value="${S.h}"><output id="hO"></output></div>
+    <div class="seg" id="pSeg">${PLACES.map(([n, p], i) => `<button data-i="${i}" aria-pressed="${S.press === p}">${n}</button>`).join('')}</div>
+    <label class="chk"><input type="checkbox" id="hz" ${S.haze ? 'checked' : ''}> 加入霧霾／灰塵</label>
+    <button class="chip" data-h="70">正午</button><button class="chip" data-h="12">傍晚</button><button class="chip" data-h="1">日落</button>`;
+  const upd = () => { $('#hO').textContent = S.h + '°'; dirty = true; };
+  $('#hS').oninput = e => { S.h = +e.target.value; upd(); };
+  document.querySelectorAll('#pSeg button').forEach(b => b.onclick = () => { S.press = PLACES[+b.dataset.i][1]; S.atm = S.press > 0; document.querySelectorAll('#pSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); dirty = true; });
+  $('#hz').onchange = e => { S.haze = e.target.checked; dirty = true; };
+  document.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { S.h = +b.dataset.h; $('#hS').value = S.h; upd(); });
+  upd();
+}
+
+// ---------- star colours ----------
+const ST = {T:5772};
+const STARS = [['比鄰星（紅矮星）', 3000], ['參宿四', 3600], ['太陽', 5772], ['織女星', 9600], ['參宿七', 12100]];
+function setupStar(){
+  $('#dock').innerHTML = `<div class="sl"><span>表面溫度</span><input id="tS" type="range" min="2500" max="15000" step="50" value="${ST.T}"><output id="tO"></output></div>
+    ${STARS.map(([n, t]) => `<button class="chip" data-t="${t}">${n}</button>`).join('')}`;
+  $('#tS').oninput = e => { ST.T = +e.target.value; $('#tO').textContent = ST.T + ' K'; };
+  document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { ST.T = +b.dataset.t; $('#tS').value = ST.T; $('#tO').textContent = ST.T + ' K'; });
+  $('#tO').textContent = ST.T + ' K';
+}
+function drawStar(){
+  const dockH = $('#dock').offsetHeight || 60, hh = H - dockH;
+  ctx.fillStyle = '#0b0e18'; ctx.fillRect(0, 0, W, hh);
+  const sp = LAM.map(l => planck(l, ST.T)), rgb = normMax(xyz2lin(spec2xyz(sp))), [R, G, B] = to255(rgb);
+  // star disk
+  const narrow = W < 640, cx = narrow ? W/2 : W*.27, cy = narrow ? hh*.36 : hh*.55, r = Math.min(narrow ? hh*.13 : hh*.22, W*.2);
+  const glow = ctx.createRadialGradient(cx, cy, r*.6, cx, cy, r*1.9); glow.addColorStop(0, `rgba(${R},${G},${B},.5)`); glow.addColorStop(1, `rgba(${R},${G},${B},0)`);
+  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, r*1.9, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = `rgb(${R},${G},${B})`; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  const name = (STARS.find(([, t]) => Math.abs(t - ST.T) < 60) || [''])[0];
+  ctx.fillStyle = '#eef1fb'; ctx.font = '700 18px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(name || `${ST.T} K 的星星`, cx, cy + r + 34);
+  ctx.font = '13px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#aab3cc'; ctx.fillText(`在太空中看到的顏色 rgb(${R}, ${G}, ${B})`, cx, cy + r + 56); ctx.textAlign = 'start';
+  // blackbody curve
+  const px = narrow ? 20 : W*.52, pw = narrow ? W - 40 : W*.44, py = narrow ? hh*.62 : hh*.2, ph = narrow ? hh*.3 : hh*.55;
+  const L0 = 200, L1 = 2000, lmax = 2.8978e6/ST.T;
+  let mx = 0; const pts = []; for (let l = L0; l <= L1; l += 5){ const v = planck(l, ST.T); pts.push([l, v]); mx = Math.max(mx, v); }
+  const X = l => px + (l - L0)/(L1 - L0)*pw, Y = v => py + ph - v/mx*ph*.92;
+  for (let l = 380; l <= 780; l += 5){ const [r2, g2, b2] = lamColor(l); ctx.fillStyle = `rgba(${r2},${g2},${b2},.35)`; ctx.fillRect(X(l), py, X(l + 5) - X(l) + .5, ph); }
+  ctx.strokeStyle = '#eef1fb'; ctx.lineWidth = 2.5; ctx.beginPath(); pts.forEach(([l, v], i) => i ? ctx.lineTo(X(l), Y(v)) : ctx.moveTo(X(l), Y(v))); ctx.stroke();
+  ctx.strokeStyle = 'rgba(238,241,251,.4)'; ctx.lineWidth = 1; ctx.strokeRect(px, py, pw, ph);
+  ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(X(lmax), py); ctx.lineTo(X(lmax), py + ph); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#eef1fb'; ctx.font = '600 12px "Noto Sans TC", sans-serif';
+  ctx.fillText(`最亮的波長 ${Math.round(lmax)} nm`, Math.min(X(lmax) + 6, px + pw - 120), py + 16);
+  ctx.fillStyle = '#aab3cc'; ctx.font = '11px "Outfit", sans-serif';
+  [200, 400, 700, 1000, 1500, 2000].forEach(l => ctx.fillText(l + ' nm', X(l) - 14, py + ph + 16));
+  ctx.fillStyle = '#eef1fb'; ctx.font = '700 13px "Noto Sans TC", sans-serif'; ctx.fillText('星星發出的光（彩色區是眼睛看得到的範圍）', px, py - 8);
+  const note = ST.T < 4200 ? '溫度低：紅光比藍光多很多，看起來偏紅橘。' : ST.T < 7000 ? (Math.abs(ST.T - 5772) < 200 ? '太陽最亮的波長在藍綠色附近，但它同時發出所有顏色的光，混合起來是白色！' : '各色光差不多一樣多，混起來接近白色。') : '溫度高：藍光比較多，看起來偏藍白。';
+  $('#read').innerHTML = `<div class="big">表面溫度 ${ST.T.toLocaleString()} K</div><div class="line">${note}</div><div class="sub">為什麼沒有綠色的星星？能讓綠光最亮的溫度，也會同時發出大量紅光和藍光，混起來就變成白色了。</div>`;
+}
+
+// ---------- quiz ----------
+const QS = [
+  {q:'太空人在太空中看到的太陽是什麼顏色？', o:['黃色','橘色','白色','紅色'], a:2, e:'太陽發出所有顏色的光，混在一起是白色。在地面上看起來偏黃，是因為一部分藍光被空氣散射掉了。'},
+  {q:'天空為什麼是藍色的？', o:['因為反射了海洋的顏色','空氣分子把藍光散射到四面八方','太陽發出的藍光最多','臭氧是藍色的'], a:1, e:'波長短的藍光最容易被空氣分子彈開，從天空各處進入我們的眼睛。'},
+  {q:'夕陽為什麼特別紅？', o:['傍晚太陽溫度降低了','陽光要穿過更厚的空氣，藍綠光都被散射掉了','地球的影子是紅色的','雲把太陽染紅了'], a:1, e:'太陽靠近地平線時，陽光斜斜地穿過幾十倍厚的空氣，最後只剩紅橙光能直直抵達眼睛。'},
+  {q:'藍光（450 nm）被空氣散射的程度，大約是紅光（700 nm）的幾倍？', o:['1 倍','2 倍','約 6 倍','100 倍'], a:2, e:'散射強度和波長的四次方成反比：(700÷450)⁴ ≈ 5.9。'},
+  {q:'雲為什麼是白色的？', o:['雲裡的水滴比光的波長大，每種顏色都散射得差不多','雲是冰做的','雲反射了月光','雲裡沒有空氣'], a:0, e:'大水滴不挑顏色（米氏散射），所有顏色一起散射，混起來就是白色。'},
+  {q:'在月球上（沒有大氣層）白天抬頭看，天空是什麼顏色？', o:['藍色','白色','黑色','紅色'], a:2, e:'沒有空氣就沒有散射，就算太陽高掛，天空也是黑的，星星清晰可見。'}
+];
+let qi = 0, qs = 0, qAns = false;
+function renderQuiz(){
+  const box = $('#quiz');
+  if (qi >= QS.length){
+    box.innerHTML = `<div class="qcard"><div class="prog">完成！</div><h3>你答對了 ${qs} / ${QS.length} 題</h3><div class="exp">${qs === QS.length ? '滿分！下次看到夕陽，你可以跟朋友解釋為什麼它是紅的了。' : '回到「天空調色盤」，把太陽拉到地平線附近，再實驗看看。'}</div><button class="next" id="qAgain">再做一次</button></div>`;
+    $('#qAgain').onclick = () => { qi = 0; qs = 0; renderQuiz(); }; return;
+  }
+  const Q = QS[qi]; qAns = false;
+  box.innerHTML = `<div class="qcard"><div class="prog">第 ${qi + 1} / ${QS.length} 題 · 答對 ${qs} 題</div><h3>${Q.q}</h3>
+    <div class="opts">${Q.o.map((t, i) => `<button data-i="${i}">${'ABCD'[i]}　${t}</button>`).join('')}</div><div id="qExp"></div></div>`;
+  box.querySelectorAll('.opts button').forEach(b => b.onclick = () => {
+    if (qAns) return; qAns = true; const i = +b.dataset.i, ok = i === Q.a; if (ok) qs++;
+    box.querySelectorAll('.opts button').forEach(x => { x.disabled = true; if (+x.dataset.i === Q.a) x.classList.add('right'); });
+    if (!ok) b.classList.add('wrong');
+    $('#qExp').innerHTML = `<div class="exp">${ok ? '答對了！' : '再想想。'}${Q.e}</div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="next" id="qNext">${qi + 1 < QS.length ? '下一題' : '看成績'}</button></div>`;
+    $('#qNext').onclick = () => { qi++; renderQuiz(); };
+  });
+}
+
+// ---------- shell ----------
+function setTab(t){
+  tab = t; document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  $('#quiz').hidden = t !== 'quiz'; $('#dock').hidden = t === 'quiz'; $('#read').hidden = t === 'quiz';
+  if (t === 'sky'){ setupSky(); dirty = true; } else if (t === 'star') setupStar(); else renderQuiz();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+const view = $('#view');
+function resize(){ const r = view.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); dirty = true; }
+new ResizeObserver(resize).observe(view); resize();
+setTab('sky');
+function frame(now){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (tab === 'sky') drawSky(now); else if (tab === 'star') drawStar();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

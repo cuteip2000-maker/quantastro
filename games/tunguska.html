@@ -1,0 +1,484 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>通古斯大爆炸</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: field-investigation desk — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#09080a;
+  --panel:#141214;
+  --panel2:#1d1a1d;
+  --rule:#352f33;
+  --ink:#f1ece8;
+  --dim:#a89f9a;
+  --fire:#ff9a3c;
+  --sun:#ffd76a;
+  --ok:#6fd38f;
+  --bad:#ff7a6a;
+  --sky:#6fbfff;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--fire)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#050405}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(9,8,10,.86);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(330px,calc(100% - 24px))}
+.ro b{color:var(--sun);font-family:var(--f-num)}
+#roA{transition:opacity .35s}
+.ro .big{font-family:var(--f-disp);font-size:16px}
+.ro .ok{color:var(--ok)}
+.ro .st{display:block;color:var(--dim)}
+.ro .st.done{color:var(--ok)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--sun);color:#221a00;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--fire);border-color:var(--fire);color:#2a1300;font-weight:700}
+.btn.sel{border-color:var(--fire);color:var(--fire);box-shadow:inset 0 0 0 1px var(--fire);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 200px}
+.sl input{flex:1;accent-color:var(--fire);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:4.4em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--fire)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:62vh;min-height:420px}
+  #p-A .cv{height:82vh;min-height:640px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 重現大爆炸<small>調出 1908 年那一顆</small></button>
+      <button data-tab="B" aria-pressed="false">② 森林偵探<small>從倒下的樹找爆炸點</small></button>
+      <button data-tab="C" aria-pressed="false">③ 多久一次？<small>大小、能量、頻率</small></button>
+    </nav>
+    <div class="view">
+      <!-- A: airburst simulator -->
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">直徑<input id="aL" type="range" min="5" max="150" step="1" value="30"><b id="aLV"></b></label>
+            <label class="sl">速度<input id="aV" type="range" min="11" max="40" step="0.5" value="17"><b id="aVV"></b></label>
+            <label class="sl">角度<input id="aT" type="range" min="10" max="90" step="1" value="45"><b id="aTV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">材質</span>
+            <button class="btn" data-mat="ice">冰（彗星）</button>
+            <button class="btn sel" data-mat="stone">石頭</button>
+            <button class="btn" data-mat="iron">鐵</button>
+            <button class="btn pri" id="aGo">☄️ 讓它衝進大氣層</button>
+          </div>
+          <div class="row">
+            <span class="lab">比一比</span>
+            <button class="btn" data-pre="che">2013 車里雅賓斯克</button>
+            <button class="btn" data-pre="bar">5 萬年前 巴林傑隕石坑</button>
+            <span class="note">挑戰：調出和 1908 年通古斯一樣的結果！</span>
+          </div>
+        </div>
+      </div>
+      <!-- B: forest detective -->
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="bGo" disabled>📍 確定答案</button>
+            <button class="btn" id="bAll">🔦 畫出所有延長線</button>
+            <button class="btn" id="bNext" hidden>下一回合 ▶</button>
+            <button class="btn" id="bReset">↺ 從第 1 回合重來</button>
+          </div>
+          <div class="note">點一棵倒下的樹，會畫出它的「延長線」。點地圖其他地方，插上你猜的爆炸中心。</div>
+        </div>
+      </div>
+      <!-- C: how often -->
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">太空岩石直徑<input id="cL" type="range" min="0" max="2.477" step="0.005" value="1.74"><b id="cLV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">跳到</span>
+            <button class="btn" data-cl="0.6">2008 TC3</button>
+            <button class="btn" data-cl="1.28">車里雅賓斯克</button>
+            <button class="btn" data-cl="1.74">通古斯</button>
+            <button class="btn" data-cl="2.146">140 m（重點監測）</button>
+          </div>
+          <div class="note">假設是石質小行星、每秒 20 公里、45° 斜斜衝進來。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>1908 年，西伯利亞的天空爆炸了</h1>
+    <p class="lede">1908 年 6 月 30 日早上，一顆太空岩石衝進俄羅斯西伯利亞通古斯河上空。它沒有撞到地面，卻在半空中爆炸，把整片森林像骨牌一樣吹倒。</p>
+
+    <div class="card">
+      <h2>發生了什麼事？</h2>
+      <p>大約 7 點多，當地人看到一道比太陽還亮的火光劃過天空，接著是巨大的爆炸聲。</p>
+      <p>大約 <b>2,150 平方公里</b>的森林被吹倒，約有 <b>8 千萬棵樹</b>倒地，面積和整個台中市差不多。</p>
+      <p>65 公里外的瓦納瓦拉貿易站，有人被震得從門廊摔下去，還覺得襯衫像著火一樣燙。</p>
+      <p>之後好幾個晚上，歐洲的夜空異常明亮，半夜還能在戶外看報紙。</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼沒有隕石坑？</h2>
+      <p>岩石以每秒十幾、二十公里的速度衝進大氣層，前方的空氣被猛烈壓縮，壓力大到超過岩石能承受的強度，它就開始碎裂。</p>
+      <p>碎片一散開，迎風面積變大、受到的空氣阻力更大，碎得更快。一瞬間，大部分<b>動能</b>都變成熱和衝擊波。這叫做<b>空中爆炸</b>，爆炸高度大約在 5～10 公里。</p>
+      <div class="fx">動能 ＝ ½ × 質量 × 速度²</div>
+      <p>速度變成 2 倍，能量就變成 4 倍。所以一顆只有幾十公尺的岩石，能量就相當於上千萬噸黃色炸藥（TNT）。</p>
+    </div>
+
+    <div class="card">
+      <h2>森林留下的線索</h2>
+      <p>1927 年，蘇聯科學家庫利克第一次帶隊進到現場，原本想找一大塊隕石，卻什麼也沒找到。</p>
+      <p>他發現倒下的樹全都「頭朝外」，從一個中心往四面八方倒成放射狀。最奇怪的是正中央：樹枝被剝光的樹還站著，像一根根電線桿。因為衝擊波是從正上方往下壓，樹被往下壓，沒有被往旁邊推倒。</p>
+    </div>
+
+    <div class="card">
+      <h2>是小行星還是彗星？</h2>
+      <p>到現在，科學家還在討論它的身分。多數人認為是直徑約 50～60 公尺的<b>石質小行星</b>；也有人認為是冰和塵土組成的<b>彗星碎塊</b>。冰比較脆，會在更高的地方碎掉。</p>
+    </div>
+
+    <div class="card">
+      <h2>這種事多久會發生一次？</h2>
+      <ul class="tl">
+        <li><b>1908</b><span>通古斯：能量估計約 300 萬～1,500 萬噸 TNT</span></li>
+        <li><b>2008</b><span>4 公尺的小行星 2008 TC3，人類第一次在撞擊前就發現，最後落在蘇丹沙漠</span></li>
+        <li><b>2013</b><span>俄羅斯車里雅賓斯克：約 19 公尺，在約 30 公里高空爆炸，震破玻璃讓大約 1,500 人受傷</span></li>
+        <li><b>2022</b><span>NASA 的 DART 太空船撞擊小行星，第一次成功改變它的軌道</span></li>
+      </ul>
+      <p style="margin-top:8px">每年 6 月 30 日是「國際小行星日」，就是為了紀念通古斯事件。</p>
+    </div>
+
+    <div class="card">
+      <h2>關於這個模擬</h2>
+      <p>碎裂和爆炸高度用的是科學家的簡化撞擊模型（Collins 等人，2005）。森林被吹倒的範圍，是用通古斯的真實紀錄去校準。頻率來自 Brown 等人（2002）的觀測統計。結果都是「大約」，用來比較不同情況。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),D2R=Math.PI/180;
+const fmt=(x,d=0)=>x.toLocaleString('zh-TW',{maximumFractionDigits:d,minimumFractionDigits:d});
+let TAB='A';
+
+/* ---------- impact model (after Collins, Melosh & Marcus 2005, simplified) ---------- */
+const RHO={ice:1000,stone:3000,iron:7800},MATN={ice:'冰',stone:'石頭',iron:'鐵'};
+function sim(L,vk,thD,mat){
+  const rho=RHO[mat],v=vk*1000,th=thD*D2R,sn=Math.sin(th),H=8000,CD=2,r0=1.2,fp=7;
+  const Y=10**(2.107+0.0624*Math.sqrt(rho)),m=rho*Math.PI/6*L**3,E=0.5*m*v*v;
+  const If=4.07*CD*H*Y/(rho*L*v*v*sn);
+  const R={E,Mt:E/4.184e15,L,vk,thD,mat};
+  let vImp=v;
+  if(If>=1){R.zs=0;R.zb=0;R.ground=true;vImp=v*Math.exp(-3*r0*CD*H/(4*rho*L*sn));}
+  else{const zs=-H*(Math.log(Y/(r0*v*v))+1.308-0.314*If-1.303*Math.sqrt(1-If));
+    const rs=r0*Math.exp(-zs/H),l=L*sn*Math.sqrt(rho/(CD*rs)),zb=zs-2*H*Math.log(1+l/(2*H)*Math.sqrt(fp*fp-1));
+    R.zs=Math.max(0,zs);R.zb=Math.max(0,zb);R.ground=zb<=0;vImp=v*Math.exp(-3*rs*CD*H/(4*rho*L*sn));}
+  const h=R.zb/1000,c=Math.cbrt(R.Mt),rg=D=>D>h?Math.sqrt(D*D-h*h):0;
+  R.h=h;R.rBlow=rg(10.2*c);R.rFire=rg(4.5*c);R.rWin=rg(60*c);
+  R.rPole=R.rBlow>0&&!R.ground?Math.min(R.rBlow*0.9,h*0.7):0;
+  R.area=Math.PI*R.rBlow**2;
+  R.crater=R.ground?1.25*1.161*(rho/2500)**(1/3)*L**0.78*vImp**0.44*9.8**-0.22*sn**(1/3):0; // metres
+  return R;
+}
+const hiro=Mt=>Mt*1000/15;
+function energyText(Mt){const w=Mt*100;return w>=10000?`${fmt(w/10000,1)} 億噸`:w>=1?`${fmt(w,w<10?1:0)} 萬噸`:`${fmt(Mt*1e6,0)} 噸`;}
+// Mt → 萬噸: 1 Mt = 100 萬噸
+
+/* ================= A: simulator ================= */
+const A={L:30,v:17,th:45,mat:'stone',R:null,t0:0,trees:null,checked:false,won:false};
+function syncA(){$('#aLV').textContent=A.L+' m';$('#aVV').textContent=A.v+' km/s';$('#aTV').textContent=A.th+'°';}
+['aL','aV','aT'].forEach((id,i)=>$('#'+id).oninput=e=>{A[['L','v','th'][i]]=+e.target.value;A.R=null;syncA();roA();});
+$$('[data-mat]').forEach(b=>b.onclick=()=>{A.mat=b.dataset.mat;$$('[data-mat]').forEach(x=>x.classList.toggle('sel',x===b));A.R=null;roA();});
+const PRE={che:{L:19,v:19,th:18,mat:'stone',msg:'2013 年車里雅賓斯克：約 19 公尺，斜斜地衝進來，在 30 公里左右的高空爆炸。'},
+           bar:{L:50,v:13,th:45,mat:'iron',msg:'5 萬年前美國亞利桑那：一顆約 50 公尺的「鐵」隕石，鐵太堅固，一路撞到地面。'}};
+$$('[data-pre]').forEach(b=>b.onclick=()=>{const p=PRE[b.dataset.pre];Object.assign(A,{L:p.L,v:p.v,th:p.th,mat:p.mat});
+  $('#aL').value=p.L;$('#aV').value=p.v;$('#aT').value=p.th;$$('[data-mat]').forEach(x=>x.classList.toggle('sel',x.dataset.mat===p.mat));syncA();launch();toast('#tA',p.msg,6000);});
+// forest: jittered grid of trees, ±80 km
+const TREES=(()=>{const t=[];let s=7;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};
+  for(let i=-26;i<=26;i++)for(let j=-26;j<=26;j++){const x=i*3+(r()-0.5)*2.4,y=j*3+(r()-0.5)*2.4;t.push({x,y,r:Math.hypot(x,y),a:Math.atan2(y,x)+(r()-0.5)*0.25,k:r()});}return t;})();
+const VAN={x:24,y:60.4,n:'瓦納瓦拉貿易站'}; // ~65 km SSE
+function launch(){A.R=sim(A.L,A.v,A.th,A.mat);A.t0=performance.now();A.checked=false;roA();
+  $('#aGo').textContent='☄️ 再衝一次';
+  const cv=$('#cA').getBoundingClientRect();if(cv.top<-40||cv.top>innerHeight*0.5)$('#cA').scrollIntoView({block:'start'});}
+$('#aGo').onclick=launch;
+const FLY=2.6,SHOCK=4.0;
+function phase(now){if(!A.R)return{st:'idle'};const t=(now-A.t0)/1000;
+  if(t<FLY)return{st:'fly',f:t/FLY,t};return{st:'shock',s:t-FLY,t};}
+function shockGround(s){const Rs=s/SHOCK*130;const h=A.R.h;return Rs>h?Math.sqrt(Rs*Rs-h*h):-1;}
+function roA(){
+  const R=A.R;let html='';
+  if(!R){html=`<span class="big">準備發射</span><span class="st">${MATN[A.mat]}・直徑 ${A.L} m・每秒 ${A.v} km・${A.th}°</span><span class="st">按「☄️ 讓它衝進大氣層」</span>`;}
+  else{
+    html=`<span class="big">${R.ground?'💥 撞上地面！':'💥 空中爆炸！'}</span>`
+      +`<span class="st">能量 ≈ <b>${energyText(R.Mt)}</b> TNT（≈ <b>${fmt(hiro(R.Mt),hiro(R.Mt)<10?1:0)}</b> 顆廣島原子彈）</span>`
+      +`<span class="st">碎裂 <b>${fmt(R.zs/1000,1)}</b> km → ${R.ground?`撞地，坑直徑約 <b>${fmt(R.crater/1000,2)}</b> km`:`爆炸 <b>${fmt(R.h,1)}</b> km`}</span>`
+      +`<span class="st">吹倒森林 <b>${fmt(R.area,0)}</b> km²（通古斯約 2,150）</span>`;
+    const c1=!R.ground,c2=!R.ground&&R.h>=5&&R.h<=10,c3=R.area>=1500&&R.area<=3000,ck=v=>v?'✅':'⬜';
+    html+=`<span class="st" style="color:var(--ink)">挑戰 ${ck(c1)} 空中爆炸 ${ck(c2)} 高度 5～10 km ${ck(c3)} 面積 1,500～3,000</span>`;
+    A.ok3=c1&&c2&&c3;
+  }
+  $('#roA').innerHTML=html;
+}
+function drawSide(a,x0,y0,pw,ph,now){
+  a.save();a.beginPath();a.rect(x0,y0,pw,ph);a.clip();
+  const gy=y0+ph-26,k=(ph-60)/100,gx=x0+pw*0.68;
+  // camera pans with the rock so shallow entries stay on screen, then glides back to ground zero
+  let pan=0;{const R0=A.R,p0=phase(now);if(R0&&p0.st==='fly'){const zE=R0.h,zN=125-(125-zE)*Math.pow(p0.f,1.15),xr=-(zN-zE)/Math.tan(R0.thD*D2R);pan=Math.min(0,xr+(gx-x0-pw*0.45)/k);}}
+  const P=(xkm,zkm)=>[gx+(xkm-pan)*k,gy-zkm*k];
+  const g=a.createLinearGradient(0,gy-100*k,0,gy);g.addColorStop(0,'#050407');g.addColorStop(0.55,'#0c1a35');g.addColorStop(1,'#3a6aa8');
+  a.fillStyle=g;a.fillRect(x0,y0,pw,ph);
+  // altitude ticks
+  a.font='11px Lexend,"Noto Sans TC",sans-serif';a.textBaseline='middle';a.textAlign='left';
+  for(let z=0;z<=100;z+=20){const y=gy-z*k;a.strokeStyle='rgba(255,255,255,.08)';a.beginPath();a.moveTo(x0,y);a.lineTo(x0+pw,y);a.stroke();a.fillStyle='rgba(241,236,232,.55)';if(z)a.fillText(z+' km',x0+8,y-8);}
+  a.setLineDash([3,4]);a.strokeStyle='rgba(255,255,255,.25)';a.beginPath();a.moveTo(x0,gy-10*k);a.lineTo(x0+pw,gy-10*k);a.stroke();a.setLineDash([]);
+  a.fillStyle='rgba(241,236,232,.5)';a.fillText('✈ 噴射客機 10 km',x0+60,gy-10*k-8);
+  // ground
+  a.fillStyle='#1c2a1a';a.fillRect(x0,gy,pw,ph);
+  const R=A.R,ph_=phase(now);
+  // forest strip on ground (side view)
+  for(let xk=Math.floor(pan)-200;xk<=pan+200;xk+=1.6){const[sx]=P(xk,0);if(sx<x0||sx>x0+pw)continue;
+    let st='stand';if(R&&ph_.st==='shock'){const sg=shockGround(ph_.s),r=Math.abs(xk);if(sg>=r){if(r<R.rPole)st='pole';else if(r<R.rBlow)st='down';}}
+    a.strokeStyle=st==='stand'?'#2f6b34':st==='pole'?'#4a3527':'#5a4630';a.lineWidth=1.4;a.beginPath();
+    if(st==='down'){const d=Math.sign(xk)||1;a.moveTo(sx,gy);a.lineTo(sx+d*5,gy-1);}else{a.moveTo(sx,gy);a.lineTo(sx,gy-6);}a.stroke();}
+  if(!R){a.fillStyle='rgba(241,236,232,.7)';a.font='13px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText('側面圖：太空岩石從左上方衝進大氣層',x0+pw/2,y0+ph*0.45);a.restore();return;}
+  const th=R.thD*D2R,zEnd=R.h,zs=R.zs/1000,z0=125;
+  const xAt=z=>-(z-zEnd)/Math.tan(th);
+  const zNow=ph_.st==='fly'?z0-(z0-zEnd)*Math.pow(ph_.f,1.15):zEnd;
+  // trail
+  const glowStart=Math.min(z0,100);
+  if(zNow<glowStart){const[a0,b0]=P(xAt(glowStart),glowStart),[a1,b1]=P(xAt(zNow),zNow);
+    const tg=a.createLinearGradient(a0,b0,a1,b1);tg.addColorStop(0,'rgba(255,160,60,0)');tg.addColorStop(1,'rgba(255,220,150,.9)');
+    a.strokeStyle=tg;a.lineWidth=ph_.st==='fly'?3:2;a.lineCap='round';a.beginPath();a.moveTo(a0,b0);a.lineTo(a1,b1);a.stroke();a.lineCap='butt';
+    if(ph_.st==='shock'){a.globalAlpha=clamp(1-ph_.s/3,0,1)*0.6;a.lineWidth=8;a.strokeStyle='rgba(200,190,180,.4)';a.beginPath();a.moveTo(a0,b0);a.lineTo(a1,b1);a.stroke();a.globalAlpha=1;}}
+  // breakup marker
+  if(zs>0&&zs<100){const[bx,by]=P(xAt(zs),zs);a.strokeStyle='rgba(255,215,106,.6)';a.setLineDash([2,3]);a.beginPath();a.moveTo(bx,by);a.lineTo(bx-60,by);a.stroke();a.setLineDash([]);
+    a.fillStyle='#ffd76a';a.textAlign='right';a.fillText('開始碎裂 '+fmt(zs,0)+' km',bx-64,by);}
+  if(ph_.st==='fly'){
+    const[rx,ry]=P(xAt(zNow),zNow),broken=zNow<zs,spread=broken?clamp((zs-zNow)/Math.max(1,zs-zEnd),0,1):0;
+    const r=4+spread*18;const gg=a.createRadialGradient(rx,ry,0,rx,ry,r*3.2);gg.addColorStop(0,'rgba(255,255,240,1)');gg.addColorStop(0.3,'rgba(255,200,100,.8)');gg.addColorStop(1,'rgba(255,120,40,0)');
+    if(zNow<100){a.fillStyle=gg;a.beginPath();a.arc(rx,ry,r*3.2,0,7);a.fill();}
+    a.fillStyle=broken?'#fff3d0':'#8a7f76';a.beginPath();a.ellipse(rx,ry,4+spread*3,4+spread*14,th,0,7);a.fill();
+    if(broken){a.fillStyle='rgba(255,230,180,.9)';for(let i=0;i<9;i++){const an=i*0.7+now*0.01,d=spread*16;a.fillRect(rx+Math.cos(an)*d*0.5,ry+Math.sin(an*1.3)*d,2,2);}}
+  }else{
+    const[bx,by]=P(0,zEnd),s=ph_.s;
+    // flash
+    if(s<1.2){const fr=clamp(1-s/1.2,0,1),rr=40+s*90;const fg=a.createRadialGradient(bx,by,0,bx,by,rr);fg.addColorStop(0,`rgba(255,255,230,${fr})`);fg.addColorStop(0.4,`rgba(255,180,80,${fr*0.7})`);fg.addColorStop(1,'rgba(255,100,30,0)');a.fillStyle=fg;a.beginPath();a.arc(bx,by,rr,0,7);a.fill();}
+    // shock sphere
+    const Rs=s/SHOCK*130;if(Rs<200){a.save();a.beginPath();a.rect(x0,y0,pw,gy-y0);a.clip();a.strokeStyle=`rgba(255,255,255,${clamp(0.8-s/6,0.15,0.8)})`;a.lineWidth=2;a.beginPath();a.arc(bx,by,Rs*k,0,7);a.stroke();a.restore();}
+    if(R.ground){const cr=Math.max(3,R.crater/1000*k/2);a.fillStyle='#3b2a1d';a.beginPath();a.ellipse(bx,gy,cr,Math.min(cr*0.35,10),0,0,Math.PI);a.fill();}
+    a.fillStyle='#ffd76a';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.fillText(R.ground?'撞擊點':'爆炸 '+fmt(zEnd,1)+' km',bx+10,by-10);
+  }
+  // angle label
+  a.fillStyle='rgba(241,236,232,.6)';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='right';a.fillText(`入射角 ${R.thD}°（側面圖，比例相同）`,x0+pw-8,gy+14);
+  a.restore();
+}
+function drawMap(a,x0,y0,pw,ph,now){
+  const S=Math.min(pw-16,ph-16),mx=x0+(pw-S)/2,my=y0+(ph-S)/2,half=80,k=S/(2*half),cx=mx+S/2,cy=my+S/2;
+  a.save();a.beginPath();a.rect(mx,my,S,S);a.clip();
+  a.fillStyle='#14231a';a.fillRect(mx,my,S,S);
+  // river
+  a.strokeStyle='#2a4f70';a.lineWidth=3;a.beginPath();for(let x=-80;x<=80;x+=4){const y=-30+Math.sin(x*0.05)*12+x*0.2;const X=cx+x*k,Y=cy+y*k;x===-80?a.moveTo(X,Y):a.lineTo(X,Y);}a.stroke();
+  const R=A.R,p=phase(now),sg=R&&p.st==='shock'?shockGround(p.s):-1;
+  if(R&&sg>0){
+    const f=Math.min(sg,R.rFire);if(f>0){a.fillStyle='rgba(255,120,40,.18)';a.beginPath();a.arc(cx,cy,f*k,0,7);a.fill();}
+  }
+  const stand=new Path2D(),down=new Path2D(),pole=new Path2D();
+  for(const t of TREES){const X=cx+t.x*k,Y=cy+t.y*k;if(X<mx-4||X>mx+S+4||Y<my-4||Y>my+S+4)continue;
+    let st='s';if(sg>=t.r){if(t.r<R.rPole)st='p';else if(t.r<R.rBlow)st='d';}
+    if(st==='s'){stand.moveTo(X+1.3,Y);stand.arc(X,Y,1.3,0,7);}
+    else if(st==='p'){pole.moveTo(X+1.1,Y);pole.arc(X,Y,1.1,0,7);}
+    else{const L=Math.max(3,1.8*k);down.moveTo(X,Y);down.lineTo(X+Math.cos(t.a)*L,Y+Math.sin(t.a)*L);}}
+  a.fillStyle='#2f7a3a';a.fill(stand);a.fillStyle='#6a4a32';a.fill(pole);a.strokeStyle='#b08a5a';a.lineWidth=1.1;a.stroke(down);
+  if(R){
+    const done=p.st==='shock'&&p.s>SHOCK*0.9;
+    a.lineWidth=1.5;
+    if(R.rBlow>0&&sg>=R.rBlow){a.strokeStyle='rgba(255,154,60,.9)';a.beginPath();a.arc(cx,cy,R.rBlow*k,0,7);a.stroke();}
+    if(R.rWin>0&&sg>=Math.min(R.rWin,110)){a.setLineDash([5,5]);a.strokeStyle='rgba(111,191,255,.8)';a.beginPath();a.arc(cx,cy,R.rWin*k,0,7);a.stroke();a.setLineDash([]);}
+    if(sg>0&&sg<120){a.strokeStyle='rgba(255,255,255,.55)';a.lineWidth=2;a.beginPath();a.arc(cx,cy,sg*k,0,7);a.stroke();}
+    if(R.ground&&p.st==='shock'){a.fillStyle='#3b2a1d';a.strokeStyle='#8a6a4a';a.beginPath();a.arc(cx,cy,Math.max(3,R.crater/2000*k),0,7);a.fill();a.stroke();}
+    if(done&&R.rBlow>4){a.fillStyle='#ffb46a';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='bottom';a.fillText('樹被吹倒',cx+R.rBlow*k*0.71+4,cy-R.rBlow*k*0.71);}
+    if(done&&R.rWin>0&&R.rWin<78){a.fillStyle='#6fbfff';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='top';a.fillText('窗戶震破',cx-R.rWin*k*0.71-4,cy+R.rWin*k*0.71);}
+  }
+  // ground zero + Vanavara
+  a.strokeStyle='#ffd76a';a.lineWidth=1.5;a.beginPath();a.moveTo(cx-6,cy);a.lineTo(cx+6,cy);a.moveTo(cx,cy-6);a.lineTo(cx,cy+6);a.stroke();
+  const vx=cx+VAN.x*k,vy=cy+VAN.y*k;a.fillStyle='#f1ece8';a.fillRect(vx-5,vy-3,10,7);a.beginPath();a.moveTo(vx-7,vy-3);a.lineTo(vx,vy-9);a.lineTo(vx+7,vy-3);a.closePath();a.fill();
+  a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='middle';a.fillStyle='#f1ece8';a.fillText(VAN.n+'（65 km）',vx-10,vy);
+  if(R&&sg>=65){const hit=65<R.rBlow?'房子被吹壞、人被震倒':65<R.rFire?'熱到像著火':65<R.rWin?'窗戶震破、人被震倒':'只聽到巨響';a.fillStyle='#ffd76a';a.textBaseline='top';a.fillText(hit,vx-10,vy+9);}
+  // scale bar
+  a.restore();
+  a.fillStyle='rgba(241,236,232,.7)';a.font='11px Lexend,"Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';
+  a.strokeStyle='rgba(241,236,232,.7)';a.lineWidth=2;a.beginPath();a.moveTo(mx+10,my+S-14);a.lineTo(mx+10+20*k,my+S-14);a.stroke();a.fillText('20 km',mx+10,my+S-30);
+  a.textAlign='right';a.fillText('從上往下看（160 × 160 km）',mx+S-8,my+S-18);
+  a.strokeStyle='#352f33';a.lineWidth=1;a.strokeRect(mx,my,S,S);
+}
+function drawA(a,w,h,now){
+  a.fillStyle='#09080a';a.fillRect(0,0,w,h);
+  if(w>=700){const sw=Math.floor(w*0.56);drawSide(a,0,0,sw,h,now);drawMap(a,sw,0,w-sw,h,now);}
+  else{const sh=Math.floor(h*0.5);drawSide(a,0,0,w,sh,now);drawMap(a,0,sh,w,h-sh,now);}
+  const p=phase(now);
+  $('#roA').style.opacity=p.st==='fly'?'0':'1';
+  if(A.R&&p.st==='shock'&&p.s>SHOCK&&!A.checked){A.checked=true;if(A.ok3&&!A.won){A.won=true;toast('#tA','🎉 你重現了通古斯大爆炸！科學家也是這樣，用模型反推那顆太空岩石：大約 50～60 公尺、每秒十幾到二十幾公里。',8000);}}
+}
+
+/* ================= B: forest detective ================= */
+const ROUNDS=[{n:14,noise:8},{n:10,noise:16},{n:7,noise:26}];
+// round 1 shows the standing 'telegraph-pole' trees near the centre as an extra clue
+const B={round:0,sites:[],c:{x:0,y:0},guess:null,revealed:false,all:false,scores:[]};
+const HALF=35;
+function newRound(){const cfg=ROUNDS[B.round];B.c={x:(Math.random()-0.5)*24,y:(Math.random()-0.5)*24};B.sites=[];B.guess=null;B.revealed=false;B.all=false;
+  let guard=0;while(B.sites.length<cfg.n&&guard++<5000){const x=(Math.random()-0.5)*2*(HALF-3),y=(Math.random()-0.5)*2*(HALF-3),r=Math.hypot(x-B.c.x,y-B.c.y);
+    if(r<4.5||r>32)continue;if(B.sites.some(s=>Math.hypot(s.x-x,s.y-y)<6))continue;
+    B.sites.push({x,y,a:Math.atan2(y-B.c.y,x-B.c.x)+(Math.random()-0.5)*2*cfg.noise*D2R,line:false});}
+  // one standing "telegraph pole" site near the centre
+  const an=Math.random()*6.28,rr=1.5+Math.random()*2;B.pole={x:B.c.x+Math.cos(an)*rr,y:B.c.y+Math.sin(an)*rr};
+  $('#bGo').disabled=true;$('#bNext').hidden=true;$('#bAll').disabled=false;roB();}
+function roB(){const cfg=ROUNDS[B.round];let s=`<span class="big">第 ${B.round+1} / 3 回合</span><span class="st">${cfg.n} 個調查點，測量誤差 ±${cfg.noise}°</span>`;
+  if(B.revealed){const e=B.scores[B.round];s+=`<span class="st">你猜的位置離真正中心 <b>${fmt(e,1)}</b> km：${e<2?'<span class="ok">神準！</span>':e<5?'<span class="ok">很不錯！</span>':'還可以再準一點'}</span>`;}
+  else s+=`<span class="st">${B.guess?'按「📍 確定答案」':'倒下的樹：根在靠近爆炸點的一端，樹梢朝外。'}</span>`;
+  if(B.scores.length===3&&B.revealed){const avg=B.scores.reduce((a,b)=>a+b,0)/3;s+=`<span class="st ok">三回合平均誤差 ${fmt(avg,1)} km</span>`;}
+  $('#roB').innerHTML=s;}
+function mapGeom(w,h){const top=$('#roB').offsetHeight+18;const S=Math.max(200,Math.min(w-24,h-top-10));return{S,mx:(w-S)/2,my:top+(h-top-10-S)/2,k:S/(2*HALF)};}
+function drawB(a,w,h){
+  a.fillStyle='#09080a';a.fillRect(0,0,w,h);
+  const{S,mx,my,k}=mapGeom(w,h),X=x=>mx+S/2+x*k,Y=y=>my+S/2+y*k;
+  a.save();a.beginPath();a.rect(mx,my,S,S);a.clip();
+  a.fillStyle='#16251a';a.fillRect(mx,my,S,S);
+  // terrain specks
+  a.fillStyle='rgba(60,110,60,.25)';for(let i=0;i<400;i++){const u=(i*97%400)/400,v=(i*61%400)/400;a.fillRect(mx+u*S,my+((v+u*0.37)%1)*S,2,2);}
+  a.strokeStyle='rgba(255,255,255,.05)';a.lineWidth=1;for(let g=-HALF;g<=HALF;g+=10){a.beginPath();a.moveTo(X(g),my);a.lineTo(X(g),my+S);a.moveTo(mx,Y(g));a.lineTo(mx+S,Y(g));a.stroke();}
+  // extension lines
+  for(const s of B.sites){if(!(s.line||B.all))continue;a.setLineDash([5,5]);a.strokeStyle='rgba(255,215,106,.55)';a.lineWidth=1.2;a.beginPath();a.moveTo(X(s.x),Y(s.y));a.lineTo(X(s.x-Math.cos(s.a)*90),Y(s.y-Math.sin(s.a)*90));a.stroke();a.setLineDash([]);}
+  // fallen trees
+  for(const s of B.sites){const L=3.2,rx=X(s.x),ry=Y(s.y),tx=X(s.x+Math.cos(s.a)*L),ty=Y(s.y+Math.sin(s.a)*L);
+    a.fillStyle='rgba(255,255,255,.06)';a.beginPath();a.arc(rx,ry,14,0,7);a.fill();
+    a.strokeStyle='#c49a68';a.lineWidth=3;a.lineCap='round';a.beginPath();a.moveTo(rx,ry);a.lineTo(tx,ty);a.stroke();a.lineCap='butt';
+    a.fillStyle='#6a4a32';a.beginPath();a.arc(rx,ry,3.2,0,7);a.fill();
+    a.fillStyle='#3c8a45';a.beginPath();a.arc(tx,ty,4.5,0,7);a.fill();}
+  // telegraph pole
+  if(B.round===0||B.revealed){const px=X(B.pole.x),py=Y(B.pole.y);a.fillStyle='#6a4a32';a.strokeStyle='#e8d0b0';a.lineWidth=1.5;a.beginPath();a.arc(px,py,5,0,7);a.fill();a.stroke();
+    a.fillStyle='#e8d0b0';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='middle';a.fillText('站著的焦樹',px+8,py);}
+  if(B.guess){const gx=X(B.guess.x),gy=Y(B.guess.y);a.strokeStyle='#ff4fd8';a.lineWidth=2;a.beginPath();a.moveTo(gx,gy);a.lineTo(gx,gy-20);a.stroke();
+    a.fillStyle='#ff4fd8';a.beginPath();a.moveTo(gx,gy-20);a.lineTo(gx+12,gy-15);a.lineTo(gx,gy-10);a.closePath();a.fill();a.beginPath();a.arc(gx,gy,3,0,7);a.fill();}
+  if(B.revealed){const cx=X(B.c.x),cy=Y(B.c.y);a.fillStyle='#ffd76a';a.beginPath();for(let i=0;i<10;i++){const r=i%2?5:12,an=-Math.PI/2+i*Math.PI/5;a.lineTo(cx+Math.cos(an)*r,cy+Math.sin(an)*r);}a.closePath();a.fill();
+    if(B.guess){a.setLineDash([3,3]);a.strokeStyle='#fff';a.lineWidth=1;a.beginPath();a.moveTo(cx,cy);a.lineTo(X(B.guess.x),Y(B.guess.y));a.stroke();a.setLineDash([]);}}
+  a.restore();
+  a.strokeStyle='#352f33';a.strokeRect(mx,my,S,S);
+  a.strokeStyle='rgba(241,236,232,.7)';a.lineWidth=2;a.beginPath();a.moveTo(mx+10,my+S-12);a.lineTo(mx+10+10*k,my+S-12);a.stroke();
+  a.fillStyle='rgba(241,236,232,.7)';a.font='11px Lexend,sans-serif';a.textAlign='left';a.textBaseline='bottom';a.fillText('10 km',mx+10,my+S-16);
+  drawB.g={S,mx,my,k};
+}
+$('#cB').addEventListener('click',e=>{if(B.revealed)return;const g=drawB.g;if(!g)return;const r=e.currentTarget.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;
+  if(px<g.mx||px>g.mx+g.S||py<g.my||py>g.my+g.S)return;const x=(px-g.mx-g.S/2)/g.k,y=(py-g.my-g.S/2)/g.k;
+  const hit=B.sites.find(s=>Math.hypot((s.x-x)*g.k,(s.y-y)*g.k)<14);
+  if(hit){hit.line=!hit.line;}else{B.guess={x,y};$('#bGo').disabled=false;}roB();});
+$('#bAll').onclick=()=>{B.all=!B.all;};
+$('#bGo').onclick=()=>{if(!B.guess)return;B.revealed=true;B.scores[B.round]=Math.hypot(B.guess.x-B.c.x,B.guess.y-B.c.y);$('#bGo').disabled=true;B.all=true;
+  if(B.round<2){$('#bNext').hidden=false;}else toast('#tB','三回合完成！資料越少、測量誤差越大，越難找準。真正的調查隊量了上萬棵樹，才畫出通古斯的「蝴蝶形」倒樹區。',8000);roB();};
+$('#bNext').onclick=()=>{B.round++;newRound();toast('#tB',B.round===1?'第 2 回合：這次找不到站著的焦樹了，只能靠倒下的樹。':'最後一回合：調查點更少、誤差更大，要多畫幾條延長線來比較。',5000);};
+$('#bReset').onclick=()=>{B.round=0;B.scores=[];newRound();};
+
+/* ================= C: how often ================= */
+const C={lg:1.74};
+const ektOf=L=>0.5*3000*Math.PI/6*L**3*(20000**2)/4.184e12;
+const yearsOf=L=>1/(3.71*ektOf(L)**-0.9);
+function intervalText(y){if(y<1){const n=1/y;return `每年約 ${fmt(n,n<10?1:0)} 次`;}if(y<10000)return `平均約每 ${fmt(y,0)} 年一次`;return `平均約每 ${fmt(y/10000,1)} 萬年一次`;}
+function fateOf(R){if(R.ground)return '撞到地面，撞出隕石坑';if(R.rBlow<=0)return R.h>25?'在高空爆炸，地面上看到超亮火球':'空中爆炸，地面可能有窗戶被震破';return '低空爆炸，森林或城市被大範圍吹倒';}
+const EVENTS=[{L:4,n:'2008 TC3'},{L:19,n:'車里雅賓斯克 2013'},{L:55,n:'通古斯 1908'}];
+function syncC(){const L=10**C.lg;$('#cLV').textContent=(L<10?fmt(L,1):fmt(L,0))+' m';
+  const R=sim(L,20,45,'stone');const hc=hiro(R.Mt);
+  $('#roC').innerHTML=`<span class="big">直徑 ${L<10?fmt(L,1):fmt(L,0)} 公尺的太空岩石</span>`
+   +`<span class="st">能量 ≈ <b>${energyText(R.Mt)}</b> TNT（約 <b>${fmt(hc,hc<10?1:0)}</b> 顆廣島原子彈）</span>`
+   +`<span class="st">多久一次：<b>${intervalText(yearsOf(L))}</b>（全世界）</span>`
+   +`<span class="st">結果：${fateOf(R)}</span>`
+   +(R.area>0?`<span class="st">吹倒面積 ≈ <b>${fmt(R.area,0)}</b> km²</span>`:'');}
+$('#cL').oninput=e=>{C.lg=+e.target.value;syncC();};
+$$('[data-cl]').forEach(b=>b.onclick=()=>{C.lg=+b.dataset.cl;$('#cL').value=C.lg;syncC();});
+function drawC(a,w,h){
+  a.fillStyle='#09080a';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+22,wide=w>=700;
+  const cw=wide?w*0.6:w,ch=wide?h-top:(h-top)*0.6;
+  // chart
+  const L0=0,L1=2.477,Y0=-2,Y1=5.5,pl=58,pr=16,pt=top+6,pb=40;
+  const X=lg=>pl+(lg-L0)/(L1-L0)*(cw-pl-pr),Yv=ly=>pt+(Y1-ly)/(Y1-Y0)*(ch-pt-pb+top-6);
+  const yb=Yv(Y0);
+  a.strokeStyle='#352f33';a.lineWidth=1;a.font='11px Lexend,"Noto Sans TC",sans-serif';a.fillStyle='#a89f9a';
+  for(const lg of [0,1,2]){for(const m of [1,2,5]){const v=lg+Math.log10(m);if(v>L1)continue;const x=X(v);a.beginPath();a.moveTo(x,pt);a.lineTo(x,yb);a.stroke();a.textAlign='center';a.textBaseline='top';a.fillText(fmt(10**v,0)+' m',x,yb+5);}}
+  const YT=[[-2,'3.6 天'],[-1,'1 個月'],[0,'1 年'],[1,'10 年'],[2,'100 年'],[3,'1,000 年'],[4,'1 萬年'],[5,'10 萬年']];
+  for(const[v,t]of YT){const y=Yv(v);a.beginPath();a.moveTo(pl,y);a.lineTo(cw-pr,y);a.stroke();a.textAlign='right';a.textBaseline='middle';a.fillText(t,pl-6,y);}
+  a.fillStyle='#f1ece8';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='bottom';a.fillText('平均多久撞一次（越往上越少見）',pl,pt-4);
+  a.textAlign='right';a.textBaseline='top';a.fillText('直徑',cw-pr,yb+20);
+  // curve
+  a.strokeStyle='#ff9a3c';a.lineWidth=2.5;a.beginPath();for(let lg=L0;lg<=L1+1e-9;lg+=0.02){const y=Yv(Math.log10(yearsOf(10**lg)));lg===L0?a.moveTo(X(lg),y):a.lineTo(X(lg),y);}a.stroke();
+  for(const ev of EVENTS){const lg=Math.log10(ev.L),x=X(lg),y=Yv(Math.log10(yearsOf(ev.L)));a.fillStyle='#6fbfff';a.beginPath();a.arc(x,y,4.5,0,7);a.fill();
+    a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='bottom';a.fillText(ev.n,x-6,y-4);}
+  {const x=X(C.lg),y=Yv(Math.log10(yearsOf(10**C.lg)));a.strokeStyle='rgba(255,215,106,.5)';a.setLineDash([3,3]);a.beginPath();a.moveTo(x,yb);a.lineTo(x,y);a.lineTo(pl,y);a.stroke();a.setLineDash([]);
+    a.fillStyle='#ffd76a';a.beginPath();a.arc(x,y,7,0,7);a.fill();}
+  // area comparison
+  const ax=wide?cw+10:12,ay=wide?top:top+ch+12,aw=wide?w-cw-22:w-24,ah=wide?h-top-12:h-ay-12;
+  a.fillStyle='#141214';a.strokeStyle='#352f33';a.beginPath();a.roundRect(ax,ay,aw,ah,10);a.fill();a.stroke();
+  a.fillStyle='#f1ece8';a.font='600 12.5px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('被吹倒的面積 vs 台灣的城市',ax+10,ay+8);
+  const R=sim(10**C.lg,20,45,'stone'),areas=[[R.area,'吹倒範圍','#ff9a3c',true],[271.8,'台北市 272 km²','#6fbfff',false],[2214.9,'台中市 2,215 km²','#6fd38f',false]];
+  const maxA=Math.max(2214.9,R.area),sc=Math.min((aw-20)/2.3,(ah-58))/Math.sqrt(maxA);
+  let x=ax+12;const base=ay+ah-26;
+  for(const[ar,lab,col,circ]of areas){const side=Math.sqrt(Math.max(ar,0))*sc;a.fillStyle=col+'55';a.strokeStyle=col;a.lineWidth=1.5;
+    if(circ){const r=side/Math.sqrt(Math.PI);if(r>0.5){a.beginPath();a.arc(x+r,base-r,r,0,7);a.fill();a.stroke();}a.fillStyle=col;a.font='11.5px "Noto Sans TC",sans-serif';a.textBaseline='top';a.fillText(R.area>0?`${lab} ${fmt(R.area,0)} km²`:'沒有吹倒森林',x,base+6);x+=Math.max(2*r,a.measureText(lab).width*0.6)+18;}
+    else{a.fillRect(x,base-side,side,side);a.strokeRect(x,base-side,side,side);a.fillStyle=col;a.font='11.5px "Noto Sans TC",sans-serif';a.textBaseline='top';a.fillText(lab,x,base+6);x+=Math.max(side,a.measureText(lab).width)+14;}}
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h);else drawC(a,w,h);requestAnimationFrame(loop);}
+syncA();roA();newRound();syncC();requestAnimationFrame(loop);
+})();
+</script>

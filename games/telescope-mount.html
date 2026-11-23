@@ -1,0 +1,689 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>架起一台望遠鏡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: observatory workbench — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#08090f;
+  --panel:#11131c;
+  --panel2:#191c28;
+  --rule:#2c3042;
+  --ink:#eceef4;
+  --dim:#9ca1b5;
+  --sun:#ffd76a;
+  --ok:#5fd38d;
+  --bad:#ff7a7a;
+  --cyan:#6fd6ff;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--sun)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#05060a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(8,9,15,.86);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(360px,calc(100% - 24px))}
+.ro b{color:var(--sun)}
+.ro .big{font-family:var(--f-disp);font-size:16px}
+.ro .ok{color:var(--ok)}
+.ro .st{display:block;color:var(--dim)}
+.ro .st.cur{color:var(--ink);font-weight:700}
+.ro .st.done{color:var(--ok)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--sun);color:#221a00;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5}
+.toast.on{opacity:1}
+.toast.bad{background:var(--bad);color:#2a0606}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3.5em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--sun);border-color:var(--sun);color:#221a00;font-weight:700}
+.btn.sel{border-color:var(--sun);color:var(--sun);box-shadow:inset 0 0 0 1px var(--sun);font-weight:700}
+.btn.lock{min-width:8.5em}
+.btn.sq{min-width:2.6em;padding:7px 8px;font-family:var(--f-num)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 260px}
+.sl input{flex:1;accent-color:var(--sun);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:4.6em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--sun);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+.tray{display:flex;flex-wrap:wrap;gap:6px}
+.part{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:6px 11px;font-size:14px;font-weight:700;text-align:left;line-height:1.3}
+.part small{display:block;font-weight:400;font-size:11px;color:var(--dim)}
+.part:hover:not(:disabled){border-color:var(--sun)}
+.part:disabled{opacity:.3;cursor:default;text-decoration:line-through}
+.shake{animation:sh .35s}
+@keyframes sh{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.grp{display:flex;gap:4px;align-items:center}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.card ol,.card ul{margin:0 0 8px;padding-left:1.3em;font-size:14px}
+.card.warn{border-color:#7a3a3a;background:#241517}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:60vh;min-height:400px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+  #p-B .cv{height:78vh;min-height:600px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 組裝<small>照順序把零件裝上去</small></button>
+      <button data-tab="B" aria-pressed="false">② 平衡<small>用槓桿原理讓它不亂轉</small></button>
+      <button data-tab="C" aria-pressed="false">③ 同軸<small>校正尋星鏡</small></button>
+    </nav>
+    <div class="view">
+      <!-- assembly -->
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row" id="aPick">
+            <span class="lab">零件箱</span>
+            <div class="tray" id="tray"></div>
+          </div>
+          <div class="row" id="aLevel" hidden>
+            <span class="lab">調水平</span>
+            <span class="grp">北邊的腳 <button class="btn sq" data-lv="y,1">伸長</button><button class="btn sq" data-lv="y,-1">縮短</button></span>
+            <span class="grp">東邊的腳 <button class="btn sq" data-lv="x,1">伸長</button><button class="btn sq" data-lv="x,-1">縮短</button></span>
+            <span class="note">水平儀的氣泡會跑向比較高的那一邊，要讓氣泡回到中間的圈圈。</span>
+          </div>
+          <div class="row" id="aAim" hidden>
+            <span class="lab">對準北極</span>
+            <span class="grp">轉動赤道儀 <button class="btn sq" id="azL">◀</button><button class="btn sq" id="azR">▶</button></span>
+            <label class="sl">極軸仰角<input id="lat" type="range" min="0" max="60" step="0.5" value="45"><b id="latV"></b></label>
+          </div>
+          <div class="row">
+            <button class="btn" id="aHint">💡 下一步是什麼？</button>
+            <button class="btn" id="aReset">↺ 全部拆掉重來</button>
+          </div>
+        </div>
+      </div>
+      <!-- balance -->
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">赤經軸</span>
+            <label class="sl">平衡錘位置<input id="xcw" type="range" min="0.08" max="0.34" step="0.001" value="0.12"><b id="xcwV"></b></label>
+            <button class="btn lock" id="raLock">🔓 鬆開離合器</button>
+            <button class="btn" id="raBack">✋ 扶回水平</button>
+          </div>
+          <div class="row">
+            <span class="lab">赤緯軸</span>
+            <label class="sl">鏡筒前後滑動<input id="sld" type="range" min="-0.12" max="0.12" step="0.001" value="-0.07"><b id="sldV"></b></label>
+            <button class="btn lock" id="deLock">🔓 鬆開離合器</button>
+            <button class="btn" id="deBack">✋ 扶回水平</button>
+          </div>
+          <div class="row">
+            <span class="lab">後端裝</span>
+            <button class="btn sel" data-rear="light">輕目鏡</button>
+            <button class="btn" data-rear="heavy">大目鏡</button>
+            <button class="btn" data-rear="cam">相機</button>
+            <span class="note">先鎖住、調一調，再鬆開離合器看看它會不會自己轉。</span>
+          </div>
+        </div>
+      </div>
+      <!-- finder alignment -->
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">轉鏡筒</span>
+            <span class="grp"><button class="btn sq" data-mv="-1,0">◀</button><button class="btn sq" data-mv="0,1">▲</button><button class="btn sq" data-mv="0,-1">▼</button><button class="btn sq" data-mv="1,0">▶</button></span>
+            <label class="chk"><input type="checkbox" id="fine">細調</label>
+            <button class="btn lock" id="cLock">🔓 鬆開中</button>
+            <span class="grp"><span class="lab">目鏡</span><button class="btn sel" data-ep="25">25mm 低倍</button><button class="btn" data-ep="10">10mm 高倍</button></span>
+          </div>
+          <div class="row">
+            <span class="lab">尋星鏡螺絲</span>
+            <span class="grp"><button class="btn sq" data-sc="-1,0">◀</button><button class="btn sq" data-sc="0,1">▲</button><button class="btn sq" data-sc="0,-1">▼</button><button class="btn sq" data-sc="1,0">▶</button></span>
+            <span class="note">箭頭＝讓尋星鏡「指向」往哪邊偏。</span>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="flip" checked>像真的一樣翻轉影像</label>
+            <label class="chk"><input type="checkbox" id="peek">偷看尋星鏡實際指哪裡</label>
+            <button class="btn" id="cReset">↺ 重來</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>架起一台望遠鏡</h1>
+    <p class="lede">折射望遠鏡加上德式赤道儀，是學校和天文社最常見的組合。裝得對、平衡好、尋星鏡校正好，晚上才能順利找到星星。</p>
+
+    <div class="card">
+      <h2>德式赤道儀：兩根軸</h2>
+      <p><b>赤經軸（極軸）</b>要和地球自轉軸平行，也就是指向北天極（北極星附近）。星星東升西落，只要繞著這根軸慢慢轉，就能一直跟著星星。</p>
+      <p><b>赤緯軸</b>和極軸垂直，用來調整鏡筒指向天空的高低。鏡筒裝在赤緯軸的一端，另一端是平衡桿和平衡錘。</p>
+      <div class="fx">極軸仰角 ＝ 當地緯度（台灣約 22°～25°）</div>
+      <p>你站的地方緯度是幾度，北極星離地平線就差不多是幾度高。</p>
+    </div>
+
+    <div class="card">
+      <h2>組裝口訣：先錘後鏡</h2>
+      <ol>
+        <li>三腳架張開、鎖緊、調水平</li>
+        <li>赤道儀頭裝上去，N 朝北，仰角調成緯度</li>
+        <li>平衡桿 → 平衡錘 → 止滑螺絲</li>
+        <li>鎖緊兩軸離合器</li>
+        <li>最後才放鏡筒，再裝尋星鏡、天頂鏡和目鏡</li>
+      </ol>
+      <p>拆的時候<b>反過來</b>：先拿下目鏡和鏡筒，最後才拆平衡錘。如果先拆平衡錘，鏡筒那一邊太重，整台會轉下來甚至翻倒。</p>
+    </div>
+
+    <div class="card">
+      <h2>平衡就是槓桿原理</h2>
+      <p>赤經軸像一個蹺蹺板：一邊是鏡筒，一邊是平衡錘。</p>
+      <div class="fx">力矩 ＝ 重量 × 到轉軸的距離</div>
+      <p>兩邊力矩一樣大，鬆開離合器時它就會停在原地不動。平衡錘比較重，所以它離轉軸比較近。</p>
+      <p>赤緯軸也一樣：把鏡筒在夾座裡前後滑動，讓「重心」剛好落在轉軸正上方。換了比較重的目鏡或相機，後面變重，就要再調一次。</p>
+      <p>平衡好，馬達追蹤時比較省力，也不容易傷到齒輪。進階的人會故意讓東側稍微重一點點，讓齒輪咬得更緊。</p>
+    </div>
+
+    <div class="card">
+      <h2>同軸：讓尋星鏡和主鏡看同一點</h2>
+      <p>主鏡放大倍率高，視野只有 1～2 度，直接用它找星星像用吸管看天空。尋星鏡倍率低、視野大約 7 度，用它先找到目標，主鏡才看得到。</p>
+      <p>前提是兩支鏡子要指向<b>同一個點</b>，這就叫「同軸」。最好白天先找遠方的固定目標（電塔、避雷針）來校正：</p>
+      <ol>
+        <li>先用低倍目鏡，把目標放在主鏡正中央</li>
+        <li>換高倍目鏡再對準一次，然後鎖緊</li>
+        <li>只轉尋星鏡的調整螺絲，讓十字線對到同一個目標</li>
+      </ol>
+    </div>
+
+    <div class="card warn">
+      <h2>⚠️ 白天校正：絕對不要對到太陽</h2>
+      <p>望遠鏡和尋星鏡都會把陽光聚焦，就算只看一眼，眼睛也可能永久受傷。白天操作時，尋星鏡要蓋上蓋子或背對太陽，選的目標要遠離太陽的方向。</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼影像是顛倒的？</h2>
+      <p>凸透鏡做的望遠鏡，成像本來就上下左右都顛倒（轉了 180°）。尋星鏡通常直接看，所以是<b>上下左右顛倒</b>。</p>
+      <p>主鏡後面加了天頂鏡，鏡子反射一次，變成<b>上下正確、左右相反</b>，像照鏡子一樣。看星星時沒關係，校正時要記得這件事，不然會越調越偏。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,bad=false,ms){const t=$(id);t.innerHTML=msg;t.classList.toggle('bad',bad);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms||(bad?4200:3600));}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const D2R=Math.PI/180;
+let TAB='A';
+
+/* ================= ① ASSEMBLY ================= */
+const PARTS={
+  tripod:['三腳架','站穩的地基'],
+  head:['赤道儀頭','有兩根轉軸'],
+  bar:['平衡桿','一根鐵桿'],
+  cw:['平衡錘','好重的鐵塊'],
+  stop:['止滑螺絲','桿子末端的蓋子'],
+  lock:['鎖緊離合器','兩根軸都鎖住'],
+  tube:['折射鏡筒','80mm 口徑'],
+  finder:['尋星鏡','小小的瞄準鏡'],
+  diag:['天頂鏡＋目鏡','眼睛看的地方'],
+};
+const ORDER=['tripod','head','bar','cw','stop','lock','tube','finder','diag'];
+const TRAY=['tube','cw','tripod','finder','lock','bar','diag','head','stop'];
+const OKMSG={
+  tripod:'三腳架張開到底、鎖緊，掛上中間的配件盤會更穩。接著用水平儀把它調平。',
+  head:'赤道儀頭裝上去了！現在要：① 把標著「N」的那一面轉向正北 ② 把極軸仰角調成當地緯度。',
+  bar:'平衡桿鎖進赤緯軸的下方。',
+  cw:'平衡錘套上平衡桿，先推到靠近底端，等一下再調位置。',
+  stop:'止滑螺絲鎖在桿子末端：萬一平衡錘鬆了，也不會滑下來砸到腳。',
+  lock:'赤經軸、赤緯軸的離合器都鎖緊了，放鏡筒時才不會亂轉。',
+  tube:'鏡筒的鳩尾板滑進夾座，鎖緊螺絲。鎖緊之前，手要一直扶著鏡筒！',
+  finder:'尋星鏡裝在鏡筒上方，晚上靠它瞄準。等一下要做「同軸」校正。',
+  diag:'天頂鏡插進調焦座，再插上目鏡。看高處的星星時，脖子就不用彎成奇怪的角度。',
+};
+const A={have:{},at:{},stage:'pick',lv:{x:3,y:-4},az:35,lat:45,mist:0,done:false};
+function needMsg(id){const h=A.have;
+  switch(id){
+    case 'tripod':return '';
+    case 'head':return h.tripod?'':'赤道儀頭要裝在三腳架上，先把三腳架架好。';
+    case 'bar':return h.head?'':'平衡桿是鎖在赤道儀的赤緯軸下方，要先裝赤道儀頭。';
+    case 'cw':return h.bar?'':'平衡錘要套在平衡桿上，先裝平衡桿。';
+    case 'stop':return h.cw?'':(h.bar?'止滑螺絲鎖在桿子末端，是用來擋住平衡錘的。先套上平衡錘，再鎖止滑螺絲，不然平衡錘套不進去！':'止滑螺絲要鎖在平衡桿末端，先裝平衡桿和平衡錘。');
+    case 'lock':return h.head?'':'還沒有赤道儀，沒有離合器可以鎖。';
+    case 'tube':
+      if(!h.head)return '鏡筒要裝在赤道儀上，先把下面的部分裝好。';
+      if(!h.cw)return '⚠️ 危險！沒有平衡錘，鏡筒一放上去，重量全偏在一邊，整台會轉下來甚至翻倒。先裝平衡錘！';
+      if(!h.stop)return '⚠️ 平衡錘下面還沒有止滑螺絲。萬一平衡錘鬆脫，會直接滑下來砸到腳！先鎖止滑螺絲。';
+      if(!h.lock)return '⚠️ 兩軸離合器還沒鎖緊，鏡筒一放上去就會自己轉下來。先鎖緊離合器。';
+      return '';
+    case 'finder':case 'diag':return h.tube?'':'要先有鏡筒，才能裝上去。';
+  }return '';}
+function buildTray(){const t=$('#tray');t.innerHTML='';
+  for(const id of TRAY){const b=document.createElement('button');b.className='part';b.dataset.p=id;
+    b.innerHTML=`${PARTS[id][0]}<small>${PARTS[id][1]}</small>`;b.onclick=()=>place(id,b);t.appendChild(b);}
+  syncA();}
+function place(id,el){
+  if(A.stage!=='pick')return;
+  const m=needMsg(id);
+  if(m){A.mist++;toast('#tA',m,true,5200);el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');syncA();return;}
+  A.have[id]=true;A.at[id]=performance.now();
+  if(id==='tripod'){A.stage='level';}
+  if(id==='head'){A.stage='aim';}
+  toast('#tA',OKMSG[id]);
+  if(ORDER.every(k=>A.have[k])){A.done=true;setTimeout(()=>toast('#tA',`🎉 組裝完成！${A.mist?`過程中犯錯 ${A.mist} 次。`:'一次都沒錯！'}下一步：到「② 平衡」把兩根軸調平衡。`,false,7000),1600);}
+  syncA();}
+function syncA(){
+  $$('#tray .part').forEach(b=>b.disabled=!!A.have[b.dataset.p]||A.stage!=='pick');
+  $('#aLevel').hidden=A.stage!=='level';$('#aAim').hidden=A.stage!=='aim';
+  $('#latV').textContent=A.lat.toFixed(1)+'°';
+  const n=ORDER.filter(k=>A.have[k]).length;
+  let cur='';
+  if(A.stage==='level')cur='用水平儀把三腳架調平：氣泡要回到正中間。';
+  else if(A.stage==='aim')cur=`把赤道儀的 N 轉向正北（現在偏了 <b>${Math.abs(A.az)}°</b>），再把極軸仰角調成當地緯度（現在 <b>${A.lat.toFixed(1)}°</b>）。`;
+  else if(A.done)cur='<span class="ok">全部完成！</span>拆的時候順序要反過來喔。';
+  else cur='從下面的零件箱，選出<b>下一個</b>要裝的零件。';
+  $('#roA').innerHTML=`<span class="big">組裝進度 ${n} / ${ORDER.length}</span><br>${cur}<br><span class="st">犯錯次數：${A.mist}</span>`;
+}
+$$('[data-lv]').forEach(b=>b.onclick=()=>{const[k,v]=b.dataset.lv.split(',');A.lv[k]+=+v;
+  if(A.lv.x===0&&A.lv.y===0){A.stage='pick';toast('#tA','水平調好了！三腳架不平，赤道儀轉動時指向就會跑掉。');}syncA();});
+function aimCheck(){if(A.az===0&&A.lat>=22&&A.lat<=25.5){A.stage='pick';toast('#tA',`對準了！N 朝正北、仰角 ${A.lat.toFixed(1)}°，極軸現在指向北極星附近。`);}syncA();}
+$('#azL').onclick=()=>{A.az=clamp(A.az-5,-60,60);aimCheck();};
+$('#azR').onclick=()=>{A.az=clamp(A.az+5,-60,60);aimCheck();};
+$('#lat').oninput=e=>{A.lat=+e.target.value;syncA();};
+$('#lat').onchange=aimCheck;
+$('#aHint').onclick=()=>{
+  if(A.stage==='level')return toast('#tA','氣泡跑到哪一邊，就代表哪一邊比較高：把那一邊的腳縮短，或把對面的腳伸長。');
+  if(A.stage==='aim')return toast('#tA','用 ◀ ▶ 把指北箭頭轉到 N，再拉「極軸仰角」到台灣的緯度（約 22°～25°，台中約 24°）。');
+  const k=ORDER.find(k=>!A.have[k]);if(!k)return toast('#tA','已經全部裝好了！');
+  toast('#tA',`下一個：「${PARTS[k][0]}」`);};
+$('#aReset').onclick=()=>{Object.assign(A,{have:{},at:{},stage:'pick',lv:{x:3,y:-4},az:35,lat:45,mist:0,done:false});$('#lat').value=45;syncA();};
+
+// --- drawing helpers for side view (world units = metres, y up)
+function sideView(a,w,h,now){
+  const g=a.createLinearGradient(0,0,0,h);g.addColorStop(0,'#0c1226');g.addColorStop(1,'#26314f');a.fillStyle=g;a.fillRect(0,0,w,h);
+  const oy=h*0.94,k=Math.min((oy-24)/1.78,w*0.6/1.3),ox=w*(w>620?0.4:0.42);
+  const P=(x,y)=>[ox+x*k,oy-y*k];
+  // ground
+  a.fillStyle='#141a14';a.fillRect(0,oy,w,h-oy);a.strokeStyle='#2c3a2a';a.lineWidth=2;a.beginPath();a.moveTo(0,oy);a.lineTo(w,oy);a.stroke();
+  const fade=id=>{const t=A.at[id];if(t==null)return null;return clamp((now-t)/380,0,1);};
+  const poly=(pts,fill,stroke)=>{a.beginPath();pts.forEach((p,i)=>{const[x,y]=P(p[0],p[1]);i?a.lineTo(x,y):a.moveTo(x,y);});a.closePath();a.fillStyle=fill;a.fill();if(stroke){a.strokeStyle=stroke;a.lineWidth=1;a.stroke();}};
+  const along=(o,dir,f0,f1,hw,fill,stroke)=>{const n=[-dir[1],dir[0]];
+    poly([[o[0]+dir[0]*f0+n[0]*hw,o[1]+dir[1]*f0+n[1]*hw],[o[0]+dir[0]*f1+n[0]*hw,o[1]+dir[1]*f1+n[1]*hw],
+          [o[0]+dir[0]*f1-n[0]*hw,o[1]+dir[1]*f1-n[1]*hw],[o[0]+dir[0]*f0-n[0]*hw,o[1]+dir[1]*f0-n[1]*hw]],fill,stroke);};
+  const label=(x,y,txt,dx=0.1,dy=0)=>{const[sx,sy]=P(x,y),[tx,ty]=P(x+dx,y+dy);a.strokeStyle='rgba(255,215,106,.55)';a.lineWidth=1;a.beginPath();a.moveTo(sx,sy);a.lineTo(tx,ty);a.stroke();
+    a.fillStyle='#ffd76a';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign=dx<0?'right':'left';a.textBaseline='middle';a.fillText(txt,tx+(dx<0?-4:4),ty);};
+  const withPart=(id,fn)=>{const f=fade(id);if(f==null)return false;a.save();a.globalAlpha=f;a.translate(0,-(1-f)*0.12*k);fn();a.restore();return true;};
+  const showLab=w>480;
+  // tripod
+  withPart('tripod',()=>{
+    a.lineCap='round';
+    const leg=(x0,x1,col,wd)=>{const[a0,b0]=P(x0,1.0),[a1,b1]=P(x1,0);a.strokeStyle=col;a.lineWidth=wd*k;a.beginPath();a.moveTo(a0,b0);a.lineTo(a1,b1);a.stroke();};
+    leg(0.0,0.1,'#3a3f4c',0.03);leg(-0.06,-0.44,'#5b6273',0.034);leg(0.06,0.44,'#5b6273',0.034);
+    a.lineCap='butt';
+    poly([[-0.25,0.43],[0.25,0.43],[0.05,0.47]],'#454b5a');
+    poly([[-0.11,0.98],[0.11,0.98],[0.11,1.03],[-0.11,1.03]],'#6b7385');
+    if(showLab)label(-0.36,0.35,'三腳架',-0.12,0);
+  });
+  const lat=A.lat*D2R,u=[Math.cos(lat),Math.sin(lat)],v=[Math.sin(lat),-Math.cos(lat)],nv=[-v[0],-v[1]];
+  const L=[0,1.15],Dp=[L[0]+u[0]*0.2,L[1]+u[1]*0.2];
+  // polar axis guide to Polaris
+  if(A.have.head){
+    const[sx,sy]=P(L[0],L[1]),[ex,ey]=P(L[0]+u[0]*6,L[1]+u[1]*6);
+    a.save();a.setLineDash([5,6]);a.strokeStyle='rgba(111,214,255,.45)';a.lineWidth=1.2;a.beginPath();a.moveTo(sx,sy);a.lineTo(ex,ey);a.stroke();a.restore();
+    // Polaris near the edge along the axis
+    const t=Math.min((w-24-sx)/Math.max(1e-3,ex-sx),(sy-24)/Math.max(1e-3,sy-ey),1);
+    const px=sx+(ex-sx)*t,py=sy+(ey-sy)*t,ok=A.stage!=='aim'||(A.az===0&&A.lat>=22&&A.lat<=25.5);
+    a.fillStyle=ok?'#fff6c8':'rgba(255,255,255,.35)';a.beginPath();a.arc(px,py,ok?4:3,0,7);a.fill();
+    a.fillStyle='rgba(255,246,200,.85)';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='top';a.fillText('極軸指向 → 北極星',px-8,py+6);
+    // latitude arc
+    const[cx,cy]=P(L[0],L[1]);a.strokeStyle='rgba(255,215,106,.7)';a.lineWidth=1.2;a.beginPath();a.arc(cx,cy,0.3*k,-lat,0);a.stroke();
+    a.beginPath();a.moveTo(cx,cy);a.lineTo(cx+0.36*k,cy);a.stroke();
+    a.fillStyle='#ffd76a';a.font='700 13px Lexend,sans-serif';a.textAlign='left';a.textBaseline='middle';
+    a.fillText(A.lat.toFixed(1)+'°',cx+0.32*k*Math.cos(lat/2)+6,cy-0.32*k*Math.sin(lat/2));
+  }
+  // head
+  withPart('head',()=>{
+    poly([[-0.08,1.03],[0.08,1.03],[0.08,1.1],[-0.08,1.1]],'#c9ced9','#8f96a6');
+    along(L,u,-0.16,0.2,0.055,'#e3e6ee','#8f96a6');
+    along(L,u,-0.16,-0.13,0.06,'#9aa1b0');
+    if(A.have.lock||true){const c=A.have.lock?'#5fd38d':'#ff7a7a';const[x,y]=P(L[0]+u[0]*0.04,L[1]+u[1]*0.04);a.fillStyle=c;a.beginPath();a.arc(x,y,0.016*k,0,7);a.fill();}
+    if(showLab)label(L[0]-0.12,L[1]-0.03,'赤道儀（極軸＝赤經軸）',-0.16,-0.12);
+  });
+  // DEC housing (part of head)
+  if(A.have.head){withPart('head',()=>{along(Dp,v,-0.1,0.07,0.048,'#d4d8e2','#8f96a6');
+    const c=A.have.lock?'#5fd38d':'#ff7a7a';const[x,y]=P(Dp[0]+u[0]*0.05,Dp[1]+u[1]*0.05);a.fillStyle=c;a.beginPath();a.arc(x,y,0.016*k,0,7);a.fill();});}
+  withPart('bar',()=>{along(Dp,v,0.07,0.47,0.011,'#aab1c0');if(showLab&&!A.have.cw)label(Dp[0]+v[0]*0.4,Dp[1]+v[1]*0.4,'平衡桿',0.15,0);});
+  withPart('cw',()=>{along(Dp,v,0.27,0.34,0.075,'#4b5163','#7d8496');if(showLab)label(Dp[0]+v[0]*0.3+u[0]*0.075,Dp[1]+v[1]*0.3+u[1]*0.075,'平衡錘',0.15,0);});
+  withPart('stop',()=>{along(Dp,v,0.46,0.5,0.022,'#ff7a7a');if(showLab)label(Dp[0]+v[0]*0.48,Dp[1]+v[1]*0.48,'止滑螺絲',0.15,-0.03);});
+  const Tc=[Dp[0]+nv[0]*0.2,Dp[1]+nv[1]*0.2];
+  if(A.have.tube){withPart('tube',()=>{
+    along(Dp,v,-0.13,-0.1,0.06,'#7d8496');
+    along([Tc[0]+v[0]*0.06,Tc[1]+v[1]*0.06],u,-0.17,0.17,0.012,'#8a8f9c');
+    along(Tc,u,-0.36,0.3,0.045,'#f1f3f8','#9aa1b0');
+    along(Tc,u,0.28,0.44,0.052,'#e6e9f0','#9aa1b0');
+    along(Tc,u,0.435,0.44,0.04,'#5aa9ff');
+    along(Tc,u,-0.47,-0.36,0.022,'#2a2d36');
+    along(Tc,u,-0.115,-0.085,0.055,'#2f323b');along(Tc,u,0.085,0.115,0.055,'#2f323b');
+    if(showLab)label(Tc[0]+u[0]*0.1+nv[0]*0.05,Tc[1]+u[1]*0.1+nv[1]*0.05,'折射鏡筒',0.28,0.06);
+  });}
+  withPart('finder',()=>{const F=[Tc[0]+nv[0]*0.085,Tc[1]+nv[1]*0.085];
+    along([Tc[0]+nv[0]*0.055,Tc[1]+nv[1]*0.055],u,0.1,0.18,0.012,'#555b68');
+    along(F,u,0.04,0.24,0.019,'#2c2f3a','#5b6273');
+    if(showLab)label(F[0]+u[0]*0.14+nv[0]*0.02,F[1]+u[1]*0.14+nv[1]*0.02,'尋星鏡',0.3,0.15);});
+  withPart('diag',()=>{const R=[Tc[0]+u[0]*-0.47,Tc[1]+u[1]*-0.47];
+    along(R,u,-0.05,0,0.026,'#1d1f26','#4a4f5c');
+    const E=[R[0]+u[0]*-0.025,R[1]+u[1]*-0.025];
+    along(E,nv,0.02,0.11,0.02,'#1b1d24','#4a4f5c');along(E,nv,0.05,0.06,0.022,'#9aa1b0');
+    if(showLab)label(E[0]+nv[0]*0.1,E[1]+nv[1]*0.1,'天頂鏡＋目鏡',-0.12,0.08);});
+  // insets: bubble level & compass
+  const r=Math.min(42,w*0.075),bx=w-r-16,by=oy-r-34;
+  if(A.have.tripod){
+    a.fillStyle='rgba(8,9,15,.8)';a.strokeStyle='#2c3042';a.lineWidth=1;a.beginPath();a.arc(bx,by,r+8,0,7);a.fill();a.stroke();
+    const gg=a.createRadialGradient(bx,by,2,bx,by,r);gg.addColorStop(0,'#3d5a2a');gg.addColorStop(1,'#1f3216');a.fillStyle=gg;a.beginPath();a.arc(bx,by,r,0,7);a.fill();
+    a.strokeStyle='rgba(255,255,255,.7)';a.beginPath();a.arc(bx,by,r*0.22,0,7);a.stroke();
+    const qx=bx+clamp(A.lv.x*r*0.16,-r*0.75,r*0.75),qy=by-clamp(A.lv.y*r*0.16,-r*0.75,r*0.75);
+    const lvok=A.lv.x===0&&A.lv.y===0;a.fillStyle=lvok?'rgba(200,255,200,.95)':'rgba(240,255,220,.85)';a.beginPath();a.arc(qx,qy,r*0.17,0,7);a.fill();
+    a.fillStyle='#9ca1b5';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='middle';a.fillText('北',bx,by-r-1);a.fillText('東',bx+r+1,by);
+    a.fillStyle='#ffd76a';a.fillText(lvok?'水平 ✓':'水平儀',bx,by+r+18);
+  }
+  if(A.have.head){
+    const cx=bx-2*r-34,cy=by;
+    a.fillStyle='rgba(8,9,15,.8)';a.strokeStyle='#2c3042';a.beginPath();a.arc(cx,cy,r+8,0,7);a.fill();a.stroke();
+    a.strokeStyle='#4a5066';a.beginPath();a.arc(cx,cy,r,0,7);a.stroke();
+    a.fillStyle='#9ca1b5';a.font='700 12px Lexend,sans-serif';a.textAlign='center';a.textBaseline='middle';
+    a.fillText('N',cx,cy-r+10);a.fillText('E',cx+r-9,cy);a.fillText('S',cx,cy+r-10);a.fillText('W',cx-r+9,cy);
+    const ang=A.az*D2R,ok=A.az===0;a.strokeStyle=ok?'#5fd38d':'#ff7a7a';a.lineWidth=3;
+    a.beginPath();a.moveTo(cx,cy);a.lineTo(cx+Math.sin(ang)*r*0.78,cy-Math.cos(ang)*r*0.78);a.stroke();
+    a.fillStyle=a.strokeStyle;a.beginPath();a.arc(cx,cy,3,0,7);a.fill();
+    a.fillStyle='#ffd76a';a.font='11px "Noto Sans TC",sans-serif';a.fillText(ok?'朝北 ✓':'赤道儀的 N',cx,cy+r+18);
+  }
+}
+
+/* ================= ② BALANCE ================= */
+const G=9.8,MCW=3.4,MBAR=0.8,XBAR=0.17,DT=0.2,THR=0.1;
+const REAR={light:{m:0.35,x:-0.5,n:'輕目鏡'},heavy:{m:0.75,x:-0.5,n:'大目鏡'},cam:{m:1.0,x:-0.53,n:'相機'}};
+const B={xcw:0.12,s:-0.07,rear:'light',ra:{th:0,om:0,un:false,still:0,hit:false},de:{th:0,om:0,un:false,still:0,hit:false},ok:{}};
+function bParts(){const r=REAR[B.rear];return[[3.0,0.04],[0.5,0],[0.25,0.16],[r.m,r.x]];}
+function bM(){return bParts().reduce((s,p)=>s+p[0],0);}
+function tauRA(){return G*(bM()*DT-MCW*B.xcw-MBAR*XBAR);}
+function tauDE(){return G*bParts().reduce((s,p)=>s+p[0]*(p[1]+B.s),0);}
+function stepAxis(ax,tau,I,dt,key,msgs){
+  if(!ax.un){ax.om=0;ax.still=0;return;}
+  const tq=tau*Math.cos(ax.th);
+  if(Math.abs(tq)<THR&&Math.abs(ax.om)<0.05){ax.om=0;ax.still+=dt;}
+  else{ax.om+=(tq-0.9*ax.om)/I*dt;ax.th+=ax.om*dt;ax.still=0;}
+  const lim=0.87;
+  if(ax.th>lim||ax.th<-lim){ax.th=clamp(ax.th,-lim,lim);ax.om=0;
+    if(!ax.hit){ax.hit=true;toast('#tB',ax.th>0?msgs[0]:msgs[1],true);}}
+  if(ax.still>1.3&&Math.abs(tau)<THR&&Math.abs(ax.th)<0.35){const k=key+B.rear;if(!B.ok[k]){B.ok[k]=true;
+    toast('#tB',`✅ ${key==='ra'?'赤經軸':'赤緯軸'}平衡了！鬆開離合器，它也乖乖停在原地。`);}}
+}
+function setLock(ax,btn,un){ax.un=un;ax.hit=false;ax.still=0;$(btn).textContent=un?'🔒 鎖緊離合器':'🔓 鬆開離合器';$(btn).classList.toggle('sel',un);}
+$('#raLock').onclick=()=>setLock(B.ra,'#raLock',!B.ra.un);
+$('#deLock').onclick=()=>setLock(B.de,'#deLock',!B.de.un);
+$('#raBack').onclick=()=>{B.ra.th=0;B.ra.om=0;B.ra.hit=false;};
+$('#deBack').onclick=()=>{B.de.th=0;B.de.om=0;B.de.hit=false;};
+$('#xcw').oninput=e=>{B.xcw=+e.target.value;B.ra.still=0;B.ra.hit=false;syncB();};
+$('#sld').oninput=e=>{B.s=+e.target.value;B.de.still=0;B.de.hit=false;syncB();};
+$$('[data-rear]').forEach(b=>b.onclick=()=>{if(B.rear===b.dataset.rear)return;B.rear=b.dataset.rear;$$('[data-rear]').forEach(x=>x.classList.toggle('sel',x===b));
+  B.ra.still=B.de.still=0;B.ra.hit=B.de.hit=false;toast('#tB',`換上${REAR[B.rear].n}：後端重量變了，鏡筒的重心也跟著移動，兩根軸都要重新平衡！`);syncB();});
+function syncB(){$('#xcwV').textContent=(B.xcw*100).toFixed(1)+' cm';$('#sldV').textContent=(B.s>=0?'往前 ':'往後 ')+Math.abs(B.s*100).toFixed(1)+' cm';}
+function roB(){const st=(ok,cur,t)=>`<span class="st ${ok?'done':cur?'cur':''}">${ok?'✅':'⬜'} ${t}</span>`;
+  const m1=B.ok.ralight,m2=B.ok.delight,m3=B.ok.racam&&B.ok.decam;
+  $('#roB').innerHTML=`<span class="big">平衡任務</span>`+st(m1,!m1,'① 赤經軸平衡（輕目鏡）')+st(m2,m1&&!m2,'② 赤緯軸平衡（輕目鏡）')+st(m3,m1&&m2&&!m3,'③ 換上相機，兩軸都重新平衡')
+   +(m1&&m2&&m3?'<span class="ok">全部完成！平衡好的望遠鏡，馬達追星最輕鬆。</span>':'');}
+function torqueMeter(a,x,y,wd,tau,lt,rt){
+  a.fillStyle='#191c28';a.strokeStyle='#2c3042';a.lineWidth=1;a.beginPath();a.roundRect(x,y,wd,14,7);a.fill();a.stroke();
+  const zone=wd/2*THR/1.5;a.fillStyle='rgba(95,211,141,.35)';a.fillRect(x+wd/2-zone,y+1,zone*2,12);
+  const nx=x+wd/2+clamp(tau/1.5,-1,1)*wd/2*0.96;a.fillStyle=Math.abs(tau)<THR?'#5fd38d':'#ffd76a';a.beginPath();a.arc(nx,y+7,7,0,7);a.fill();
+  a.fillStyle='#9ca1b5';a.font='11.5px "Noto Sans TC",sans-serif';a.textBaseline='top';a.textAlign='left';a.fillText(lt,x,y+18);a.textAlign='right';a.fillText(rt,x+wd,y+18);
+  a.textAlign='center';a.fillStyle='#eceef4';a.font='600 12px Lexend,"Noto Sans TC",sans-serif';a.fillText(`淨力矩 ${Math.abs(tau).toFixed(2)} N·m`,x+wd/2,y+18);
+}
+function arrowDown(a,x,y,len,col,txt){a.strokeStyle=col;a.fillStyle=col;a.lineWidth=2.5;a.beginPath();a.moveTo(x,y);a.lineTo(x,y+len);a.stroke();
+  a.beginPath();a.moveTo(x-6,y+len-8);a.lineTo(x+6,y+len-8);a.lineTo(x,y+len+2);a.closePath();a.fill();
+  if(txt){a.font='600 12px Lexend,"Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='top';a.fillText(txt,x,y+len+6);}}
+function drawRA(a,x0,y0,pw,ph){
+  a.save();a.beginPath();a.rect(x0,y0,pw,ph);a.clip();
+  const dh=ph-72,cx=x0+pw*0.5,cy=y0+dh*0.42,k=Math.min(pw/0.95,dh/0.6);
+  a.fillStyle='#eceef4';a.font='700 14px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('赤經軸：從南邊沿著極軸看',x0+12,y0+ph-64);
+  a.fillStyle='#9ca1b5';a.font='12px "Noto Sans TC",sans-serif';a.fillText(B.ra.un?'離合器鬆開：會自己轉！':'離合器鎖住',x0+12,y0+ph-44);
+  // support
+  a.fillStyle='#3a3f4c';a.beginPath();a.moveTo(cx-0.05*k,cy+0.05*k);a.lineTo(cx+0.05*k,cy+0.05*k);a.lineTo(cx+0.12*k,y0+ph-74);a.lineTo(cx-0.12*k,y0+ph-74);a.closePath();a.fill();
+  const th=B.ra.th;a.save();a.translate(cx,cy);a.rotate(-th);
+  // DEC housing toward tube
+  a.fillStyle='#d4d8e2';a.fillRect(-0.15*k,-0.04*k,0.15*k,0.08*k);
+  // bar + ruler
+  a.fillStyle='#aab1c0';a.fillRect(0.04*k,-0.011*k,0.33*k,0.022*k);
+  a.strokeStyle='#4a5066';a.lineWidth=1;a.fillStyle='#9ca1b5';a.font='10px Lexend,sans-serif';a.textAlign='center';a.textBaseline='top';
+  for(let c=5;c<=36;c++){const xx=c/100*k;a.beginPath();a.moveTo(xx,-0.011*k);a.lineTo(xx,-0.011*k+(c%5?3:7));a.stroke();if(c%10===0)a.fillText(c+'',xx,0.016*k);}
+  a.fillStyle='#ff7a7a';a.fillRect(0.365*k,-0.022*k,0.016*k,0.044*k);
+  // counterweight
+  a.fillStyle='#4b5163';a.strokeStyle='#8a91a3';a.beginPath();a.roundRect((B.xcw-0.035)*k,-0.08*k,0.07*k,0.16*k,4);a.fill();a.stroke();
+  a.fillStyle='#eceef4';a.font='700 11px Lexend,sans-serif';a.textBaseline='middle';a.fillText('3.4kg',B.xcw*k,0);
+  // tube end-on
+  const tx=-DT*k;a.fillStyle='#e6e9f0';a.beginPath();a.arc(tx,0,0.056*k,0,7);a.fill();a.fillStyle='#2b6bb5';a.beginPath();a.arc(tx,0,0.04*k,0,7);a.fill();
+  a.fillStyle='rgba(255,255,255,.35)';a.beginPath();a.arc(tx-0.012*k,-0.012*k,0.012*k,0,7);a.fill();
+  a.fillStyle='#2c2f3a';a.beginPath();a.arc(tx-0.085*k,0,0.02*k,0,7);a.fill();
+  a.restore();
+  a.fillStyle='#9aa1b0';a.beginPath();a.arc(cx,cy,0.03*k,0,7);a.fill();a.fillStyle='#08090f';a.beginPath();a.arc(cx,cy,0.01*k,0,7);a.fill();
+  // weight arrows in world frame
+  const tp=[cx-DT*k*Math.cos(th),cy+DT*k*Math.sin(th)],cp=[cx+B.xcw*k*Math.cos(th),cy-B.xcw*k*Math.sin(th)];
+  const M=bM();arrowDown(a,tp[0],tp[1]+0.07*k,M*8,'#6fd6ff',`${M.toFixed(2)}kg × ${(DT*100).toFixed(0)}cm`);
+  arrowDown(a,cp[0],cp[1]+0.09*k,MCW*8,'#ffd76a',`3.4kg × ${(B.xcw*100).toFixed(1)}cm`);
+  torqueMeter(a,x0+12,y0+ph-30-12,pw-24,-tauRA(),'◀ 鏡筒側重','平衡錘側重 ▶');a.restore();
+}
+function drawDE(a,x0,y0,pw,ph){
+  a.save();a.beginPath();a.rect(x0,y0,pw,ph);a.clip();
+  const dh=ph-72,cx=x0+pw*0.5,cy=y0+dh*0.62,k=Math.min(pw/1.4,dh/0.5);
+  a.fillStyle='#eceef4';a.font='700 14px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('赤緯軸：從側面看鏡筒',x0+12,y0+ph-64);
+  a.fillStyle='#9ca1b5';a.font='12px "Noto Sans TC",sans-serif';a.fillText(B.de.un?'離合器鬆開：會自己轉！':'離合器鎖住',x0+12,y0+ph-44);
+  a.fillStyle='#3a3f4c';a.fillRect(cx-0.05*k,cy,0.1*k,y0+ph-74-cy);
+  const s=B.s,r=REAR[B.rear];
+  a.save();a.translate(cx,cy);a.rotate(B.de.th);
+  const R=(x0_,y0_,x1,y1,c,st)=>{a.fillStyle=c;a.fillRect(x0_*k,y0_*k,(x1-x0_)*k,(y1-y0_)*k);if(st){a.strokeStyle=st;a.lineWidth=1;a.strokeRect(x0_*k,y0_*k,(x1-x0_)*k,(y1-y0_)*k);}};
+  R(-0.08,-0.03,0.08,0,'#7d8496');                       // saddle (fixed)
+  R(s-0.17,-0.045,s+0.17,-0.03,'#8a8f9c');              // dovetail
+  R(s-0.4,-0.145,s+0.3,-0.055,'#f1f3f8','#9aa1b0');     // tube
+  R(s+0.28,-0.152,s+0.44,-0.048,'#e6e9f0','#9aa1b0');   // dew shield
+  R(s+0.435,-0.14,s+0.44,-0.06,'#5aa9ff');
+  R(s-0.48,-0.122,s-0.4,-0.078,'#2a2d36');               // focuser
+  R(s-0.115,-0.155,s-0.085,-0.03,'#2f323b');R(s+0.085,-0.155,s+0.115,-0.03,'#2f323b');
+  R(s+0.12,-0.165,s+0.2,-0.145,'#555b68');R(s+0.06,-0.205,s+0.26,-0.165,'#2c2f3a','#5b6273'); // finder
+  R(s-0.535,-0.13,s-0.48,-0.07,'#1d1f26','#4a4f5c');     // diagonal
+  if(B.rear==='cam'){R(s-0.6,-0.17,s-0.48,-0.13,'#30333d','#5b6273');R(s-0.6,-0.25,s-0.47,-0.17,'#24262e','#5b6273');}
+  else if(B.rear==='heavy'){R(s-0.535,-0.25,s-0.48,-0.13,'#1b1d24','#4a4f5c');R(s-0.54,-0.2,s-0.475,-0.19,'#9aa1b0');}
+  else{R(s-0.525,-0.21,s-0.49,-0.13,'#1b1d24','#4a4f5c');R(s-0.528,-0.18,s-0.487,-0.172,'#9aa1b0');}
+  // centre of mass
+  const M=bM(),cg=bParts().reduce((t,p)=>t+p[0]*(p[1]+s),0)/M;
+  a.strokeStyle='#6fd6ff';a.lineWidth=2;a.beginPath();a.arc(cg*k,-0.1*k,7,0,7);a.stroke();
+  a.beginPath();a.moveTo(cg*k-7,-0.1*k);a.lineTo(cg*k+7,-0.1*k);a.moveTo(cg*k,-0.1*k-7);a.lineTo(cg*k,-0.1*k+7);a.stroke();
+  a.fillStyle='#6fd6ff';a.font='700 12px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='bottom';a.fillText('重心',cg*k,-0.1*k-10);
+  a.setLineDash([3,4]);a.strokeStyle='rgba(255,255,255,.35)';a.lineWidth=1;a.beginPath();a.moveTo(0,0);a.lineTo(0,-0.3*k);a.stroke();a.setLineDash([]);
+  a.fillStyle='#9ca1b5';a.font='11px "Noto Sans TC",sans-serif';a.textBaseline='bottom';a.fillText('物鏡（前）▶',(s+0.36)*k,-0.16*k);a.fillText('◀ 後',(s-0.5)*k,-0.27*k);
+  a.restore();
+  a.fillStyle='#9aa1b0';a.beginPath();a.arc(cx,cy,0.022*k,0,7);a.fill();a.fillStyle='#08090f';a.beginPath();a.arc(cx,cy,0.008*k,0,7);a.fill();
+  a.fillStyle='#9ca1b5';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='middle';a.fillText('赤緯軸',cx+0.03*k,cy+0.02*k);
+  torqueMeter(a,x0+12,y0+ph-30-12,pw-24,tauDE(),'◀ 後端重','前端重 ▶');a.restore();
+}
+function drawB(a,w,h){
+  a.fillStyle='#0b0d16';a.fillRect(0,0,w,h);
+  const ro=$('#roB'),top=ro.offsetTop+ro.offsetHeight+6;
+  if(w>=520){drawRA(a,0,top,w/2,h-top);drawDE(a,w/2,top,w/2,h-top);a.strokeStyle='#2c3042';a.beginPath();a.moveTo(w/2,top);a.lineTo(w/2,h-6);a.stroke();}
+  else{const hh=(h-top)/2;drawRA(a,0,top,w,hh);drawDE(a,0,top+hh,w,hh);a.strokeStyle='#2c3042';a.beginPath();a.moveTo(6,top+hh);a.lineTo(w-6,top+hh);a.stroke();}
+}
+
+/* ================= ③ FINDER ALIGNMENT ================= */
+const ridgeFar=x=>1.25+0.55*Math.sin(x*0.23+0.4)+0.3*Math.sin(x*0.71+1.3)+0.12*Math.sin(x*2.3);
+const ridgeNear=x=>0.1+0.32*Math.sin(x*0.37+2.0)+0.16*Math.sin(x*1.17+0.5)+0.05*Math.sin(x*4.1);
+const TW=-3.2,TWB=ridgeFar(TW),T1={x:TW,y:TWB+0.97};
+const WT=5.8,WTB=ridgeNear(WT)-0.05,T2={x:WT,y:WTB+1.3};
+const TREES=[-13,-11.6,-7.4,-6.2,-1.4,0.1,3.4,4.3,8.6,9.4,11.8,13.5].map((x,i)=>({x,r:0.18+((i*37)%10)/40}));
+const CLOUDS=[[-10,5.2,1.6],[-2,6.4,2.1],[7,5.6,1.8],[14,6.8,1.5]];
+const C={az:-11,alt:3.4,off:{x:1.9,y:-1.3},ep:25,lock:false,step:0};
+const fovMain=()=>C.ep===25?2.17:0.87,FOVF=7;
+function drawWorld(a,ppd,az0,halfW,t){
+  const lw=px=>px/ppd;
+  const x0=az0-halfW,x1=az0+halfW,stepX=Math.max(0.02,(x1-x0)/160);
+  // sky
+  const g=a.createLinearGradient(0,10,0,-1);g.addColorStop(0,'#6ea8dd');g.addColorStop(0.75,'#b8d8f2');g.addColorStop(1,'#e4f0f7');
+  a.fillStyle=g;a.fillRect(x0-1,-6,x1-x0+2,20);
+  // clouds
+  a.fillStyle='rgba(255,255,255,.75)';
+  for(const[cx,cy,s]of CLOUDS){for(let i=0;i<5;i++){a.beginPath();a.ellipse(cx+(i-2)*s*0.32,cy+Math.sin(i*1.7)*0.18*s,s*0.42,s*0.2,0,0,7);a.fill();}}
+  // far ridge
+  a.fillStyle='#8ea2b6';a.beginPath();a.moveTo(x0,-6);for(let x=x0;x<=x1+stepX;x+=stepX)a.lineTo(x,ridgeFar(x));a.lineTo(x1+stepX,-6);a.closePath();a.fill();
+  // wind turbine (far)
+  {const bx=-9.2,by=ridgeFar(bx),hy=by+0.9;a.strokeStyle='#d7dde4';a.lineWidth=lw(Math.max(1,0.012*ppd));a.beginPath();a.moveTo(bx,by);a.lineTo(bx,hy);a.stroke();
+    a.lineWidth=lw(Math.max(1,0.02*ppd));for(let i=0;i<3;i++){const an=t*0.0012+i*2.094;a.beginPath();a.moveTo(bx,hy);a.lineTo(bx+Math.cos(an)*0.45,hy+Math.sin(an)*0.45);a.stroke();}
+    a.fillStyle='#d7dde4';a.beginPath();a.arc(bx,hy,0.03,0,7);a.fill();}
+  // TV tower (target 1)
+  {const b=TWB,top=b+0.75;a.strokeStyle='#6c7684';a.lineWidth=lw(Math.max(1,0.01*ppd));
+    a.beginPath();a.moveTo(TW-0.16,b);a.lineTo(TW-0.035,top);a.moveTo(TW+0.16,b);a.lineTo(TW+0.035,top);a.stroke();
+    a.lineWidth=lw(Math.max(0.8,0.005*ppd));a.beginPath();
+    for(let i=0;i<6;i++){const y0=b+i*0.125,y1=y0+0.125,w0=0.16-(0.125*i/0.75),w1=0.16-(0.125*(i+1)/0.75);
+      a.moveTo(TW-w0,y0);a.lineTo(TW+w1,y1);a.moveTo(TW+w0,y0);a.lineTo(TW-w1,y1);a.moveTo(TW-w1,y1);a.lineTo(TW+w1,y1);}a.stroke();
+    a.fillStyle='#6c7684';a.fillRect(TW-0.07,top,0.14,0.035);a.fillRect(TW-0.05,top+0.08,0.1,0.02);
+    a.lineWidth=lw(Math.max(1,0.008*ppd));a.beginPath();a.moveTo(TW,top);a.lineTo(TW,T1.y);a.stroke();
+    const blink=0.65+0.35*Math.sin(t*0.004);a.fillStyle=`rgba(255,40,40,${blink})`;a.beginPath();a.arc(T1.x,T1.y,0.018,0,7);a.fill();
+    a.fillStyle='rgba(255,60,60,.25)';a.beginPath();a.arc(T1.x,T1.y,0.04,0,7);a.fill();}
+  // near ridge
+  a.fillStyle='#5f8456';a.beginPath();a.moveTo(x0,-6);for(let x=x0;x<=x1+stepX;x+=stepX)a.lineTo(x,ridgeNear(x));a.lineTo(x1+stepX,-6);a.closePath();a.fill();
+  a.fillStyle='#4c6d45';a.fillRect(x0-1,-6,x1-x0+2,5.2);
+  // building
+  {const bx=1.2,b=ridgeNear(bx)-0.1;a.fillStyle='#d9d3c7';a.fillRect(bx-0.55,b,1.1,0.72);a.fillStyle='#7c8fa3';
+    for(let r=0;r<5;r++)for(let c=0;c<7;c++)a.fillRect(bx-0.48+c*0.145,b+0.08+r*0.12,0.08,0.06);
+    a.fillStyle='#b4ad9f';a.fillRect(bx-0.58,b+0.72,1.16,0.04);a.strokeStyle='#666';a.lineWidth=lw(Math.max(1,0.008*ppd));a.beginPath();a.moveTo(bx+0.3,b+0.76);a.lineTo(bx+0.3,b+1.0);a.stroke();}
+  // water tower (target 2)
+  {const b=WTB;a.strokeStyle='#5b5f66';a.lineWidth=lw(Math.max(1,0.022*ppd));a.beginPath();
+    a.moveTo(WT-0.22,b);a.lineTo(WT-0.14,b+0.6);a.moveTo(WT+0.22,b);a.lineTo(WT+0.14,b+0.6);a.moveTo(WT-0.08,b);a.lineTo(WT-0.05,b+0.6);a.moveTo(WT+0.08,b);a.lineTo(WT+0.05,b+0.6);a.stroke();
+    a.lineWidth=lw(Math.max(0.8,0.008*ppd));a.beginPath();a.moveTo(WT-0.2,b+0.2);a.lineTo(WT+0.2,b+0.2);a.moveTo(WT-0.17,b+0.42);a.lineTo(WT+0.17,b+0.42);a.stroke();
+    a.fillStyle='#cfc8bb';a.fillRect(WT-0.2,b+0.6,0.4,0.35);a.fillStyle='#b9b1a2';a.beginPath();a.moveTo(WT-0.22,b+0.95);a.lineTo(WT+0.22,b+0.95);a.lineTo(WT,b+1.06);a.closePath();a.fill();
+    a.fillStyle='#8a2f2f';a.font='0.1px sans-serif';a.fillRect(WT-0.2,b+0.75,0.4,0.03);
+    a.strokeStyle='#3d4048';a.lineWidth=lw(Math.max(1,0.006*ppd));a.beginPath();a.moveTo(WT,b+1.05);a.lineTo(WT,T2.y);a.stroke();
+    a.fillStyle='#3d4048';a.beginPath();a.arc(T2.x,T2.y,0.012,0,7);a.fill();}
+  // trees
+  for(const tr of TREES){if(tr.x<x0-1||tr.x>x1+1)continue;const b=ridgeNear(tr.x)-0.05;a.fillStyle='#3d2e22';a.fillRect(tr.x-0.025,b,0.05,tr.r*0.9);
+    a.fillStyle='#2f5a2c';a.beginPath();a.ellipse(tr.x,b+tr.r*1.35,tr.r*0.75,tr.r,0,0,7);a.fill();a.fillStyle='#3b6c37';a.beginPath();a.ellipse(tr.x-tr.r*0.2,b+tr.r*1.55,tr.r*0.4,tr.r*0.5,0,0,7);a.fill();}
+}
+function scopeView(a,cx,cy,R,az0,alt0,fov,fx,fy,t,cross){
+  const ppd=R/(fov/2);
+  a.save();a.beginPath();a.arc(cx,cy,R,0,7);a.clip();
+  a.translate(cx,cy);a.scale(fx?-ppd:ppd,fy?ppd:-ppd);a.translate(-az0,-alt0);
+  drawWorld(a,ppd,az0,fov*0.75,t);
+  a.restore();
+  // vignette & rim
+  a.save();const vg=a.createRadialGradient(cx,cy,R*0.75,cx,cy,R);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');a.fillStyle=vg;a.beginPath();a.arc(cx,cy,R,0,7);a.fill();
+  a.strokeStyle='#000';a.lineWidth=6;a.beginPath();a.arc(cx,cy,R+3,0,7);a.stroke();a.strokeStyle='#3a3f4c';a.lineWidth=2;a.beginPath();a.arc(cx,cy,R+7,0,7);a.stroke();
+  if(cross){a.strokeStyle='rgba(20,20,20,.85)';a.lineWidth=1.4;a.beginPath();
+    a.moveTo(cx-R,cy);a.lineTo(cx-6,cy);a.moveTo(cx+6,cy);a.lineTo(cx+R,cy);a.moveTo(cx,cy-R);a.lineTo(cx,cy-6);a.moveTo(cx,cy+6);a.lineTo(cx,cy+R);a.stroke();}
+  else{a.strokeStyle='rgba(255,255,255,.28)';a.lineWidth=1;a.beginPath();a.arc(cx,cy,5,0,7);a.stroke();}
+  a.restore();
+}
+function drawC(a,w,h,t){
+  a.fillStyle='#0b0d16';a.fillRect(0,0,w,h);
+  const flip=$('#flip').checked,peek=$('#peek').checked;
+  const ro=$('#roC'),top=ro.offsetTop+ro.offsetHeight+8;
+  // panorama strip
+  const ph=Math.max(70,Math.min(h*0.22,150)),px0=12,pw=w-24,py0=top;
+  const ppdP=pw/32,pazc=0,paltc=2.2;
+  a.save();a.beginPath();a.roundRect(px0,py0,pw,ph,8);a.clip();a.translate(px0+pw/2,py0+ph/2);a.scale(ppdP,-ppdP);a.translate(-pazc,-paltc);
+  drawWorld(a,ppdP,pazc,16.5,t);
+  // main FOV circle
+  a.lineWidth=2/ppdP;a.strokeStyle='#ffd76a';a.beginPath();a.arc(C.az,C.alt,Math.max(fovMain()/2,4/ppdP),0,7);a.stroke();
+  if(peek){a.setLineDash([4/ppdP,4/ppdP]);a.strokeStyle='#ff4fd8';a.beginPath();a.arc(C.az+C.off.x,C.alt+C.off.y,FOVF/2,0,7);a.stroke();a.setLineDash([]);
+    a.beginPath();a.moveTo(C.az+C.off.x-0.3,C.alt+C.off.y);a.lineTo(C.az+C.off.x+0.3,C.alt+C.off.y);a.moveTo(C.az+C.off.x,C.alt+C.off.y-0.3);a.lineTo(C.az+C.off.x,C.alt+C.off.y+0.3);a.stroke();}
+  a.restore();
+  a.strokeStyle='#2c3042';a.lineWidth=1;a.beginPath();a.roundRect(px0,py0,pw,ph,8);a.stroke();
+  a.fillStyle='rgba(8,9,15,.75)';a.fillRect(px0+6,py0+ph-22,190,18);a.fillStyle='#eceef4';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='middle';
+  a.fillText(`遠方風景（點一下快速轉過去）`,px0+10,py0+ph-13);
+  // two views
+  const vy0=py0+ph+14,vh=h-vy0-10,lab=36;
+  const R=Math.max(40,Math.min((pw-24)/4,(vh-lab)/2));
+  const cyv=vy0+lab+R-4+Math.max(0,(vh-lab-2*R)/2);
+  const cxF=w*0.27,cxM=w*0.73;
+  scopeView(a,cxF,cyv,R,C.az+C.off.x,C.alt+C.off.y,FOVF,flip,flip,t,true);
+  scopeView(a,cxM,cyv,R,C.az,C.alt,fovMain(),flip,false,t,false);
+  a.fillStyle='#eceef4';a.font='700 14px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='top';
+  a.fillText('尋星鏡 6×30',cxF,vy0);a.fillText(`主鏡 ${C.ep}mm 目鏡（${C.ep===25?24:60} 倍）`,cxM,vy0);
+  a.fillStyle='#9ca1b5';a.font='11.5px "Noto Sans TC",sans-serif';
+  a.fillText(`視野 7°${flip?'・上下左右顛倒':''}`,cxF,vy0+18);a.fillText(`視野 ${fovMain().toFixed(1)}°${flip?'・左右相反（天頂鏡）':''}`,cxM,vy0+18);
+  // panorama hit area
+  drawC.pano={x:px0,y:py0,w:pw,h:ph,ppd:ppdP,azc:pazc,altc:paltc};
+}
+const dist=(x,y,p)=>Math.hypot(x-p.x,y-p.y);
+function checkC(){
+  const d1=dist(C.az,C.alt,T1),df1=dist(C.az+C.off.x,C.alt+C.off.y,T1);
+  const prev=C.step;
+  if(C.step<=1){if(C.step===0&&d1<0.3)C.step=1;if(C.step===1&&C.ep===10&&d1<0.07)C.step=2;}
+  if(C.step===2&&C.lock&&d1<0.07)C.step=3;
+  if(C.step===3&&df1<0.1)C.step=4;
+  if((C.step===2||C.step===3)&&d1>=0.07)C.step=d1<0.3?1:0;
+  if(C.step===4&&!C.lock&&dist(C.az+C.off.x,C.alt+C.off.y,T2)<0.15&&dist(C.az,C.alt,T2)<fovMain()*0.35)C.step=5;
+  if(C.step!==prev){const m={1:'主鏡看到紅燈了！換上 10mm 高倍目鏡，再把紅燈放到最中央。',2:'對得很準！現在按「🔒 鎖緊」，之後鏡筒不能再動。',3:'鎖好了。現在只轉「尋星鏡螺絲」，讓尋星鏡的十字線也對到同一盞紅燈。',
+    4:'🎯 同軸完成！驗證一下：鬆開離合器、換回 25mm，只看尋星鏡把十字線對準右邊水塔頂的避雷針，再看主鏡有沒有看到。',5:'🎉 主鏡也看到避雷針了！尋星鏡和主鏡指向同一點，晚上找星星就靠它了。'}[C.step];
+    if(m&&C.step>prev)toast('#tC',m,false,6500);else if(C.step<prev&&prev<4)toast('#tC','主鏡已經離開紅燈了，要重新對準再鎖緊。',true);}
+  roC();}
+function roC(){const S=['用主鏡（25mm）找到山頂電視塔的<b>紅燈</b>，放到視野中央','換 10mm 高倍目鏡，把紅燈對到最中央','按「🔒 鎖緊」固定鏡筒','只調尋星鏡螺絲，讓十字線對準紅燈','驗證：只用尋星鏡瞄準水塔避雷針'];
+  $('#roC').innerHTML=`<span class="big">同軸校正 ${Math.min(C.step,5)} / 5</span>`+(C.step>=5?'<span class="ok"> ✅ 全部完成！</span>':`<span class="st cur">第 ${C.step+1} 步：${S[C.step]}</span>`);}
+function moveScope(dx,dy){if(C.lock){toast('#tC','已經鎖緊了，要先按「鬆開」才能轉鏡筒。',true);return;}const st=$('#fine').checked?0.04:0.4;
+  C.az=clamp(C.az+dx*st,-15,15);C.alt=clamp(C.alt+dy*st,-1,7);checkC();}
+$$('[data-mv]').forEach(b=>b.onclick=()=>{const[x,y]=b.dataset.mv.split(',').map(Number);moveScope(x,y);});
+$$('[data-sc]').forEach(b=>b.onclick=()=>{const[x,y]=b.dataset.sc.split(',').map(Number);const st=$('#fine').checked?0.02:0.1;
+  C.off.x=clamp(C.off.x+x*st,-4,4);C.off.y=clamp(C.off.y+y*st,-4,4);
+  if(C.step<3&&!C.lock)toast('#tC','提醒：要先把主鏡對準、鎖緊，再調尋星鏡，不然兩支都在動會越調越亂。',false,3000);checkC();});
+$('#cLock').onclick=()=>{C.lock=!C.lock;$('#cLock').textContent=C.lock?'🔒 鎖緊中':'🔓 鬆開中';$('#cLock').classList.toggle('sel',C.lock);checkC();};
+$$('[data-ep]').forEach(b=>b.onclick=()=>{C.ep=+b.dataset.ep;$$('[data-ep]').forEach(x=>x.classList.toggle('sel',x===b));if(C.ep===10)$('#fine').checked=true;checkC();});
+$('#cReset').onclick=()=>{Object.assign(C,{az:-11,alt:3.4,off:{x:1.9,y:-1.3},ep:25,lock:false,step:0});$('#cLock').textContent='🔓 鬆開中';$('#cLock').classList.remove('sel');
+  $$('[data-ep]').forEach(x=>x.classList.toggle('sel',x.dataset.ep==='25'));$('#fine').checked=false;checkC();};
+$('#cC').addEventListener('click',e=>{const p=drawC.pano;if(!p)return;const r=e.currentTarget.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  if(x<p.x||x>p.x+p.w||y<p.y||y>p.y+p.h)return;if(C.lock){toast('#tC','已經鎖緊了，要先按「鬆開」才能轉鏡筒。',true);return;}
+  C.az=clamp(p.azc+(x-p.x-p.w/2)/p.ppd,-15,15);C.alt=clamp(p.altc-(y-p.y-p.h/2)/p.ppd,-1,7);checkC();});
+addEventListener('keydown',e=>{if(TAB!=='C')return;const m={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,1],ArrowDown:[0,-1]}[e.key];if(m){e.preventDefault();moveScope(m[0],m[1]);}});
+
+/* ================= tabs & loop ================= */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  ['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+let last=performance.now();
+function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+  // physics runs always so the balance state stays honest
+  const M=bM();
+  stepAxis(B.ra,tauRA(),M*DT*DT+MCW*B.xcw*B.xcw+MBAR*0.035+0.05,dt,'ra',['砰！鏡筒那一側太重，整個轉下去撞到了。要把平衡錘往外推。','砰！平衡錘那一側太重，整個轉下去了。要把平衡錘往內推（靠近轉軸）。']);
+  stepAxis(B.de,tauDE(),bParts().reduce((s,p)=>s+p[0]*(p[1]+B.s)**2,0)+0.15,dt,'de',['物鏡那頭太重，鏡筒往前栽下去了！把鏡筒往後滑。','後端太重，鏡筒往後仰了！把鏡筒往前滑。']);
+  const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')sideView(a,w,h,now);else if(TAB==='B'){drawB(a,w,h);roB();}else drawC(a,w,h,now);
+  requestAnimationFrame(loop);}
+buildTray();syncB();roC();requestAnimationFrame(loop);
+})();
+</script>

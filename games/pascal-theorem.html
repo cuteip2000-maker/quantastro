@@ -1,0 +1,307 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>帕斯卡定理</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: a classroom slate — chalk constructions fill the board on the left, the argument runs down the right. Three chalk colours pair the opposite sides. Single dark look. */
+:root{
+  --slate:#222b33;
+  --tray:#1a2128;
+  --ledge:#2b3641;
+  --rule:#42505d;
+  --chalk:#f4f1e8;
+  --dim:#b0bbc4;
+  --pink:#ff9db0;
+  --yellow:#ffe27a;
+  --blue:#8fd3ff;
+  --ok:#9be8b0;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--slate);color:var(--chalk);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--tray)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--tray);border:1px solid var(--rule);border-bottom:0;border-radius:8px 8px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--slate);color:var(--chalk);box-shadow:inset 0 3px 0 var(--yellow)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:var(--slate)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto}
+.cv{position:relative;flex:1 0 auto;min-height:370px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
+.ro{position:absolute;left:10px;top:8px;background:rgba(26,33,40,.92);border:1px solid var(--rule);border-radius:6px;padding:5px 11px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(420px,calc(100% - 20px))}
+.ro b{color:var(--yellow);font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.toast{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:var(--yellow);color:#2c2500;font-weight:700;border-radius:6px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+.dock{background:var(--ledge);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--tray);border:1px solid var(--rule);border-radius:6px;padding:6px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--chalk)}
+.btn:disabled{opacity:.42;cursor:default}
+.btn.pri{background:var(--yellow);border-color:var(--yellow);color:#2c2500;font-weight:700}
+.btn.sel{border-color:var(--yellow);color:var(--yellow);box-shadow:inset 0 0 0 1px var(--yellow);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 230px;min-width:0}
+.sl input{flex:1;accent-color:var(--yellow);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--chalk);min-width:3.4em;text-align:right;font-variant-numeric:tabular-nums}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--pink);width:16px;height:16px}
+.rail{background:var(--slate);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-family:var(--f-disp);font-size:26px;line-height:1.3;margin:0 0 6px;text-wrap:balance}
+.lede{color:var(--dim);margin:0 0 12px;font-size:14px}
+.pairs{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0 0 16px;font-size:14px;align-items:baseline}
+.pairs dt{font-family:var(--f-num);font-weight:700}
+.pairs dd{margin:0;color:var(--dim)}
+.sec{border-top:1px solid var(--rule);padding-block:11px 5px}
+.sec h2{font-family:var(--f-disp);font-size:17px;margin:0 0 5px}
+.sec p{margin:0 0 8px;font-size:14px}
+@media (max-width:880px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative;overflow:visible}
+  .cv{flex:none;height:60vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .tabs button{padding:6px 10px;font-size:13px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 神秘六邊形<small>怎麼拖都共線</small></button>
+      <button data-tab="B" aria-pressed="false">② 60 種連法<small>一組點，60 條線</small></button>
+      <button data-tab="C" aria-pressed="false">③ 五點定曲線<small>猜猜曲線在哪</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">曲線</span>
+            <button class="btn sel" data-k="circle">圓</button>
+            <button class="btn" data-k="ellipse">橢圓</button>
+            <button class="btn" data-k="parabola">拋物線</button>
+            <button class="btn" data-k="hyper">雙曲線</button>
+            <button class="btn" data-k="lines">兩條直線</button>
+          </div>
+          <div class="row">
+            <button class="btn pri" id="aAuto">⏸ 暫停移動</button>
+            <button class="btn" id="aShuffle">隨機換位置</button>
+            <label class="chk"><input type="checkbox" id="off">讓 F 離開曲線</label>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="bRand">隨機一種連法</button>
+            <button class="btn" id="bAll">畫出全部 60 條</button>
+            <button class="btn" id="bClear">清空</button>
+            <button class="btn" id="bNew">換一組點</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="cReveal">揭曉曲線</button>
+            <button class="btn" id="cUndo">收回一點</button>
+            <button class="btn" id="cNext">下一題</button>
+          </div>
+          <div class="row"><label class="sl">轉動直尺<input id="rot" type="range" min="0" max="3.1416" step="0.002" value="0" disabled><b id="rotV">0°</b></label></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>圓上任取六點，三個交點一定排成直線</h1>
+    <p class="lede">把圓上的六個點依序連成六邊形 ABCDEF（線可以交叉），再把三組「對邊」延長。三個交點，不管六個點放在哪裡，永遠落在同一條直線上。這條線叫做帕斯卡線。</p>
+    <dl class="pairs">
+      <dt style="color:var(--pink)">AB 和 DE</dt><dd>相交於 P</dd>
+      <dt style="color:var(--yellow)">BC 和 EF</dt><dd>相交於 Q</dd>
+      <dt style="color:var(--blue)">CD 和 FA</dt><dd>相交於 R</dd>
+    </dl>
+
+    <div class="sec">
+      <h2>不只有圓</h2>
+      <p>橢圓、拋物線、雙曲線都成立。這些曲線都是用平面切圓錐得到的，所以合稱<b>圓錐曲線</b>。連「兩條直線」也算，因為平面穿過圓錐頂點時，切出來的就是兩條線。兩條直線的版本叫做帕普斯定理，西元四世紀就有人證明了。</p>
+    </div>
+
+    <div class="sec">
+      <h2>對邊平行怎麼辦？</h2>
+      <p>平行線不相交，交點好像消失了。射影幾何的想法是：平行線在<b>無窮遠處</b>相交，所有無窮遠點合起來是一條「無窮遠線」。</p>
+      <p>正六邊形的三組對邊都平行，三個交點全在無窮遠線上，定理依然成立。</p>
+    </div>
+
+    <div class="sec">
+      <h2>為什麼會共線？</h2>
+      <p>有一個漂亮的想法：用投影把圓變成另一個圓，同時把 P、Q 所在的直線送到無窮遠。投影不會破壞「點在線上」的關係。</p>
+      <p>這時 AB 平行 DE，BC 平行 EF。圓內接角的性質會推出 CD 也平行 FA，所以第三個交點 R 也在無窮遠線上。送回原來的位置，P、Q、R 就在同一條直線上。</p>
+    </div>
+
+    <div class="sec">
+      <h2>60 條線的神秘圖形</h2>
+      <p>同樣六個點，換個連接順序就是不同的六邊形，共有 5! ÷ 2 = <b>60</b> 種，各有一條帕斯卡線。帕斯卡把這個圖形叫做「神秘六線形」。</p>
+      <p>這 60 條線還藏著更多巧合：有 20 個施泰納點和 60 個柯克曼點，都是剛好三條線交在一起的地方。</p>
+    </div>
+
+    <div class="sec">
+      <h2>五點決定一條曲線</h2>
+      <p>兩點決定一條直線，<b>五點</b>決定一條圓錐曲線。帕斯卡定理的逆定理（布雷肯里奇和麥克勞林）說：如果三個交點共線，六個點就在同一條圓錐曲線上。</p>
+      <p>所以只用一把沒有刻度的直尺，就能在五個點之外找出曲線上的第六點、第七點，要多少有多少。③ 就是這樣畫出曲線的。</p>
+    </div>
+
+    <div class="sec">
+      <h2>16 歲的發現</h2>
+      <p>法國的<b>布萊茲・帕斯卡</b>約在 16 歲時發現這個定理，1640 年印成一張傳單《圓錐曲線論》。他後來研究圓錐曲線的完整手稿已經失傳，今天主要靠萊布尼茲留下的筆記才知道部分內容。</p>
+      <p>壓力單位「帕」和液壓機的<b>帕斯卡原理</b>也是同一位帕斯卡的成就，不過那是物理，和這個幾何定理不同。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,ms=4800){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),PI=Math.PI,TAU=2*PI;
+const C={slate:'#222b33',grid:'rgba(244,241,232,.045)',chalk:'#f4f1e8',dim:'#b0bbc4',pink:'#ff9db0',yellow:'#ffe27a',blue:'#8fd3ff',ok:'#9be8b0',bad:'#ff7d6e'};
+const FONT='"Noto Sans TC",sans-serif',NAMES='ABCDEF',PAIR=[C.pink,C.yellow,C.blue];
+let TAB='A';
+
+/* homogeneous geometry: a point or a line is [a,b,c] */
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const unit=v=>{const n=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/n,v[1]/n,v[2]/n];};
+const H=p=>[p[0],p[1],1];
+const finite=p=>Math.abs(p[2])>1e-7*Math.hypot(p[0],p[1]);
+const XY=p=>[p[0]/p[2],p[1]/p[2]];
+function pascal(P){const h=P.map(H),s=h.map((p,i)=>unit(cross(p,h[(i+1)%6]))),X=unit(cross(s[0],s[3])),Y=unit(cross(s[1],s[4])),Z=unit(cross(s[2],s[5]));
+  const c=[[X,Z],[X,Y],[Y,Z]].map(([a,b])=>cross(a,b));let l=c[0];for(const v of c)if(Math.hypot(...v)>Math.hypot(...l))l=v;
+  return{s,X,Y,Z,line:unit(l),dev:Math.abs(dot(X,cross(Y,Z)))};}
+
+/* drawing */
+function view(w,h,top,ext){const s=Math.min(w-12,h-top-8)/(2*ext),cx=w/2,cy=top+(h-top)/2;return{s,cx,cy,X:x=>cx+x*s,Y:y=>cy-y*s,ix:x=>(x-cx)/s,iy:y=>(cy-y)/s};}
+function board(a,w,h,V){a.fillStyle=C.slate;a.fillRect(0,0,w,h);a.strokeStyle=C.grid;a.lineWidth=1;const st=V.s>=18?1:V.s>=8?2:5;a.beginPath();for(let k=Math.ceil(-V.cx/V.s/st)*st;V.X(k)<=w;k+=st){a.moveTo(V.X(k)+.5,0);a.lineTo(V.X(k)+.5,h);}for(let k=Math.ceil((V.cy-h)/V.s/st)*st;V.Y(k)>=0;k+=st){a.moveTo(0,V.Y(k)+.5);a.lineTo(w,V.Y(k)+.5);}a.stroke();}
+function fullLine(a,V,l){const n=l[0]*l[0]+l[1]*l[1];if(n<1e-10)return false;const px=-l[2]*l[0]/n,py=-l[2]*l[1]/n,m=Math.sqrt(n),dx=l[1]/m,dy=-l[0]/m,R=4000/V.s;a.beginPath();a.moveTo(V.X(px-dx*R),V.Y(py-dy*R));a.lineTo(V.X(px+dx*R),V.Y(py+dy*R));a.stroke();return true;}
+function dot2(a,x,y,r,col){a.fillStyle=col;a.beginPath();a.arc(x,y,r,0,7);a.fill();}
+function label(a,t,x,y,col,size=13){a.font=`700 ${size}px "Lexend",${FONT}`;a.textAlign='center';a.textBaseline='middle';a.lineWidth=3.5;a.strokeStyle=C.slate;a.strokeText(t,x,y);a.fillStyle=col;a.fillText(t,x,y);}
+function drawHex(a,V,P,r,opt={}){const col=i=>PAIR[i%3];
+  a.lineWidth=1;for(let i=0;i<6;i++){a.strokeStyle=col(i);a.globalAlpha=.3;fullLine(a,V,r.s[i]);}a.globalAlpha=1;
+  a.lineWidth=2.6;a.lineCap='round';for(let i=0;i<6;i++){const p=P[i],q=P[(i+1)%6];a.strokeStyle=col(i);a.beginPath();a.moveTo(V.X(p[0]),V.Y(p[1]));a.lineTo(V.X(q[0]),V.Y(q[1]));a.stroke();}a.lineCap='butt';
+  const good=r.dev<1e-7;
+  if(!good&&finite(r.X)&&finite(r.Y)&&finite(r.Z)){const t=[r.X,r.Y,r.Z].map(XY);a.fillStyle='rgba(255,125,110,.2)';a.strokeStyle=C.bad;a.lineWidth=2;a.beginPath();t.forEach((q,i)=>i?a.lineTo(V.X(q[0]),V.Y(q[1])):a.moveTo(V.X(q[0]),V.Y(q[1])));a.closePath();a.fill();a.stroke();}
+  else if(good){a.strokeStyle=C.ok;a.lineWidth=3;fullLine(a,V,r.line);}
+  [r.X,r.Y,r.Z].forEach((q,i)=>{if(!finite(q))return;const[x,y]=XY(q);dot2(a,V.X(x),V.Y(y),6.5,PAIR[i]);a.strokeStyle=C.slate;a.lineWidth=1.5;a.beginPath();a.arc(V.X(x),V.Y(y),6.5,0,7);a.stroke();label(a,'PQR'[i],V.X(x)+13,V.Y(y)-12,PAIR[i]);});
+  if(!opt.noPts)P.forEach((p,i)=>{dot2(a,V.X(p[0]),V.Y(p[1]),7,C.chalk);const n=Math.hypot(p[0],p[1])||1;label(a,NAMES[i],V.X(p[0])+p[0]/n*17,V.Y(p[1])-p[1]/n*17,C.chalk);});}
+
+/* ================= A: the mystic hexagon ================= */
+const CURVE={
+  circle:{n:'圓',f:u=>[2.4*Math.cos(TAU*u),2.4*Math.sin(TAU*u)],closed:true,d:[.02,.19,.36,.55,.70,.88]},
+  ellipse:{n:'橢圓',f:u=>[3.2*Math.cos(TAU*u),1.8*Math.sin(TAU*u)],closed:true,d:[.05,.24,.38,.58,.72,.9]},
+  parabola:{n:'拋物線',f:u=>{const x=-3.6+7.2*u;return[x,.32*x*x-2.2];},d:[.05,.22,.46,.6,.83,.95]},
+  hyper:{n:'雙曲線',f:u=>{const R=u<.5,s=((R?u:u-.5)/.5-.5)*2.6;return[(R?1:-1)*1.3*Math.cosh(s),1.1*Math.sinh(s)];},brk:true,d:[.08,.3,.44,.58,.76,.92]},
+  lines:{n:'兩條直線',f:u=>{const T=u<.5,x=-4+16*(T?u:u-.5);return T?[x,.22*x+1.7]:[x,-.18*x-1.7];},brk:true,d:[.05,.6,.22,.78,.42,.93]}};
+// pick a hexagon whose three intersection points stay on the board, even while the points drift
+function goodU(k){const c=CURVE[k],ok=u=>{for(let t=0;t<5;t++){const v=u.map((b,i)=>{const x=b+(t?.032*Math.sin(t*1.3+i*1.7):0);if(c.closed)return (x+1)%1;const lo=Math.floor(b*2)/2;return c.brk?clamp(x,lo+.005,lo+.495):clamp(x,.005,.995);}),P=v.map(c.f);for(let i=0;i<6;i++)for(let j=0;j<i;j++)if(Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1])<.85)return false;const r=pascal(P);for(const q of[r.X,r.Y,r.Z]){if(!finite(q))return false;const[x,y]=XY(q);if(Math.abs(x)>7.5||Math.abs(y)>6.5)return false;}}return true;};
+  for(let t=0;t<4000;t++){let u;if(k==='lines'){const a=[0,1,2].map(()=>.03+Math.random()*.44).sort((x,y)=>x-y),b=[0,1,2].map(()=>.53+Math.random()*.44).sort((x,y)=>x-y);u=[a[0],b[0],a[1],b[1],a[2],b[2]];}else u=[0,1,2,3,4,5].map(()=>.02+Math.random()*.96);if(ok(u))return u;}return [...c.d];}
+const As={k:'circle',u:[],base:[],auto:true,off:false,F:[0,0],drag:-1,ext:5,t:0,last:0,r:null};
+function setK(k){As.k=k;As.u=goodU(k);As.base=[...As.u];As.off=false;$('#off').checked=false;$$('[data-k]').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));if(k==='lines')toast('#tA','A、C、E 在上面那條線，B、D、F 在下面那條線。這個特例叫帕普斯定理。',4600);}
+const ptsA=()=>{const f=CURVE[As.k].f,P=As.u.map(f);if(As.off)P[5]=As.F;return P;};
+function setAuto(v){As.auto=v;if(v)As.base=[...As.u];$('#aAuto').textContent=v?'⏸ 暫停移動':'▶ 讓點自己動';}
+function roA(r){let s=`<span class="big">${CURVE[As.k].n}上的六邊形 ABCDEF</span>`;const inf=[r.X,r.Y,r.Z].filter(q=>!finite(q)).length;
+  if(r.dev<1e-7)s+=`<span class="st" style="color:var(--ok)">P、Q、R 在同一條直線上</span><span class="st">${inf?`有 ${inf} 個交點跑到無窮遠`:'再怎麼拖都不會歪掉'}</span>`;
+  else s+=`<span class="st" style="color:#ff7d6e">F 離開曲線，P、Q、R 圍成三角形</span><span class="st">把 F 拖回去，三角形就會縮成直線</span>`;
+  const h=$('#roA');if(h._s!==s){h.innerHTML=s;h._s=s;}}
+$$('[data-k]').forEach(b=>b.onclick=()=>setK(b.dataset.k));
+$('#aAuto').onclick=()=>setAuto(!As.auto);
+$('#aShuffle').onclick=()=>{As.u=goodU(As.k);As.base=[...As.u];if(As.off){const q=CURVE[As.k].f(As.u[5]);As.F=[q[0]*1.28+.25,q[1]*1.28+.2];}};
+$('#off').onchange=e=>{As.off=e.target.checked;if(As.off){const q=CURVE[As.k].f(As.u[5]);As.F=[q[0]*1.28+.25,q[1]*1.28+.2];setAuto(false);toast('#tA','F 不在曲線上了，三個交點不再共線。拖動 F 試試看。',4200);}};
+const cvA=$('#cA');const posOf=(cv,e)=>{const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+cvA.addEventListener('pointerdown',e=>{const V=As.V;if(!V)return;const[x,y]=posOf(cvA,e),P=ptsA();let best=-1,bd=30;P.forEach((p,i)=>{const d=Math.hypot(V.X(p[0])-x,V.Y(p[1])-y);if(d<bd){bd=d;best=i;}});if(best<0)return;As.drag=best;setAuto(false);cvA.setPointerCapture(e.pointerId);});
+cvA.addEventListener('pointermove',e=>{if(As.drag<0)return;const V=As.V,[x,y]=posOf(cvA,e),wx=V.ix(x),wy=V.iy(y);if(As.off&&As.drag===5){As.F=[wx,wy];return;}const f=CURVE[As.k].f;let bu=As.u[As.drag],bd=1e9;for(let i=0;i<900;i++){const u=i/900,q=f(u),d=(q[0]-wx)**2+(q[1]-wy)**2;if(d<bd){bd=d;bu=u;}}As.u[As.drag]=bu;});
+const endA=()=>{As.drag=-1;};cvA.addEventListener('pointerup',endA);cvA.addEventListener('pointercancel',endA);
+function curvePath(a,V,c){const n=480;a.beginPath();for(let i=0;i<=n;i++){const u=c.closed?i/n:clamp(i/n,0,.99999),q=c.f(u),nb=c.brk&&i===Math.ceil(n/2);if(i===0||nb)a.moveTo(V.X(q[0]),V.Y(q[1]));else a.lineTo(V.X(q[0]),V.Y(q[1]));}a.stroke();}
+function drawA(a,w,h,now){const dt=clamp(now-As.last,0,60);As.last=now;if(As.auto){As.t+=dt;As.u=As.base.map((b,i)=>{let u=b+.032*Math.sin(As.t*.0007*(1+i*.17)+i*1.7);if(CURVE[As.k].closed)return (u+1)%1;const lo=Math.floor(b*2)/2;return CURVE[As.k].brk?clamp(u,lo+.005,lo+.495):clamp(u,.005,.995);});}
+  const P=ptsA(),r=pascal(P);let m=4.6;for(const p of P)m=Math.max(m,Math.abs(p[0])+1,Math.abs(p[1])+1);for(const q of[r.X,r.Y,r.Z])if(finite(q)){const[x,y]=XY(q);if(Math.abs(x)<22&&Math.abs(y)<22)m=Math.max(m,Math.abs(x)+1.2,Math.abs(y)+1.2);}
+  As.ext+=(clamp(m,4.6,22)-As.ext)*(As.drag>=0?.04:.07);const top=$('#roA').offsetHeight+10,V=view(w,h,top,As.ext);As.V=V;board(a,w,h,V);a.strokeStyle='rgba(244,241,232,.75)';a.lineWidth=2;curvePath(a,V,CURVE[As.k]);drawHex(a,V,P,r);roA(r);As.r=r;}
+
+/* ================= B: 60 hexagons from 6 points ================= */
+const ORD=[];(function perm(p,rest){if(!rest.length){if(p[1]<p[5])ORD.push([...p]);return;}rest.forEach((x,i)=>{p.push(x);perm(p,rest.filter((_,j)=>j!==i));p.pop();});})([0],[1,2,3,4,5]);
+const keyOf=o=>{const i=o.indexOf(0),f=[...Array(6)].map((_,k)=>o[(i+k)%6]),b=[...Array(6)].map((_,k)=>o[(i-k+6)%6]);return(f[1]<b[1]?f:b).join('');};
+const Bs={th:[],pts:[],ord:[],seen:new Map(),all:0,cur:null};
+function newB(){const base=[.02,.15,.39,.52,.66,.88];Bs.th=base.map(x=>(x+(Math.random()-.5)*.05)*TAU);Bs.pts=Bs.th.map(t=>[2.5*Math.cos(t),2.5*Math.sin(t)]);clearB();const o=ORD.find(onBoard);if(o)completeB(o);}
+const onBoard=o=>{const r=pascal(o.map(i=>Bs.pts[i]));return[r.X,r.Y,r.Z].every(q=>{if(!finite(q))return false;const[x,y]=XY(q);return Math.abs(x)<5.6&&Math.abs(y)<5.2;});};
+function clearB(){Bs.ord=[];Bs.seen=new Map();Bs.all=0;Bs.cur=null;roB();}
+function completeB(o){Bs.ord=[...o];const P=o.map(i=>Bs.pts[i]),r=pascal(P),k=keyOf(o),isNew=!Bs.seen.has(k);Bs.seen.set(k,r.line);Bs.cur=r;roB();return isNew;}
+function roB(){const n=Bs.seen.size,o=Bs.ord;let s=`<span class="big">同樣六個點，已找到 <b>${n}</b> / 60 種六邊形</span>`;
+  s+=o.length===6?`<span class="st">連法 ${o.map(i=>NAMES[i]).join(' → ')} → ${NAMES[o[0]]}</span>`:`<span class="st">${o.length?'已連 '+o.map(i=>NAMES[i]).join(' → '):'依序點六個點，連成自己的六邊形'}</span>`;
+  s+=`<span class="st">六邊形可以自己交叉，定理照樣成立</span>`;$('#roB').innerHTML=s;}
+$('#cB').addEventListener('pointerdown',e=>{const V=Bs.V;if(!V)return;const[x,y]=posOf($('#cB'),e);let best=-1,bd=34;Bs.pts.forEach((p,i)=>{const d=Math.hypot(V.X(p[0])-x,V.Y(p[1])-y);if(d<bd){bd=d;best=i;}});if(best<0)return;
+  if(Bs.ord.length===6){Bs.ord=[];Bs.cur=null;}if(Bs.ord.includes(best))return;Bs.ord.push(best);if(Bs.ord.length===6){const isNew=completeB(Bs.ord);toast('#tB',isNew?'新的六邊形，新的一條帕斯卡線！':'這個六邊形之前連過了，只是起點或方向不同。',3200);if(Bs.seen.size===60)toast('#tB','60 種全部找齊了！',5000);}else roB();});
+$('#bRand').onclick=()=>{const rest=ORD.filter(o=>!Bs.seen.has(keyOf(o))),all=rest.length?rest:ORD,near=all.filter(onBoard),pool=near.length?near:all;completeB(pool[Math.floor(Math.random()*pool.length)]);};
+$('#bAll').onclick=()=>{Bs.all=performance.now();Bs.ord=[];Bs.cur=null;for(const o of ORD)Bs.seen.set(keyOf(o),pascal(o.map(i=>Bs.pts[i])).line);roB();toast('#tB','60 條線看起來很亂，其實有 80 個點剛好有三條線交在一起。',5000);};
+$('#bClear').onclick=clearB;$('#bNew').onclick=newB;
+function drawB(a,w,h,now){const top=$('#roB').offsetHeight+10,V=view(w,h,top,6.6);Bs.V=V;board(a,w,h,V);
+  a.strokeStyle='rgba(244,241,232,.72)';a.lineWidth=2;a.beginPath();a.arc(V.cx,V.cy,2.5*V.s,0,7);a.stroke();
+  const ls=[...Bs.seen.values()],lim=Bs.all?Math.floor((now-Bs.all)/55)+1:ls.length;a.strokeStyle='rgba(155,232,176,.34)';a.lineWidth=1;ls.slice(0,lim).forEach(l=>fullLine(a,V,l));
+  if(Bs.ord.length===6&&Bs.cur)drawHex(a,V,Bs.ord.map(i=>Bs.pts[i]),Bs.cur,{noPts:true});
+  else if(Bs.ord.length>1){a.strokeStyle=C.yellow;a.lineWidth=2.6;a.beginPath();Bs.ord.forEach((i,k)=>{const p=Bs.pts[i];k?a.lineTo(V.X(p[0]),V.Y(p[1])):a.moveTo(V.X(p[0]),V.Y(p[1]));});a.stroke();}
+  Bs.pts.forEach((p,i)=>{const at=Bs.ord.indexOf(i);dot2(a,V.X(p[0]),V.Y(p[1]),at>=0?8.5:7,at>=0?C.yellow:C.chalk);const n=Math.hypot(p[0],p[1]);label(a,NAMES[i],V.X(p[0])+p[0]/n*19,V.Y(p[1])-p[1]/n*19,C.chalk);});}
+
+/* ================= C: five points make a conic ================= */
+const Cs={P:[],curve:[],guess:[],rv:0,done:false,phi:0,total:0,rounds:0,kind:''};
+function genConic(){const T=['橢圓','雙曲線','拋物線'][Math.floor(Math.random()*3)],ro=Math.random()*PI,c=Math.cos(ro),n=Math.sin(ro),ox=(Math.random()-.5)*1.1,oy=(Math.random()-.5)*1.1,R=([x,y])=>[ox+x*c-y*n,oy+x*n+y*c];let f,N=1800;
+  if(T==='橢圓'){const A=2.5+Math.random()*1.1,B=1.3+Math.random()*.8;f=u=>R([A*Math.cos(TAU*u),B*Math.sin(TAU*u)]);}
+  else if(T==='拋物線'){const k=.22+Math.random()*.2;f=u=>{const x=-5+10*u;return R([x,k*x*x-1.7]);};}
+  else{const A=1+Math.random()*.6,B=.8+Math.random()*.7;f=u=>{const r=u<.5,s=((r?u:u-.5)/.5-.5)*3.4;return R([(r?1:-1)*A*Math.cosh(s),B*Math.sinh(s)]);};}
+  const curve=[];for(let i=0;i<N;i++)curve.push(f(i/N));return{T,f,curve};}
+function newC(){let g,P,ok=false;for(let t=0;t<400&&!ok;t++){g=genConic();const vis=g.curve.filter(q=>Math.abs(q[0])<4.2&&Math.abs(q[1])<3.7);if(vis.length<500)continue;P=[];for(let k=0;k<300&&P.length<5;k++){const q=vis[Math.floor(Math.random()*vis.length)];if(P.every(p=>Math.hypot(p[0]-q[0],p[1]-q[1])>1.55))P.push(q);}if(P.length<5)continue;
+    const h=P.map(H),AB=cross(h[0],h[1]),DE=cross(h[3],h[4]),X=cross(AB,DE);if(!finite(unit(X)))continue;const[x,y]=XY(X);if(Math.hypot(x,y)>40)continue;ok=true;}
+  Cs.P=P;Cs.curve=g.curve;Cs.kind=g.T;Cs.guess=[];Cs.rv=0;Cs.done=false;Cs.phi=0;Cs.scored=false;$('#rot').disabled=true;$('#rot').value=0;$('#rotV').textContent='0°';$('#cReveal').disabled=false;roC();}
+function sixth(phi){const h=Cs.P.map(H),X=cross(cross(h[0],h[1]),cross(h[3],h[4])),l=cross(X,[Math.cos(phi),Math.sin(phi),0]),Y=cross(l,cross(h[1],h[2])),Z=cross(l,cross(h[2],h[3])),F=cross(cross(h[4],Y),cross(h[0],Z));return{X,l,Y,Z,F};}
+const distCurve=g=>{let m=1e9;for(const q of Cs.curve){const d=(q[0]-g[0])**2+(q[1]-g[1])**2;if(d<m)m=d;}return Math.sqrt(m);};
+function roC(){let s=`<span class="big">這五個點決定一條曲線，它會經過哪裡？</span>`;
+  if(!Cs.scored)s+=`<span class="st">在黑板上點 3 個位置，猜曲線通過的地方（已點 <b>${Cs.guess.length}</b> / 3）</span><span class="st">累計得分 <b>${Cs.total}</b> / ${Cs.rounds*9}</span>`;
+  else s+=`<span class="st">這是一條<b>${Cs.kind}</b>，本題得 <b>${Cs.last}</b> / 9 分</span><span class="st">累計 <b>${Cs.total}</b> / ${Cs.rounds*9}　轉動直尺，看第六點怎麼跑</span>`;
+  $('#roC').innerHTML=s;}
+function revealC(){if(Cs.scored)return;if(Cs.guess.length<3){toast('#tC','先點滿 3 個猜測的位置。',2600);return;}Cs.scores=Cs.guess.map(g=>{const d=distCurve(g);return d<.14?3:d<.32?2:d<.62?1:0;});Cs.last=Cs.scores.reduce((x,y)=>x+y,0);Cs.total+=Cs.last;Cs.rounds++;Cs.scored=true;Cs.rv=performance.now();$('#cReveal').disabled=true;roC();}
+$('#cReveal').onclick=revealC;$('#cUndo').onclick=()=>{if(Cs.scored)return;Cs.guess.pop();roC();};$('#cNext').onclick=newC;
+$('#rot').oninput=e=>{if(!Cs.done)return;Cs.phi=+e.target.value;$('#rotV').textContent=Math.round(Cs.phi*180/PI)+'°';};
+$('#cC').addEventListener('pointerdown',e=>{const V=Cs.V;if(!V||Cs.scored)return;const[x,y]=posOf($('#cC'),e),g=[V.ix(x),V.iy(y)],i=Cs.guess.findIndex(q=>Math.hypot(V.X(q[0])-x,V.Y(q[1])-y)<16);if(i>=0){Cs.guess.splice(i,1);roC();return;}if(Cs.guess.length>=3)return;Cs.guess.push(g);roC();});
+function traceC(a,V,lim){a.strokeStyle=C.ok;a.lineWidth=2.6;a.beginPath();let prev=null;const n=2400;for(let i=0;i<=n;i++){const phi=lim*i/n,F=sixth(phi).F;if(!finite(F)){prev=null;continue;}const q=XY(F);if(Math.abs(q[0])>30||Math.abs(q[1])>30){prev=null;continue;}if(prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<1.2)a.lineTo(V.X(q[0]),V.Y(q[1]));else a.moveTo(V.X(q[0]),V.Y(q[1]));prev=q;}a.stroke();}
+function drawC(a,w,h,now){const top=$('#roC').offsetHeight+10,V=view(w,h,top,4.7);Cs.V=V;board(a,w,h,V);let phi=Cs.phi;
+  if(Cs.scored&&!Cs.done){const u=clamp((now-Cs.rv)/4200,0,1);phi=u*PI;if(u>=1){Cs.done=true;Cs.phi=.7;$('#rot').value=.7;$('#rot').disabled=false;$('#rotV').textContent=Math.round(.7*180/PI)+'°';phi=.7;toast('#tC',Cs.last>=7?'猜得真準！':'曲線是用一把直尺一點一點找出來的。',3600);}}
+  const h0=Cs.P.map(H);
+  if(Cs.scored){traceC(a,V,Cs.done?PI:phi);const c=sixth(phi);
+    a.lineWidth=1;a.globalAlpha=.42;a.strokeStyle=C.pink;fullLine(a,V,cross(h0[0],h0[1]));fullLine(a,V,cross(h0[3],h0[4]));a.strokeStyle=C.yellow;fullLine(a,V,cross(h0[1],h0[2]));a.strokeStyle=C.blue;fullLine(a,V,cross(h0[2],h0[3]));a.globalAlpha=.9;a.strokeStyle=C.yellow;a.lineWidth=1.4;fullLine(a,V,cross(h0[4],c.Y));a.strokeStyle=C.blue;fullLine(a,V,cross(h0[0],c.Z));a.globalAlpha=1;
+    a.strokeStyle=C.ok;a.lineWidth=3;fullLine(a,V,c.l);[c.X,c.Y,c.Z].forEach((q,i)=>{if(!finite(q))return;const[x,y]=XY(q);dot2(a,V.X(x),V.Y(y),5.5,PAIR[i]);label(a,'PQR'[i],V.X(x)+12,V.Y(y)-11,PAIR[i]);});
+    if(finite(c.F)){const[x,y]=XY(c.F);dot2(a,V.X(x),V.Y(y),8,C.ok);label(a,'F',V.X(x)+14,V.Y(y)-13,C.ok,15);}}
+  Cs.guess.forEach((g,i)=>{const x=V.X(g[0]),y=V.Y(g[1]),col=Cs.scored?[C.bad,C.blue,C.yellow,C.ok][Cs.scores[i]]:C.pink;a.strokeStyle=col;a.lineWidth=2.6;a.beginPath();a.moveTo(x-7,y-7);a.lineTo(x+7,y+7);a.moveTo(x+7,y-7);a.lineTo(x-7,y+7);a.stroke();if(Cs.scored)label(a,'+'+Cs.scores[i],x,y+18,col,12);});
+  Cs.P.forEach((p,i)=>{dot2(a,V.X(p[0]),V.Y(p[1]),7,C.chalk);label(a,NAMES[i],V.X(p[0])+14,V.Y(p[1])-14,C.chalk);});}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){requestAnimationFrame(loop);const cv=$('#c'+TAB),{w,h,d}=fit(cv);if(w<10||h<10)return;const a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else drawC(a,w,h,now);}
+As.u=goodU('circle');As.base=[...As.u];newB();completeB(ORD.find(onBoard)||ORD[0]);Bs.seen.clear();Bs.seen.set(keyOf(Bs.ord),Bs.cur.line);roB();newC();requestAnimationFrame(loop);
+})();
+</script>

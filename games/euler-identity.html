@@ -1,0 +1,338 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>歐拉恆等式</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=STIX+Two+Text:ital,wght@0,500;1,500;1,700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: a sheet of blue graph paper — the complex plane fills the left, the five constants and the argument run down the right. Single light look. */
+:root{
+  --paper:#edf3f7;
+  --sheet:#f8fbfd;
+  --line:#cfdce6;
+  --ink:#1b2a41;
+  --dim:#526479;
+  --re:#c93f33;
+  --im:#0b817d;
+  --gold:#9a6a00;
+  --vio:#5650bd;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-math:"STIX Two Text","Times New Roman",serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--vio);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 390px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--paper);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--re)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--line);overflow:hidden;background:var(--sheet)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column;overflow-y:auto}
+.cv{position:relative;flex:1 0 auto;min-height:370px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cC{touch-action:none;cursor:grab}
+.ro{position:absolute;left:10px;top:8px;background:rgba(255,255,255,.93);border:1px solid var(--line);border-radius:6px;padding:5px 11px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(430px,calc(100% - 20px))}
+.ro b{color:var(--re);font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.m{font-family:var(--f-math);font-style:italic;white-space:nowrap}
+.m sup{font-size:.72em;line-height:0}
+.toast{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);background:var(--ink);color:#fff;font-weight:700;border-radius:6px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+.dock{background:var(--paper);border-top:1px solid var(--line);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--sheet);border:1px solid #b6c6d4;border-radius:6px;padding:6px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.42;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--re);color:var(--re);box-shadow:inset 0 0 0 1px var(--re);font-weight:700}
+.btn.op{font-family:var(--f-math);font-size:18px;min-width:62px;padding-block:3px;font-weight:500}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 230px;min-width:0}
+.sl input{flex:1;accent-color:var(--re);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:4.6em;text-align:right;font-variant-numeric:tabular-nums}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--re);width:16px;height:16px}
+.rail{background:var(--sheet);border-left:1px solid var(--line);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hero{font-family:var(--f-math);font-style:italic;font-size:46px;line-height:1.15;margin:0;white-space:nowrap;letter-spacing:.01em}
+.hero sup{font-size:.58em;line-height:0}
+.hero .e{color:var(--re)}.hero .i{color:var(--im)}.hero .p{color:var(--vio)}.hero .o{color:var(--gold)}
+.rail h1{font-family:var(--f-disp);font-size:21px;line-height:1.35;margin:4px 0 4px;text-wrap:balance}
+.lede{color:var(--dim);margin:0 0 12px;font-size:14px}
+.five{display:grid;grid-template-columns:44px 1fr;gap:3px 8px;margin:0 0 16px;font-size:13.5px;align-items:baseline}
+.five dt{font-family:var(--f-math);font-style:italic;font-size:21px;text-align:center;line-height:1.3}
+.five dd{margin:0;color:var(--dim)}
+.sec{border-top:1px solid var(--line);padding-block:11px 5px}
+.sec h2{font-family:var(--f-disp);font-size:17px;margin:0 0 5px}
+.sec p{margin:0 0 8px;font-size:14px}
+.fx{font-family:var(--f-math);font-style:italic;background:var(--paper);border-radius:4px;padding:6px 10px;font-size:17px;text-align:center;margin:6px 0 9px;overflow-x:auto;white-space:nowrap}
+.fx sup{font-size:.7em;line-height:0}
+@media (max-width:880px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative;overflow:visible}
+  .cv{flex:none;height:60vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--line)}
+  .ro{font-size:12px}
+  .tabs button{padding:6px 10px;font-size:13px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 乘 i 就是轉彎<small>九關小謎題</small></button>
+      <button data-tab="B" aria-pressed="false">② 一小步一小步<small>e 怎麼跑到 −1</small></button>
+      <button data-tab="C" aria-pressed="false">③ 繞著圓走<small>轉到 π 看奇蹟</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row" id="lvRow"><span class="lab">關卡</span></div>
+          <div class="row">
+            <button class="btn op" data-op="i">× i</button>
+            <button class="btn op" data-op="2">× 2</button>
+            <button class="btn op" data-op="1">+ 1</button>
+            <button class="btn" id="aUndo">復原</button>
+            <button class="btn" id="aReset">重來</button>
+            <button class="btn pri" id="aNext" hidden>下一關</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn sel" data-bm="turn">往旁邊走：走到 −1</button>
+            <button class="btn" data-bm="money">往前走：存錢得到 e</button>
+          </div>
+          <div class="row">
+            <span class="lab">分幾步</span>
+            <button class="btn" data-n="1">1</button>
+            <button class="btn" data-n="2">2</button>
+            <button class="btn sel" data-n="6">6</button>
+            <button class="btn" data-n="20">20</button>
+            <button class="btn" data-n="100">100</button>
+            <button class="btn" data-n="1000">1000</button>
+            <button class="btn pri" id="bPlay">▶ 走一遍</button>
+          </div>
+          <div class="row"><label class="sl">步數<input id="nS" type="range" min="0" max="3" step="0.01" value="0.78"><b id="nV"></b></label></div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">角度 θ<input id="th" type="range" min="0" max="6.2832" step="0.001" value="2.1"><b id="thV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">轉到</span>
+            <button class="btn" data-go="0">0</button>
+            <button class="btn" data-go="0.5">π/2</button>
+            <button class="btn pri" data-go="1">π</button>
+            <button class="btn" data-go="1.5">3π/2</button>
+            <button class="btn" data-go="2">2π</button>
+            <button class="btn" id="cGame">打靶 5 題</button>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="ser">拆成一支一支箭頭</label>
+            <label class="sl">箭頭數<input id="serN" type="range" min="1" max="20" step="1" value="8"><b id="serV"></b></label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <p class="hero"><span class="e">e</span><sup><span class="i">i</span><span class="p">π</span></sup> + <span class="o">1</span> = <span class="o">0</span></p>
+    <h1>五個最重要的數，排成一行</h1>
+    <p class="lede">這五個數來自數學不同的角落，原本看不出有什麼關係。歐拉恆等式把它們全部連在一起。</p>
+    <dl class="five">
+      <dt style="color:var(--re)">e</dt><dd>約 2.71828，自然成長的底數，來自複利</dd>
+      <dt style="color:var(--im)">i</dt><dd>虛數單位，規定 i × i = −1</dd>
+      <dt style="color:var(--vio)">π</dt><dd>約 3.14159，圓周長 ÷ 直徑，也代表轉半圈</dd>
+      <dt style="color:var(--gold)">1</dt><dd>乘法的起點，任何數乘 1 都不變</dd>
+      <dt style="color:var(--gold)">0</dt><dd>加法的起點，任何數加 0 都不變</dd>
+    </dl>
+
+    <div class="sec">
+      <h2>i 不是怪數，是一個轉彎</h2>
+      <p>數線上，乘 −1 會把數翻到另一邊，等於轉 180°。那有沒有一個數，乘兩次剛好等於轉 180°？有，乘一次轉 90° 就好。這個數就是 <span class="m">i</span>。</p>
+      <p>於是數線多了一個垂直方向，變成一整個平面，叫做<b>複數平面</b>。橫軸是一般的數，縱軸是 <span class="m">i</span> 的倍數。</p>
+      <div class="fx">1 → i → −1 → −i → 1</div>
+    </div>
+
+    <div class="sec">
+      <h2><span class="m">e<sup>iπ</sup></span> 不是「乘 iπ 次」</h2>
+      <p>沒有人能把 e 乘 3.14 個 i 次，所以這個次方要重新定義。最自然的定義來自 e 的誕生方式：</p>
+      <div class="fx">e<sup>x</sup> ≈ (1 + x/n)<sup>n</sup>，n 越大越準</div>
+      <p>把 <span class="m">x</span> 換成 <span class="m">iπ</span>，每一步就不是往前，而是<b>往垂直方向走一小段</b>。一直朝自己的側面走，路線就彎成圓。總共走 π 的路程，正好是半個單位圓，停在 −1。② 可以親眼看它收斂。</p>
+    </div>
+
+    <div class="sec">
+      <h2>歐拉公式</h2>
+      <p>走到角度 θ 時，橫向是 cos θ，縱向是 sin θ：</p>
+      <div class="fx">e<sup>iθ</sup> = cos θ + i sin θ</div>
+      <p>代入 θ = π，cos π = −1、sin π = 0，得到 <span class="m">e<sup>iπ</sup></span> = −1。把 1 移到左邊，就是上面那行式子。</p>
+      <p>③ 的「拆成箭頭」是另一種算法：把 <span class="m">e<sup>iθ</sup></span> 展開成無窮多項相加。每支箭頭都比前一支多轉 90°，越來越短，最後捲進同一個點。</p>
+    </div>
+
+    <div class="sec">
+      <h2>誰發現的？</h2>
+      <p>瑞士數學家<b>歐拉</b>在 1748 年的《無窮分析引論》寫下 <span class="m">e<sup>ix</sup></span> = cos <span class="m">x</span> + <span class="m">i</span> sin <span class="m">x</span>。英國的柯茨在更早以前就得到類似的關係。一般認為，歐拉留下的著作裡並沒有直接寫出 <span class="m">e<sup>iπ</sup></span> + 1 = 0 這個形式，但它是公式最有名的特例。</p>
+      <p>物理學家費曼稱歐拉公式是數學裡最了不起的公式之一。《數學信使》期刊的讀者票選中，歐拉恆等式也名列最美定理第一。</p>
+    </div>
+
+    <div class="sec">
+      <h2>它有什麼用？</h2>
+      <p>凡是會轉動或振動的東西，都能用 <span class="m">e<sup>iθ</sup></span> 來算：交流電、聲音和音樂、手機訊號、照片壓縮、量子力學的波函數。把「轉動」寫成「次方」之後，複雜的三角函數計算就變成簡單的乘法。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,ms=4800){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),PI=Math.PI,TAU=2*PI;
+const C={sheet:'#f8fbfd',grid:'#dbe6ee',axis:'#6d8195',ink:'#1b2a41',dim:'#526479',re:'#c93f33',im:'#0b817d',gold:'#9a6a00',vio:'#5650bd'};
+const FONT='"Noto Sans TC",sans-serif',MATH='italic 500 15px "STIX Two Text",serif';
+const ease=u=>u*u*(3-2*u);
+let TAB='A';
+
+function grid(a,x0,y0,x1,y1,cx,cy,s){a.save();a.beginPath();a.rect(x0,y0,x1-x0,y1-y0);a.clip();const st=s>=17?1:s>=8?2:5;a.lineWidth=1;a.strokeStyle=C.grid;a.beginPath();
+  for(let k=Math.ceil((x0-cx)/s/st)*st;cx+k*s<=x1;k+=st){a.moveTo(cx+k*s+.5,y0);a.lineTo(cx+k*s+.5,y1);}
+  for(let k=Math.ceil((y0-cy)/s/st)*st;cy+k*s<=y1;k+=st){a.moveTo(x0,cy+k*s+.5);a.lineTo(x1,cy+k*s+.5);}a.stroke();
+  a.strokeStyle=C.axis;a.lineWidth=1.4;a.beginPath();a.moveTo(x0,cy);a.lineTo(x1,cy);a.moveTo(cx,y0);a.lineTo(cx,y1);a.stroke();
+  a.fillStyle=C.dim;a.font=`11px ${FONT}`;a.textAlign='center';a.textBaseline='top';
+  for(let k=Math.ceil((x0-cx)/s/st)*st;cx+k*s<=x1-8;k+=st){if(k)a.fillText(String(k).replace('-','−'),cx+k*s,cy+3);}
+  a.textAlign='left';a.textBaseline='middle';for(let k=Math.ceil((y0-cy)/s/st)*st;cy+k*s<=y1-5;k+=st){if(k){const v=-k;a.fillText((v===1?'':v===-1?'−':String(v).replace('-','−'))+'i',cx+4,cy+k*s);}}
+  a.restore();}
+function arrow(a,x0,y0,x1,y1,col,lw=2.6){const L=Math.hypot(x1-x0,y1-y0);if(L<.5)return;const ux=(x1-x0)/L,uy=(y1-y0)/L,h=Math.min(11,L*.5);a.strokeStyle=col;a.fillStyle=col;a.lineWidth=lw;a.beginPath();a.moveTo(x0,y0);a.lineTo(x1-ux*h*.7,y1-uy*h*.7);a.stroke();a.beginPath();a.moveTo(x1,y1);a.lineTo(x1-ux*h-uy*h*.48,y1-uy*h+ux*h*.48);a.lineTo(x1-ux*h+uy*h*.48,y1-uy*h-ux*h*.48);a.closePath();a.fill();}
+function dot(a,x,y,r,col){a.fillStyle=col;a.beginPath();a.arc(x,y,r,0,7);a.fill();}
+const fN=(x,d=3)=>{const v=Math.abs(x)<.5*10**-d?0:x;return v.toFixed(d).replace('-','−');};
+const fC=(x,y,d=3)=>`${fN(x,d)} ${y<0&&Math.abs(y)>=.5*10**-d?'−':'+'} ${fN(Math.abs(y),d)}i`;
+
+/* ================= A: multiply-by-i puzzle (exact Gaussian integers) ================= */
+const LV=[{t:[0,1],ops:'i',tip:'把箭頭轉到 i。'},{t:[-1,0],ops:'i',tip:'要到 −1，得乘幾次 i？',win:'i × i = −1，兩個 90° 就是半圈。'},{t:[0,-1],ops:'i',tip:'再多轉一點，到 −i。',win:'i × i × i = −i。再乘一次就回到 1。'},
+  {t:[0,2],ops:'i2',tip:'× 2 會把箭頭拉長一倍。'},{t:[-2,0],ops:'i2',tip:'轉和拉長，順序換了結果一樣嗎？',win:'轉彎和伸長互不干擾，順序換了結果一樣。'},
+  {t:[1,1],ops:'i1',tip:'+ 1 是往右平移一格。'},{t:[-1,1],ops:'i1',tip:'先加還是先轉，這次很重要。',win:'加法會平移，所以和旋轉的順序不能亂換。'},
+  {t:[-2,2],ops:'i21',tip:'三種按鈕都能用了。'},{t:[-2,-2],ops:'i21',tip:'最後一關，找出最短路線。',win:'全破！複數的乘法就是旋轉加伸縮。'}];
+const LIM=4,step=(z,o)=>o==='i'?[z[1]===0?0:-z[1],z[0]]:o==='2'?[z[0]*2,z[1]*2]:[z[0]+1,z[1]];
+function bfs(l){const key=z=>z.join(','),seen=new Set([key([1,0])]);let q=[[1,0]],d=0;while(q.length&&d<14){const nx=[];for(const z of q){if(z[0]===l.t[0]&&z[1]===l.t[1])return d;for(const o of l.ops){const w=step(z,o);if(Math.abs(w[0])>LIM||Math.abs(w[1])>LIM||seen.has(key(w)))continue;seen.add(key(w));nx.push(w);}}q=nx;d++;}return -1;}
+LV.forEach(l=>l.best=bfs(l));
+const As={lv:0,z:[1,0],path:[[1,0]],ops:[],from:null,op:null,t0:0,done:false,stars:new Array(LV.length).fill(0)};
+try{const c=JSON.parse(localStorage.getItem('euler-stars')||'null');if(Array.isArray(c)&&c.length===LV.length)As.stars=c.map(x=>clamp(x|0,0,3));}catch(e){}
+const gs=(x,y)=>{const m=v=>String(v).replace('-','−');if(!y)return m(x);const im=Math.abs(y)===1?'i':Math.abs(y)+'i';if(!x)return (y<0?'−':'')+im;return `${m(x)} ${y<0?'−':'+'} ${im}`;};
+LV.forEach((l,i)=>{const b=document.createElement('button');b.className='btn';b.dataset.lv=i;b.onclick=()=>loadA(i);$('#lvRow').appendChild(b);});
+function loadA(i){As.lv=i;As.z=[1,0];As.path=[[1,0]];As.ops=[];As.from=null;As.done=false;$('#aNext').hidden=true;syncA();}
+function syncA(){const l=LV[As.lv];$$('[data-lv]').forEach(b=>{const i=+b.dataset.lv;b.textContent=(i+1)+(As.stars[i]?' '+'★'.repeat(As.stars[i]):'');b.classList.toggle('sel',i===As.lv);});
+  $$('[data-op]').forEach(b=>{b.hidden=!l.ops.includes(b.dataset.op);b.disabled=As.done;});$('#aUndo').disabled=!As.ops.length||As.done;
+  $('#roA').innerHTML=`<span class="big">第 ${As.lv+1} 關：走到 <span class="m">${gs(...l.t)}</span></span><span class="st">${l.tip}</span><span class="st">現在 <b>${gs(...As.z)}</b>　已按 <b>${As.ops.length}</b> 次　最少 ${l.best} 次</span>`;}
+function doOp(o){if(As.done)return;const w=step(As.z,o);if(Math.abs(w[0])>LIM||Math.abs(w[1])>LIM){toast('#tA','跑出方格了，換一個按鈕或按復原。',2600);return;}
+  As.from=As.z;As.op=o;As.t0=performance.now();As.z=w;As.ops.push(o);As.path.push(w);const l=LV[As.lv];
+  if(w[0]===l.t[0]&&w[1]===l.t[1]){As.done=true;const n=As.ops.length,s=n<=l.best?3:n<=l.best+2?2:1;As.stars[As.lv]=Math.max(As.stars[As.lv],s);try{localStorage.setItem('euler-stars',JSON.stringify(As.stars));}catch(e){}
+    if(As.lv<LV.length-1)$('#aNext').hidden=false;toast('#tA',`${'★'.repeat(s)}　${l.win||'到了！'}${s<3?` 最少只要 ${l.best} 次。`:''}`,5600);}
+  syncA();}
+$$('[data-op]').forEach(b=>b.onclick=()=>doOp(b.dataset.op));
+$('#aUndo').onclick=()=>{if(!As.ops.length||As.done)return;As.ops.pop();As.path.pop();As.z=As.path[As.path.length-1];As.from=null;syncA();};
+$('#aReset').onclick=()=>loadA(As.lv);$('#aNext').onclick=()=>loadA(Math.min(LV.length-1,As.lv+1));
+function drawA(a,w,h,now){a.fillStyle=C.sheet;a.fillRect(0,0,w,h);const top=$('#roA').offsetHeight+12,s=Math.min((w-16)/9.4,(h-top-10)/9.4),cx=w/2,cy=top+(h-top)/2;grid(a,0,0,w,h,cx,cy,s);
+  const X=x=>cx+x*s,Y=y=>cy-y*s,l=LV[As.lv];
+  a.strokeStyle='rgba(86,80,189,.3)';a.lineWidth=1.5;a.setLineDash([4,4]);a.beginPath();a.arc(cx,cy,s,0,7);a.stroke();a.setLineDash([]);
+  const pu=.5+.5*Math.sin(now*.005);a.strokeStyle=C.gold;a.lineWidth=2.5;a.beginPath();a.arc(X(l.t[0]),Y(l.t[1]),9+pu*3,0,7);a.stroke();a.fillStyle='rgba(154,106,0,.16)';a.fill();
+  a.strokeStyle='rgba(27,42,65,.28)';a.lineWidth=1.5;a.beginPath();As.path.forEach((p,i)=>i?a.lineTo(X(p[0]),Y(p[1])):a.moveTo(X(p[0]),Y(p[1])));a.stroke();for(const p of As.path)dot(a,X(p[0]),Y(p[1]),2.6,'rgba(27,42,65,.4)');
+  let px=As.z[0],py=As.z[1];if(As.from){const u=clamp((now-As.t0)/460,0,1),e=ease(u),[fx,fy]=As.from;if(u>=1)As.from=null;
+    if(As.op==='i'){const c=Math.cos(e*PI/2),n=Math.sin(e*PI/2);px=fx*c-fy*n;py=fx*n+fy*c;const r=Math.hypot(fx,fy),st=Math.atan2(fy,fx);a.strokeStyle=C.im;a.lineWidth=3;a.beginPath();a.arc(cx,cy,r*s,-st,-(st+e*PI/2),true);a.stroke();}
+    else if(As.op==='2'){px=fx*(1+e);py=fy*(1+e);}else{px=fx+e;py=fy;}}
+  arrow(a,cx,cy,X(px),Y(py),C.re,3.2);dot(a,X(px),Y(py),5,C.re);}
+
+/* ================= B: (1+x/n)^n ================= */
+const Bs={mode:'turn',n:6,t0:-1e9};
+const pathB=n=>{const p=[[1,0]];let x=1,y=0;const q=PI/n;for(let k=0;k<n;k++){const nx=x-y*q,ny=y+x*q;x=nx;y=ny;p.push([x,y]);}return p;};
+function setN(n,play=true){Bs.n=clamp(Math.round(n),1,1000);$('#nS').value=Math.log10(Bs.n);$('#nV').textContent=Bs.n+' 步';$$('[data-n]').forEach(b=>b.classList.toggle('sel',+b.dataset.n===Bs.n));if(play)Bs.t0=performance.now();roB();}
+function roB(){const n=Bs.n;if(Bs.mode==='turn'){const p=pathB(n),[x,y]=p[n],d=Math.hypot(x+1,y);
+    $('#roB').innerHTML=`<span class="big"><span class="m">(1 + iπ/${n})<sup>${n}</sup></span></span><span class="st">走到 <b>${fC(x,y)}</b></span><span class="st">離 −1 還差 <b>${fN(d)}</b>${n>=100?'，幾乎到了':n===1?'，一步差很遠':''}</span>`;}
+  else{const v=(1+1/n)**n;$('#roB').innerHTML=`<span class="big">存 1 元，年利率 100%</span><span class="st">一年結算 <b>${n}</b> 次，年底有 <b>${v.toFixed(5)}</b> 元</span><span class="st">次數再多也不會超過 e ≈ 2.71828</span>`;}}
+$$('[data-n]').forEach(b=>b.onclick=()=>setN(+b.dataset.n));
+$('#nS').oninput=e=>setN(10**+e.target.value,false);
+$('#bPlay').onclick=()=>{Bs.t0=performance.now();};
+$$('[data-bm]').forEach(b=>b.onclick=()=>{Bs.mode=b.dataset.bm;$$('[data-bm]').forEach(x=>x.classList.toggle('sel',x===b));Bs.t0=performance.now();roB();});
+function drawB(a,w,h,now){a.fillStyle=C.sheet;a.fillRect(0,0,w,h);const n=Bs.n,top=$('#roB').offsetHeight+12,dur=Math.min(2600,700+n*90),u=clamp((now-Bs.t0)/dur,0,1),shown=u*n;
+  if(Bs.mode==='turn'){const s=Math.min((w-16)/7.2,(h-top-10)/7.4),cx=w/2+s*.25,cy=top+(h-top)/2;grid(a,0,0,w,h,cx,cy,s);const X=x=>cx+x*s,Y=y=>cy-y*s;
+    a.strokeStyle='rgba(86,80,189,.55)';a.lineWidth=2;a.setLineDash([5,4]);a.beginPath();a.arc(cx,cy,s,0,-PI,true);a.stroke();a.setLineDash([]);
+    a.strokeStyle=C.gold;a.lineWidth=2.5;a.beginPath();a.arc(X(-1),Y(0),10,0,7);a.stroke();a.fillStyle=C.gold;a.font=`700 13px ${FONT}`;a.textAlign='center';a.textBaseline='bottom';a.fillText('−1',X(-1)-14,Y(0)-8);
+    const p=pathB(n),k=Math.floor(shown),f=shown-k;a.lineJoin='round';
+    if(n<=40){for(let j=0;j<Math.min(k,n);j++)arrow(a,X(p[j][0]),Y(p[j][1]),X(p[j+1][0]),Y(p[j+1][1]),j%2?C.im:C.re,2.4);}
+    else{a.strokeStyle=C.re;a.lineWidth=3;a.beginPath();for(let j=0;j<=Math.min(k,n);j++){j?a.lineTo(X(p[j][0]),Y(p[j][1])):a.moveTo(X(p[j][0]),Y(p[j][1]));}a.stroke();}
+    const c=p[Math.min(k,n)],nx=k<n?p[k+1]:c,hx=c[0]+(nx[0]-c[0])*f,hy=c[1]+(nx[1]-c[1])*f;if(k<n&&n<=40)arrow(a,X(c[0]),Y(c[1]),X(hx),Y(hy),k%2?C.im:C.re,2.4);
+    if(k<n&&n<=40&&f<.9){a.strokeStyle='rgba(27,42,65,.3)';a.lineWidth=1;a.setLineDash([3,3]);a.beginPath();a.moveTo(cx,cy);a.lineTo(X(c[0]),Y(c[1]));a.stroke();a.setLineDash([]);}
+    dot(a,X(hx),Y(hy),5.5,C.ink);dot(a,X(1),Y(0),4,C.vio);
+  }else{const L=52,R=w-18,T=top+16,B=h-34,X=t=>L+(R-L)*t,Y=v=>B-(B-T)*v/3;a.strokeStyle=C.grid;a.fillStyle=C.dim;a.font=`11px ${FONT}`;a.textAlign='right';a.textBaseline='middle';a.lineWidth=1;
+    for(let v=0;v<=3;v++){a.beginPath();a.moveTo(L,Y(v));a.lineTo(R,Y(v));a.stroke();a.fillText(v+' 元',L-6,Y(v));}a.textAlign='center';a.textBaseline='top';a.fillText('年初',X(0),B+5);a.fillText('半年',X(.5),B+5);a.fillText('年底',X(1),B+5);
+    a.strokeStyle=C.vio;a.lineWidth=2;a.setLineDash([5,4]);a.beginPath();for(let i=0;i<=80;i++){const t=i/80;i?a.lineTo(X(t),Y(Math.exp(t))):a.moveTo(X(t),Y(1));}a.stroke();a.setLineDash([]);
+    a.fillStyle=C.vio;a.textAlign='right';a.textBaseline='bottom';a.font=`700 13px ${FONT}`;a.fillText('e ≈ 2.718',R,Y(Math.E)-3);
+    a.strokeStyle=C.re;a.lineWidth=2.6;a.beginPath();a.moveTo(X(0),Y(1));let v=1;const q=1+1/n,lim=Math.min(shown,n);for(let k=1;k<=Math.floor(lim);k++){a.lineTo(X(k/n),Y(v));v*=q;a.lineTo(X(k/n),Y(v));}a.lineTo(X(lim/n),Y(v));a.stroke();dot(a,X(lim/n),Y(v),5,C.re);}
+}
+
+/* ================= C: around the circle ================= */
+const Cs={th:2.1,ser:false,N:8,anim:null,goal:null,round:0,score:0,told:false,geo:null,drag:false};
+const FR=k=>{const g=(a,b)=>b?g(b,a%b):a,d=g(k,6),p=k/d,q=6/d;return `${p===1?'':p}π${q===1?'':'/'+q}`;};
+function setTh(t,fromUser){Cs.th=clamp(t,0,TAU);$('#th').value=Cs.th;$('#thV').textContent=(Cs.th/PI).toFixed(2)+' π';roC();
+  if(Math.abs(Cs.th-PI)<.012&&!Cs.told){Cs.told=true;toast('#tC','轉了半圈，停在 −1。五個數就這樣連在一起：e<sup>iπ</sup> + 1 = 0',6500);}if(Math.abs(Cs.th-PI)>.2)Cs.told=false;}
+function roC(){const t=Cs.th,c=Math.cos(t),s=Math.sin(t),near=Math.abs(t-PI)<.012;let h=near?`<span class="big" style="color:var(--re)"><span class="m">e<sup>iπ</sup> + 1 = 0</span></span>`:`<span class="big"><span class="m">e<sup>i·${(t/PI).toFixed(2)}π</sup></span>　轉了 ${(t*180/PI).toFixed(0)}°</span>`;
+  h+=`<span class="st">cos θ = <b>${fN(c)}</b>　sin θ = <b>${fN(s)}</b></span>`;
+  if(Cs.goal!=null)h+=`<span class="st">打靶第 ${Cs.round+1}/5 題：轉到 <b>θ = ${FR(Cs.goal)}</b>，放開手　得分 ${Cs.score}</span>`;
+  else if(Cs.ser){const p=serPath(t,Cs.N),z=p[p.length-1];h+=`<span class="st">前 ${Cs.N} 支箭頭加起來 = <b>${fC(z[0],z[1])}</b></span>`;}else h+=`<span class="st">拖動圓上的點，或按「轉到 π」</span>`;
+  $('#roC').innerHTML=h;}
+function serPath(t,N){const p=[[0,0]];let x=1,y=0,sx=0,sy=0;for(let k=0;k<N;k++){sx+=x;sy+=y;p.push([sx,sy]);const nx=-y*t/(k+1),ny=x*t/(k+1);x=nx;y=ny;}return p;}
+function nextGoal(){const pool=[1,2,3,4,5,7,8,9,10,11];let k;do k=pool[Math.floor(Math.random()*pool.length)];while(k===Cs.goal);Cs.goal=k;roC();}
+function checkGoal(){if(Cs.goal==null)return;const tgt=Cs.goal*PI/6,de=Math.abs(Cs.th-tgt)*180/PI;if(de<=5){Cs.score++;Cs.round++;if(Cs.round>=5){toast('#tC',`打靶結束，5 題答對 ${Cs.score} 題！`,5000);Cs.goal=null;$('#cGame').textContent='再打一次';roC();return;}toast('#tC',`命中！${FR(Cs.goal)} = ${Cs.goal*30}°`,2200);nextGoal();}
+  else{Cs.round++;toast('#tC',`差了 ${de.toFixed(0)}°，${FR(Cs.goal)} 是 ${Cs.goal*30}°`,3000);if(Cs.round>=5){toast('#tC',`打靶結束，5 題答對 ${Cs.score} 題！`,5000);Cs.goal=null;$('#cGame').textContent='再打一次';roC();return;}nextGoal();}}
+$('#th').oninput=e=>{Cs.anim=null;setTh(+e.target.value);};$('#th').onchange=checkGoal;
+$$('[data-go]').forEach(b=>b.onclick=()=>{Cs.anim={from:Cs.th,to:+b.dataset.go*PI,t0:performance.now()};});
+$('#cGame').onclick=()=>{Cs.score=0;Cs.round=0;Cs.goal=null;if($('#ser').checked){$('#ser').checked=false;Cs.ser=false;}nextGoal();toast('#tC','每格是 π/6，也就是 30°。誤差 5° 以內算命中。',3600);};
+$('#ser').onchange=e=>{Cs.ser=e.target.checked;roC();};$('#serN').oninput=e=>{Cs.N=+e.target.value;$('#serV').textContent=Cs.N+' 支';roC();};
+const cvC=$('#cC');const ptTh=e=>{const g=Cs.geo,r=cvC.getBoundingClientRect();let t=Math.atan2(-(e.clientY-r.top-g.cy),e.clientX-r.left-g.cx);if(t<0)t+=TAU;return t;};
+cvC.addEventListener('pointerdown',e=>{if(!Cs.geo)return;const r=cvC.getBoundingClientRect(),g=Cs.geo;if(e.clientX-r.left>g.xr||e.clientY-r.top>g.yb)return;Cs.drag=true;Cs.anim=null;cvC.setPointerCapture(e.pointerId);setTh(ptTh(e));});
+cvC.addEventListener('pointermove',e=>{if(Cs.drag)setTh(ptTh(e));});
+const endC=()=>{if(Cs.drag){Cs.drag=false;checkGoal();}};cvC.addEventListener('pointerup',endC);cvC.addEventListener('pointercancel',endC);
+function drawC(a,w,h,now){a.fillStyle=C.sheet;a.fillRect(0,0,w,h);
+  if(Cs.anim){const u=clamp((now-Cs.anim.t0)/900,0,1);setTh(Cs.anim.from+(Cs.anim.to-Cs.anim.from)*ease(u));if(u>=1){const to=Cs.anim.to;Cs.anim=null;setTh(to);checkGoal();}}
+  const t=Cs.th,top=$('#roC').offsetHeight+12,wide=w>=600,pw=wide?w*.56:w,ph=wide?h-top:Math.max(190,h-top-118),cx=pw/2,cy=top+ph/2;let ext=1.3,path=null;
+  if(Cs.ser){path=serPath(t,Cs.N);for(const q of path)ext=Math.max(ext,Math.abs(q[0])*1.08,Math.abs(q[1])*1.08);}
+  const s=Math.min(pw-12,ph-8)/2/ext;Cs.geo={cx,cy,xr:wide?pw:w,yb:top+ph};grid(a,0,top-4,pw,top+ph,cx,cy,s);const X=x=>cx+x*s,Y=y=>cy-y*s,c=Math.cos(t),n=Math.sin(t);
+  a.strokeStyle=C.vio;a.lineWidth=2;a.beginPath();a.arc(cx,cy,s,0,7);a.stroke();
+  for(let k=0;k<12;k++){const q=k*PI/6;a.strokeStyle=C.axis;a.lineWidth=1.3;a.beginPath();a.moveTo(X(.95*Math.cos(q)),Y(.95*Math.sin(q)));a.lineTo(X(1.05*Math.cos(q)),Y(1.05*Math.sin(q)));a.stroke();}
+  a.strokeStyle=C.gold;a.lineWidth=3;a.beginPath();a.arc(cx,cy,s*.3,0,-t,true);a.stroke();
+  if(path){const col=[C.re,C.im,'#e0766b','#4fb0ab'];for(let k=0;k<path.length-1;k++)arrow(a,X(path[k][0]),Y(path[k][1]),X(path[k+1][0]),Y(path[k+1][1]),col[k%4],2.2);dot(a,X(path[path.length-1][0]),Y(path[path.length-1][1]),4,C.ink);}
+  else{a.strokeStyle=C.re;a.lineWidth=3;a.beginPath();a.moveTo(cx,cy);a.lineTo(X(c),cy);a.stroke();a.strokeStyle=C.im;a.beginPath();a.moveTo(X(c),cy);a.lineTo(X(c),Y(n));a.stroke();a.strokeStyle=C.ink;a.lineWidth=2.2;a.beginPath();a.moveTo(cx,cy);a.lineTo(X(c),Y(n));a.stroke();}
+  dot(a,X(c),Y(n),8,C.ink);dot(a,X(c),Y(n),3.5,'#fff');
+  // waves
+  const L=wide?pw+34:44,R=w-14,T=wide?top+20:top+ph+8,B=wide?h-22:h-20,mid=(T+B)/2,amp=(B-T)/2-8,WX=q=>L+(R-L)*q/TAU,WY=v=>mid-v*amp;
+  a.strokeStyle=C.grid;a.lineWidth=1;a.fillStyle=C.dim;a.font=`11px ${FONT}`;a.textAlign='center';a.textBaseline='top';for(const[q,l]of[[0,'0'],[PI/2,'π/2'],[PI,'π'],[1.5*PI,'3π/2'],[TAU,'2π']]){a.beginPath();a.moveTo(WX(q),T);a.lineTo(WX(q),B);a.stroke();a.fillText(l,WX(q),B+3);}
+  a.strokeStyle=C.axis;a.beginPath();a.moveTo(L,mid);a.lineTo(R,mid);a.stroke();a.textAlign='right';a.textBaseline='middle';a.fillText('1',L-5,WY(1));a.fillText('−1',L-5,WY(-1));
+  for(const[f,col]of[[Math.cos,C.re],[Math.sin,C.im]]){a.strokeStyle=col;a.lineWidth=2.2;a.beginPath();for(let i=0;i<=120;i++){const q=TAU*i/120;i?a.lineTo(WX(q),WY(f(q))):a.moveTo(WX(q),WY(f(q)));}a.stroke();dot(a,WX(t),WY(f(t)),5,col);}
+  a.strokeStyle='rgba(27,42,65,.45)';a.setLineDash([3,3]);a.beginPath();a.moveTo(WX(t),T);a.lineTo(WX(t),B);a.stroke();a.setLineDash([]);
+  a.font=`700 12px ${FONT}`;a.textAlign='left';a.textBaseline='top';a.fillStyle=C.re;a.fillText('cos θ',L+4,T);a.fillStyle=C.im;a.fillText('sin θ',L+50,T);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);if(TAB==='B')Bs.t0=performance.now();});
+function loop(now){requestAnimationFrame(loop);const cv=$('#c'+TAB),{w,h,d}=fit(cv);if(w<10||h<10)return;const a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else drawC(a,w,h,now);}
+$('#serV').textContent='8 支';loadA(0);setN(6,false);setTh(2.1);requestAnimationFrame(loop);})();
+</script>

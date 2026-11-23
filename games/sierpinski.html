@@ -1,0 +1,534 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>謝爾賓斯基三角形</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: geometry notebook — canvas panes with tabs left, explainer rail right; stacks on phones. Single light look. */
+:root{
+  --paper:#f5f1e6;
+  --sheet:#fffdf7;
+  --rule:#dcd4c0;
+  --ink:#1f2433;
+  --dim:#6b6f7c;
+  --v0:#d9534f;   /* vertex A */
+  --v1:#2a9d8f;   /* vertex B */
+  --v2:#3d5a98;   /* vertex C */
+  --gold:#e0a526;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--v0);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#ebe5d4;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--v0)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(255,253,247,.92);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:calc(100% - 24px)}
+.ro b{font-family:var(--f-num);color:var(--v0)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1}
+.dock{background:#f8f4ea;border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--v0);box-shadow:inset 0 0 0 1px var(--v0);color:var(--v0);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--v0);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.6em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--v0);width:16px;height:16px}
+.die{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:#fff;border:2px solid var(--ink);font-family:var(--f-num);font-weight:700;font-size:18px}
+.die.roll{animation:roll .35s}
+@keyframes roll{0%{transform:rotate(0)}50%{transform:rotate(200deg) scale(1.15)}100%{transform:rotate(360deg)}}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.stat{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--dim);line-height:1.4}
+.stat b{display:block;font-family:var(--f-num);font-size:17px;color:var(--ink)}
+.crumbs{font-size:13px;color:var(--dim)}
+.crumbs b{color:var(--ink);font-family:var(--f-num)}
+
+.rail{background:#fbf8f0;border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.dimfig{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0;text-align:center;font-size:12px;color:var(--dim)}
+.dimfig svg{width:100%;height:58px;display:block}
+.dimfig b{font-family:var(--f-num);color:var(--ink)}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--v0)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .pane[hidden]{display:none}
+  .cv{flex:none;height:56vh;min-height:330px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ro{font-size:12px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="chaos" aria-pressed="true">混沌遊戲<small>擲骰子畫出三角形</small></button>
+      <button data-tab="dig" aria-pressed="false">挖洞與放大<small>無限的細節</small></button>
+      <button data-tab="pascal" aria-pressed="false">巴斯卡的祕密<small>奇數塗色</small></button>
+    </nav>
+    <div class="view">
+      <!-- chaos game -->
+      <div class="pane" id="p-chaos">
+        <div class="cv"><canvas id="cc"></canvas><div class="ro" id="roC"></div><div class="toast" id="toastC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="die" id="die">?</span>
+            <button class="btn pri" id="c1">擲骰子 ×1</button>
+            <button class="btn" id="c10">×10</button>
+            <button class="btn" id="c100">×100</button>
+            <button class="btn" id="cAuto">▶ 自動狂擲</button>
+            <button class="btn" id="cClr">清除</button>
+          </div>
+          <div class="row" id="presetRow"><span class="lab">形狀</span></div>
+          <div class="row">
+            <label class="sl">每次走<input id="ratio" type="range" min="30" max="75" value="50"><b id="ratioV"></b></label>
+            <label class="chk"><input type="checkbox" id="noRep">不能連續選同一個頂點</label>
+          </div>
+        </div>
+      </div>
+      <!-- dig & zoom -->
+      <div class="pane" id="p-dig" hidden>
+        <div class="cv"><canvas id="cd"></canvas><div class="ro" id="roD"></div><div class="toast" id="toastD"></div></div>
+        <div class="dock">
+          <div class="row" id="digRow">
+            <button class="btn" id="dMinus">◀ 補回一層</button>
+            <button class="btn pri" id="dPlus">挖下一層 ▶</button>
+            <button class="btn" id="dZoom">🔍 進入無限放大模式</button>
+          </div>
+          <div class="row" id="zoomRow" hidden>
+            <button class="btn" id="zBack">◀ 縮小一步</button>
+            <button class="btn" id="zHome">回到原本大小</button>
+            <button class="btn" id="zAuto">▶ 自動一直放大</button>
+            <button class="btn" id="zExit">離開放大模式</button>
+            <span class="crumbs" id="crumbs"></span>
+          </div>
+          <div class="stats" id="stats"></div>
+        </div>
+      </div>
+      <!-- pascal -->
+      <div class="pane" id="p-pascal" hidden>
+        <div class="cv"><canvas id="cp"></canvas><div class="ro" id="roP"></div><div class="toast" id="toastP"></div></div>
+        <div class="dock">
+          <div class="row" id="pGameRow">
+            <button class="btn pri" id="pCheck">檢查答案</button>
+            <button class="btn" id="pClear">全部清掉</button>
+            <button class="btn" id="pShow">直接看答案</button>
+          </div>
+          <div class="row">
+            <span class="lab">列數</span>
+            <span id="rowBtns" class="row"></span>
+          </div>
+          <div class="row">
+            <span class="lab">塗色規則</span>
+            <span id="modBtns" class="row"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>謝爾賓斯基三角形</h1>
+    <p class="lede">一個挖不完洞的三角形：越放大，看到的越多，而且永遠長得一樣。</p>
+
+    <div class="card">
+      <h2>做法：一直挖洞</h2>
+      <p>1. 畫一個實心的正三角形。</p>
+      <p>2. 連接三邊的中點，把中間那個倒三角形挖掉，剩下 3 個小三角形。</p>
+      <p>3. 對每個小三角形重複第 2 步……永遠做下去。</p>
+      <p>最後留下來的，就是<b>謝爾賓斯基三角形</b>。波蘭數學家謝爾賓斯基在 1915 年研究了它。</p>
+    </div>
+
+    <div class="card">
+      <h2>奇怪的數字</h2>
+      <p>每挖一層：三角形變 <b>3 倍</b>多，面積只剩 <b>3/4</b>，周長卻變 <b>3/2 倍</b>。</p>
+      <div class="fx">面積 = (3/4)ⁿ → 0　　周長 = (3/2)ⁿ → ∞</div>
+      <p>挖到無限多層時：面積是 0，周長卻無限長！它比一條線「大」，又比一塊面「小」。</p>
+    </div>
+
+    <div class="card">
+      <h2>它是幾維的？</h2>
+      <p>把圖形邊長放大 2 倍，看看會變成幾個原本的自己：</p>
+      <div class="dimfig">
+        <div><svg viewBox="0 0 80 50"><line x1="6" y1="25" x2="40" y2="25" stroke="#d9534f" stroke-width="4"/><line x1="40" y1="25" x2="74" y2="25" stroke="#2a9d8f" stroke-width="4"/></svg>線段：<b>2</b> 個<br>2¹ = 2 → <b>1 維</b></div>
+        <div><svg viewBox="0 0 80 50"><rect x="20" y="5" width="20" height="20" fill="#d9534f"/><rect x="40" y="5" width="20" height="20" fill="#2a9d8f"/><rect x="20" y="25" width="20" height="20" fill="#3d5a98"/><rect x="40" y="25" width="20" height="20" fill="#e0a526"/></svg>正方形：<b>4</b> 個<br>2² = 4 → <b>2 維</b></div>
+        <div><svg viewBox="0 0 80 50"><polygon points="40,4 51,24 29,24" fill="#d9534f"/><polygon points="29,24 40,44 18,44" fill="#2a9d8f"/><polygon points="51,24 62,44 40,44" fill="#3d5a98"/></svg>謝爾賓斯基：<b>3</b> 個<br>2<sup>d</sup> = 3 → <b>d ≈ 1.585 維</b></div>
+      </div>
+      <p>維度不是整數的圖形，叫做<b>碎形</b>（fractal）。</p>
+    </div>
+
+    <div class="card">
+      <h2>混沌遊戲為什麼會成功？</h2>
+      <p>每次「往頂點走一半」，就等於把整張圖縮小一半，貼到那個頂點的角落。謝爾賓斯基三角形剛好由 3 個「縮小一半的自己」組成，所以亂跳的點會越來越靠近它，而且<b>一旦落進圖形附近，就再也跳不進洞裡</b>。</p>
+      <p>改成正方形時，4 個縮小一半的正方形剛好把原本的正方形填滿，所以畫不出任何圖案。</p>
+    </div>
+
+    <div class="card">
+      <h2>巴斯卡三角形的祕密</h2>
+      <p>巴斯卡三角形每個數字等於上面兩個數字的和。只看奇偶：奇+奇=偶、奇+偶=奇，這個規則和挖洞的規則一模一樣，所以奇數的位置會排出謝爾賓斯基三角形。</p>
+      <div class="fx">（上左 + 上右）÷ 2 的餘數</div>
+    </div>
+
+    <div class="card">
+      <h2>生活中的謝爾賓斯基</h2>
+      <p>• 義大利中世紀教堂的<b>科斯馬蒂鑲嵌地板</b>（13 世紀），工匠早就鋪出好幾層的三角形挖洞圖案。</p>
+      <p>• 有些<b>芋螺</b>的貝殼花紋，看起來很像一層層的三角形，可以用簡單的規則（細胞自動機）模擬出來。</p>
+      <p>• 工程師做過<b>碎形天線</b>：形狀像謝爾賓斯基三角形，可以在小小的空間裡接收好幾種頻率。</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>1653</b><span>巴斯卡寫下關於「算術三角形」的論文</span></li>
+        <li><b>1915</b><span>謝爾賓斯基發表這個三角形</span></li>
+        <li><b>1975</b><span>曼德博創造「碎形」（fractal）這個詞</span></li>
+        <li><b>1988</b><span>巴恩斯利在《處處都是碎形》書中推廣「混沌遊戲」</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const VC=['#d9534f','#2a9d8f','#3d5a98','#e0a526','#8e5bb5','#4d8a3a'];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function toast(id,msg){const t=$(id);t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2200);}
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);
+  const ch=cv.width!==W||cv.height!==H;if(ch){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d,ch};}
+let TAB='chaos';
+
+/* ======================= 1. CHAOS GAME ======================= */
+const cc=$('#cc'),cx=cc.getContext('2d');
+const dots=document.createElement('canvas'),dx=dots.getContext('2d');
+const PRE=[
+  {id:'tri',name:'三角形',n:3,r:0.5,nr:false},
+  {id:'sq',name:'正方形',n:4,r:0.5,nr:false},
+  {id:'sqnr',name:'正方形＋不能重複',n:4,r:0.5,nr:true},
+  {id:'pent',name:'五邊形',n:5,r:0.62,nr:false},
+  {id:'hex',name:'六邊形',n:6,r:0.67,nr:false}
+];
+const CG={n:3,r:0.5,nr:false,V:[],P:null,count:0,last:-1,segs:[],auto:false,preset:'tri',drag:null,geom:null};
+function chaosLayout(){
+  const g=fit(cc);
+  if(dots.width!==g.W||dots.height!==g.H){dots.width=g.W;dots.height=g.H;}
+  const top=92,bot=16,avail=g.h-top-bot,R=Math.max(60,Math.min(g.w*0.44,avail*(CG.n===3?0.6:0.52)));
+  const cxm=g.w/2,cym=top+avail*(CG.n===3?0.6:0.5);
+  CG.V=[];for(let i=0;i<CG.n;i++){const a=-Math.PI/2+i*2*Math.PI/CG.n;CG.V.push({x:cxm+R*Math.cos(a),y:cym+R*Math.sin(a)});}
+  if(CG.n===3){ // name A top, B bottom-left, C bottom-right
+    const v=CG.V;CG.V=[v[0],v[2],v[1]];
+  }
+  CG.P={x:cxm+R*0.75,y:top+avail*0.22};
+  lastWH={w:g.w,h:g.h,d:g.d};
+  clearDots();
+}
+let lastWH=null;
+function rescaleChaos(g){ // keep the drawing when the canvas size changes (phone toolbars, fonts)
+  if(!lastWH||!lastWH.w){lastWH={w:g.w,h:g.h};chaosLayout();return;}
+  const fx=g.w/lastWH.w,fy=g.h/lastWH.h,f=Math.min(fx,fy),ox=(g.w-lastWH.w*f)/2,oy=(g.h-lastWH.h*f)/2;
+  const T=p=>({x:ox+p.x*f,y:oy+p.y*f});
+  CG.V=CG.V.map(T);CG.P=T(CG.P);CG.segs=CG.segs.map(s=>({a:T(s.a),b:T(s.b),i:s.i}));
+  const tmp=document.createElement('canvas');tmp.width=dots.width;tmp.height=dots.height;tmp.getContext('2d').drawImage(dots,0,0);
+  dots.width=g.W;dots.height=g.H;dx.drawImage(tmp,ox*g.d,oy*g.d,tmp.width*f*g.d/(lastWH.d||g.d),tmp.height*f*g.d/(lastWH.d||g.d));
+  lastWH={w:g.w,h:g.h,d:g.d};
+}
+function clearDots(){dx.clearRect(0,0,dots.width,dots.height);CG.count=0;CG.last=-1;CG.segs=[];$('#die').textContent='?';}
+function pickVertex(){
+  let i;
+  do{i=Math.floor(Math.random()*CG.n);}while(CG.nr&&i===CG.last&&CG.n>1);
+  return i;
+}
+function chaosStep(record){
+  let roll=0,i;
+  if(CG.n===3){roll=1+Math.floor(Math.random()*6);i=Math.floor((roll-1)/2);
+    if(CG.nr&&i===CG.last){return chaosStep(record);} }
+  else i=pickVertex();
+  const V=CG.V[i],P=CG.P,np={x:P.x+CG.r*(V.x-P.x),y:P.y+CG.r*(V.y-P.y)};
+  if(record){CG.segs.push({a:{...P},b:np,i});if(CG.segs.length>8)CG.segs.shift();}
+  CG.P=np;CG.last=i;CG.count++;
+  const d=DPR(),s=CG.count<300?3*d:Math.max(1,1.1*d);
+  dx.fillStyle=VC[i];dx.globalAlpha=CG.count<300?1:0.8;dx.fillRect(np.x*d-s/2,np.y*d-s/2,s,s);dx.globalAlpha=1;
+  return{roll,i};
+}
+const NAMES='ABCDEF';
+function rollUI(n){
+  CG.auto=false;$('#cAuto').textContent='▶ 自動狂擲';
+  let r;if(n>10)CG.segs=[];for(let k=0;k<n;k++)r=chaosStep(n<=10);
+  const die=$('#die');die.classList.remove('roll');void die.offsetWidth;die.classList.add('roll');
+  die.textContent=CG.n===3?r.roll:NAMES[r.i];
+  if(n===1)toast('#toastC',CG.n===3?`擲出 ${r.roll} → 往 ${NAMES[r.i]} 走 ${Math.round(CG.r*100)}%`:`隨機選到 ${NAMES[r.i]} → 往它走 ${Math.round(CG.r*100)}%`);
+  if(n>1&&CG.count>=30&&CG.count<140&&CG.preset==='tri')toast('#toastC','點點開始排出形狀了嗎？按「自動狂擲」看看！');
+}
+function drawChaos(){
+  const g=fit(cc);if(g.ch)rescaleChaos(g);
+  const d=g.d;cx.setTransform(1,0,0,1,0,0);cx.clearRect(0,0,g.W,g.H);
+  cx.drawImage(dots,0,0);
+  cx.setTransform(d,0,0,d,0,0);
+  // outline
+  cx.strokeStyle='rgba(31,36,51,.15)';cx.lineWidth=1;cx.beginPath();CG.V.forEach((v,i)=>i?cx.lineTo(v.x,v.y):cx.moveTo(v.x,v.y));cx.closePath();cx.stroke();
+  // recent segments
+  CG.segs.forEach((s,k)=>{const a=(k+1)/CG.segs.length;cx.strokeStyle=VC[s.i];cx.globalAlpha=a*0.85;cx.setLineDash([5,4]);cx.lineWidth=1.6;
+    cx.beginPath();cx.moveTo(s.a.x,s.a.y);cx.lineTo(CG.V[s.i].x,CG.V[s.i].y);cx.stroke();cx.setLineDash([]);
+    cx.lineWidth=3;cx.beginPath();cx.moveTo(s.a.x,s.a.y);cx.lineTo(s.b.x,s.b.y);cx.stroke();});
+  cx.globalAlpha=1;
+  // vertices
+  cx.font='700 15px Lexend,sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+  CG.V.forEach((v,i)=>{cx.fillStyle=VC[i];cx.beginPath();cx.arc(v.x,v.y,13,0,7);cx.fill();cx.fillStyle='#fff';cx.fillText(NAMES[i],v.x,v.y+1);
+    if(CG.n===3){cx.fillStyle=VC[i];cx.font='12px "Noto Sans TC",sans-serif';const lab=['🎲 1、2','🎲 3、4','🎲 5、6'][i];cx.fillText(lab,v.x+(i===0?44:0),v.y+(i===0?0:26));cx.font='700 15px Lexend,sans-serif';}});
+  // current point
+  const P=CG.P;cx.fillStyle='#fff';cx.strokeStyle='#1f2433';cx.lineWidth=2.5;cx.beginPath();cx.arc(P.x,P.y,7,0,7);cx.fill();cx.stroke();
+  cx.fillStyle='#e0a526';cx.beginPath();cx.arc(P.x,P.y,3.5,0,7);cx.fill();
+  if(CG.count===0){cx.fillStyle='#6b6f7c';cx.font='12.5px "Noto Sans TC",sans-serif';cx.textAlign='left';cx.fillText('← 起點（可拖曳）',P.x+12,P.y);}
+  const pr=PRE.find(p=>p.id===CG.preset);
+  $('#roC').innerHTML=`<div class="big">從任意一點開始，擲骰子決定往哪個頂點走一半</div>`+
+   `<div>已經點了 <b>${CG.count.toLocaleString()}</b> 個點　形狀：${CG.n} 個頂點・每次走 <b>${Math.round(CG.r*100)}%</b>${CG.nr?'・不能重複':''}</div>`;
+}
+function chaosTick(){
+  if(CG.auto){const k=Math.min(4000,40+Math.floor(CG.count/6));for(let i=0;i<k;i++)chaosStep(false);CG.segs=[];
+    if(CG.count>=250000){CG.auto=false;$('#cAuto').textContent='▶ 自動狂擲';toast('#toastC','已經 25 萬個點，夠清楚了！');}}
+  drawChaos();
+}
+$('#c1').onclick=()=>rollUI(1);$('#c10').onclick=()=>rollUI(10);$('#c100').onclick=()=>rollUI(100);
+$('#cAuto').onclick=()=>{CG.auto=!CG.auto;$('#cAuto').textContent=CG.auto?'⏸ 停一下':'▶ 自動狂擲';};
+$('#cClr').onclick=()=>{clearDots();};
+function setPreset(p){CG.preset=p.id;CG.n=p.n;CG.r=p.r;CG.nr=p.nr;$('#ratio').value=Math.round(p.r*100);$('#noRep').checked=p.nr;syncRatio();buildPresets();chaosLayout();CG.auto=false;$('#cAuto').textContent='▶ 自動狂擲';}
+function buildPresets(){const row=$('#presetRow');row.querySelectorAll('button').forEach(b=>b.remove());
+  for(const p of PRE){const b=document.createElement('button');b.className='btn'+(p.id===CG.preset?' sel':'');b.textContent=p.name;b.onclick=()=>setPreset(p);row.appendChild(b);}}
+function syncRatio(){CG.r=+$('#ratio').value/100;$('#ratioV').textContent=Math.round(CG.r*100)+'%';}
+$('#ratio').oninput=()=>{syncRatio();CG.preset='custom';buildPresets();clearDots();};
+$('#noRep').onchange=e=>{CG.nr=e.target.checked;CG.preset='custom';buildPresets();clearDots();};
+{ // drag vertices / start point
+  cc.addEventListener('pointerdown',e=>{const r=cc.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+    let hit=null;CG.V.forEach((v,i)=>{if(Math.hypot(v.x-x,v.y-y)<20)hit={k:'v',i};});
+    if(!hit&&Math.hypot(CG.P.x-x,CG.P.y-y)<20)hit={k:'p'};
+    if(hit){CG.drag=hit;cc.setPointerCapture(e.pointerId);}});
+  cc.addEventListener('pointermove',e=>{if(!CG.drag)return;const r=cc.getBoundingClientRect(),x=Math.max(8,Math.min(r.width-8,e.clientX-r.left)),y=Math.max(8,Math.min(r.height-8,e.clientY-r.top));
+    if(CG.drag.k==='v'){CG.V[CG.drag.i]={x,y};clearDots();}else{CG.P={x,y};clearDots();}});
+  const up=()=>CG.drag=null;cc.addEventListener('pointerup',up);cc.addEventListener('pointercancel',up);
+}
+
+/* ======================= 2. DIG & ZOOM ======================= */
+const cd=$('#cd'),dg=cd.getContext('2d');
+const DZ={level:0,zoom:false,path:[],anim:null,auto:false};
+const ROOT=[[0,0],[1,0],[0.5,Math.sqrt(3)/2]]; // world coords (y up)
+function childTri(T,k){ // k: 0 top,1 left,2 right  (T: [left, right, top])
+  const [A,B,C]=T,m=(p,q)=>[(p[0]+q[0])/2,(p[1]+q[1])/2];
+  const AB=m(A,B),BC=m(B,C),CA=m(C,A);
+  return k===0?[CA,BC,C]:k===1?[A,AB,CA]:[AB,B,BC];
+}
+function triOf(path){let T=ROOT;for(const k of path)T=childTri(T,k);return T;}
+let viewT=ROOT; // triangle currently fitted to the screen
+function screenMap(g){ // maps viewT to a fixed screen triangle
+  const top=86,bot=14,avail=g.h-top-bot;
+  const side=Math.min(g.w*0.86,avail/(Math.sqrt(3)/2)*0.96);
+  const sx=(g.w-side)/2,sy=top+(avail+side*Math.sqrt(3)/2)/2;
+  const [A,B]=viewT,s=side/Math.hypot(B[0]-A[0],B[1]-A[1]);
+  return{s,ox:sx-A[0]*s,oy:sy+A[1]*s,side,sx,sy};
+}
+function drawDig(){
+  const g=fit(cd),d=g.d;dg.setTransform(1,0,0,1,0,0);dg.clearRect(0,0,g.W,g.H);dg.setTransform(d,0,0,d,0,0);
+  const M=screenMap(g),X=p=>M.ox+p[0]*M.s,Y=p=>M.oy-p[1]*M.s;
+  if(!DZ.zoom){
+    const n=DZ.level;
+    // hole tint
+    dg.fillStyle='#f1ead8';dg.beginPath();ROOT.forEach((p,i)=>i?dg.lineTo(X(p),Y(p)):dg.moveTo(X(p),Y(p)));dg.closePath();dg.fill();
+    const cols=['#3d5a98','#2a9d8f','#d9534f'];
+    const rec=(T,k,c)=>{if(k===0){dg.fillStyle=cols[c];dg.beginPath();T.forEach((p,i)=>i?dg.lineTo(X(p),Y(p)):dg.moveTo(X(p),Y(p)));dg.closePath();dg.fill();return;}
+      for(let j=0;j<3;j++)rec(childTri(T,j),k-1,k===n?j:c);};
+    if(n===0){rec(ROOT,0,0);}else rec(ROOT,n,0);
+    // newly removed holes outline
+    if(n>0){dg.strokeStyle='#e0a526';dg.lineWidth=n>5?0.6:1.5;
+      const holes=(T,k)=>{if(k===1){const a=childTri(T,0),b=childTri(T,1);const H=[a[0],a[1],b[1]];dg.beginPath();H.forEach((p,i)=>i?dg.lineTo(X(p),Y(p)):dg.moveTo(X(p),Y(p)));dg.closePath();dg.stroke();return;}
+        for(let j=0;j<3;j++)holes(childTri(T,j),k-1);};
+      if(n<=7)holes(ROOT,n);}
+    const tri=3**n,area=(0.75**n),per=(1.5**n),holesN=(tri-1)/2;
+    $('#roD').innerHTML=`<div class="big">第 <b>${n}</b> 層</div><div>${n===0?'先從一個實心三角形開始。按「挖下一層」！':'黃色框是這一層剛挖掉的洞。'}</div>`;
+    $('#stats').innerHTML=`<div class="stat">剩下的三角形<b>${tri.toLocaleString()}</b></div><div class="stat">挖掉的洞<b>${holesN.toLocaleString()}</b></div>`+
+      `<div class="stat">剩下面積<b>${(area*100).toPrecision(3)}%</b></div><div class="stat">周長總和<b>${per<1000?per.toFixed(2):Math.round(per).toLocaleString()} 倍</b></div>`;
+  }else{
+    // infinite detail: recurse from root, cull, stop at ~1.2 px
+    let drawn=0;
+    const minX=-2,maxX=g.w+2,minY=-2,maxY=g.h+2;
+    dg.fillStyle='#3d5a98';
+    const rec=(T,depth)=>{
+      const xs=T.map(X),ys=T.map(Y);
+      const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+      if(x1<minX||x0>maxX||y1<minY||y0>maxY)return;
+      if(x1-x0<1.6||depth>60){dg.beginPath();dg.moveTo(xs[0],ys[0]);dg.lineTo(xs[1],ys[1]);dg.lineTo(xs[2],ys[2]);dg.closePath();dg.fill();drawn++;return;}
+      for(let j=0;j<3;j++)rec(childTri(T,j),depth+1);
+    };
+    rec(ROOT,0);
+    // highlight the 3 children of viewT to click
+    if(!DZ.anim){
+      dg.lineWidth=2;
+      for(let j=0;j<3;j++){const T=childTri(viewT,j);dg.strokeStyle=['#d9534f','#2a9d8f','#e0a526'][j];dg.setLineDash([6,4]);
+        dg.beginPath();T.forEach((p,i)=>i?dg.lineTo(X(p),Y(p)):dg.moveTo(X(p),Y(p)));dg.closePath();dg.stroke();}
+      dg.setLineDash([]);
+    }
+    const k=DZ.path.length,f=2**k;
+    $('#roD').innerHTML=`<div class="big">放大 <b>${fmtBig(f)}</b> 倍</div><div>點虛線框裡任一個小三角形，放大 2 倍鑽進去。</div><div>不管放多大，看到的圖案都一樣！</div>`;
+    $('#crumbs').innerHTML=k?`路線：<b>${DZ.path.map(j=>['上','左','右'][j]).join('→')}</b>`:'';
+    $('#stats').innerHTML=`<div class="stat">放大倍數<b>${fmtBig(f)}</b></div><div class="stat">鑽進第幾層<b>${k}</b></div>`+
+      `<div class="stat">這個三角形邊長<b>${k?'1/'+fmtBig(f):'1'}</b></div><div class="stat">畫面上的小三角形<b>${drawn.toLocaleString()}</b></div>`;
+  }
+}
+function fmtBig(f){if(f<1e4)return f.toLocaleString();const units=[[1e12,'兆'],[1e8,'億'],[1e4,'萬']];for(const [u,n] of units)if(f>=u)return (f/u).toPrecision(3).replace(/\.?0+$/,'')+' '+n;return f;}
+function zoomTo(path){
+  const from=viewT,to=triOf(path);DZ.path=path;
+  DZ.anim={from,to,t0:performance.now(),dur:650};
+}
+function animStep(now){
+  const a=DZ.anim;if(!a)return;
+  let t=Math.min(1,(now-a.t0)/a.dur);t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  // interpolate in log-scale: geometric interpolation of side length, linear of anchor
+  const lf=Math.log(a.from[1][0]-a.from[0][0]),lt=Math.log(a.to[1][0]-a.to[0][0]);
+  const side=Math.exp(lf+(lt-lf)*t);
+  // fixed point of the similarity: keeps the zoom centre steady
+  const ratio=(a.to[1][0]-a.to[0][0])/(a.from[1][0]-a.from[0][0]);
+  let A;
+  if(Math.abs(ratio-1)<1e-9){A=a.to[0];}
+  else{ // centre c with to = c + ratio*(from-c)
+    const c=[(a.to[0][0]-ratio*a.from[0][0])/(1-ratio),(a.to[0][1]-ratio*a.from[0][1])/(1-ratio)];
+    const sc=side/(a.from[1][0]-a.from[0][0]);A=[c[0]+sc*(a.from[0][0]-c[0]),c[1]+sc*(a.from[0][1]-c[1])];
+  }
+  viewT=[A,[A[0]+side,A[1]],[A[0]+side/2,A[1]+side*Math.sqrt(3)/2]];
+  if(t>=1){viewT=a.to;DZ.anim=null;}
+}
+cd.addEventListener('click',e=>{
+  if(!DZ.zoom||DZ.anim)return;
+  if(DZ.path.length>=40){toast('#toastD','已經放大一兆倍了，電腦的小數點不夠用囉！');return;}
+  const r=cd.getBoundingClientRect(),g={w:r.width,h:r.height},M=screenMap(g);
+  const wx=(e.clientX-r.left-M.ox)/M.s,wy=(M.oy-(e.clientY-r.top))/M.s;
+  for(let j=0;j<3;j++){if(inTri([wx,wy],childTri(viewT,j))){zoomTo([...DZ.path,j]);return;}}
+  toast('#toastD','點在洞裡啦！洞裡什麼都沒有，請點三個虛線框其中一個。');
+});
+function inTri(p,T){const s=(a,b,c)=>(a[0]-c[0])*(b[1]-c[1])-(b[0]-c[0])*(a[1]-c[1]);const d1=s(p,T[0],T[1]),d2=s(p,T[1],T[2]),d3=s(p,T[2],T[0]);return !((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0));}
+$('#dPlus').onclick=()=>{if(DZ.level<9){DZ.level++;if(DZ.level===9)toast('#toastD','第 9 層已經有將近 2 萬個三角形，再挖就看不出來了。');}syncDig();};
+$('#dMinus').onclick=()=>{if(DZ.level>0)DZ.level--;syncDig();};
+$('#dZoom').onclick=()=>{DZ.zoom=true;DZ.path=[];viewT=ROOT;syncDig();};
+$('#zExit').onclick=()=>{DZ.zoom=false;DZ.auto=false;DZ.anim=null;viewT=ROOT;syncDig();};
+$('#zBack').onclick=()=>{if(DZ.path.length&&!DZ.anim)zoomTo(DZ.path.slice(0,-1));};
+$('#zHome').onclick=()=>{if(!DZ.anim){DZ.anim=null;zoomTo([]);}};
+$('#zAuto').onclick=()=>{DZ.auto=!DZ.auto;$('#zAuto').textContent=DZ.auto?'⏸ 停':'▶ 自動一直放大';};
+function syncDig(){$('#digRow').hidden=DZ.zoom;$('#zoomRow').hidden=!DZ.zoom;$('#dPlus').disabled=DZ.level>=9;$('#dMinus').disabled=DZ.level<=0;$('#zAuto').textContent=DZ.auto?'⏸ 停':'▶ 自動一直放大';}
+let autoNext=0;
+function digTick(now){
+  animStep(now);
+  if(DZ.zoom&&DZ.auto&&!DZ.anim&&now>autoNext){
+    if(DZ.path.length>=40){DZ.auto=false;syncDig();toast('#toastD','放大一兆倍，到此為止！');}
+    else{zoomTo([...DZ.path,Math.floor(Math.random()*3)]);autoNext=now+900;}
+  }
+  drawDig();
+}
+
+/* ======================= 3. PASCAL ======================= */
+const cp=$('#cp'),pc=cp.getContext('2d');
+const PS={rows:8,mod:2,marks:new Set(),solved:false,showAns:false,wrong:new Set(),cells:[]};
+const ROWOPT=[8,16,32,64,128,256];
+const MODS=[{m:2,n:'奇數塗色（除以 2）'},{m:3,n:'除以 3 的餘數'},{m:5,n:'除以 5 的餘數'}];
+const MODCOL={2:['#efe8d6','#3d5a98'],3:['#efe8d6','#d9534f','#2a9d8f'],5:['#efe8d6','#d9534f','#e0a526','#2a9d8f','#3d5a98']};
+function binomRow(n){const r=[1];for(let k=1;k<=n;k++)r.push(r[k-1]*(n-k+1)/k);return r;}
+function modTri(N,m){const T=[[1%m]];for(let i=1;i<N;i++){const p=T[i-1],r=[1%m];for(let k=1;k<i;k++)r.push((p[k-1]+p[k])%m);r.push(1%m);T.push(r);}return T;}
+function isGame(){return PS.rows===8&&PS.mod===2;}
+function drawPascal(){
+  const g=fit(cp),d=g.d;pc.setTransform(1,0,0,1,0,0);pc.clearRect(0,0,g.W,g.H);pc.setTransform(d,0,0,d,0,0);
+  const N=PS.rows,top=isGame()?96:80,bot=12,avail=g.h-top-bot;
+  const cw=Math.min(g.w*0.94/N,avail/N/0.866*1.0),rh=cw*0.866;
+  const x0=g.w/2,y0=top+(avail-rh*N)/2+rh/2;
+  const T=modTri(N,PS.mod);PS.cells=[];
+  const game=isGame();
+  for(let i=0;i<N;i++){
+    const nums=N<=16?binomRow(i):null;
+    for(let k=0;k<=i;k++){
+      const x=x0+(k-i/2)*cw,y=y0+i*rh,v=T[i][k];PS.cells.push({i,k,x,y,r:cw/2});
+      if(game){
+        const key=i+','+k,on=PS.showAns?v===1:PS.marks.has(key);
+        pc.fillStyle=on?'#3d5a98':'#fff';pc.strokeStyle=PS.wrong.has(key)?'#d9534f':'#cfc6b0';pc.lineWidth=PS.wrong.has(key)?3:1.2;
+        pc.beginPath();pc.arc(x,y,cw*0.44,0,7);pc.fill();pc.stroke();
+        pc.fillStyle=on?'#fff':'#1f2433';pc.font=`700 ${Math.min(18,cw*0.36)}px Lexend,sans-serif`;pc.textAlign='center';pc.textBaseline='middle';pc.fillText(nums[k],x,y+1);
+      }else{
+        pc.fillStyle=MODCOL[PS.mod][v];
+        if(N<=32){pc.beginPath();pc.arc(x,y,cw*0.46,0,7);pc.fill();
+          if(N<=16){pc.fillStyle=v?'#fff':'#8c8676';pc.font=`600 ${Math.min(13,cw*0.3)}px Lexend,sans-serif`;pc.textAlign='center';pc.textBaseline='middle';
+            const s=String(nums[k]);pc.fillText(s.length>4?'…':s,x,y+1);}}
+        else{pc.fillRect(x-cw/2,y-rh/2,cw+0.6,rh+0.6);}
+      }
+    }
+  }
+  const odd=T.reduce((a,r)=>a+r.filter(v=>v===1&&PS.mod===2).length,0);
+  $('#roP').innerHTML=game?
+    `<div class="big">把所有<b>奇數</b>點成藍色！</div><div>每個數字 = 上面兩個數字相加。點一下塗色，再點一下取消。</div>`:
+    `<div class="big">巴斯卡三角形前 <b>${N}</b> 列・${MODS.find(m=>m.m===PS.mod).n}</div>`+
+    (PS.mod===2?`<div>奇數有 <b>${odd.toLocaleString()}</b> 個（3 的次方：${N}=2<sup>${Math.log2(N)}</sup> 列 → 3<sup>${Math.log2(N)}</sup>）</div>`:`<div>不同顏色＝不同餘數，除以 ${PS.mod} 會變成 ${PS.mod} 個一組的三角形圖案</div>`);
+  $('#pGameRow').hidden=!game;
+}
+cp.addEventListener('click',e=>{
+  if(!isGame()||PS.showAns)return;const r=cp.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  for(const c of PS.cells)if(Math.hypot(c.x-x,c.y-y)<c.r){const key=c.i+','+c.k;PS.marks.has(key)?PS.marks.delete(key):PS.marks.add(key);PS.wrong.delete(key);drawPascal();return;}
+});
+$('#pCheck').onclick=()=>{
+  const T=modTri(8,2);PS.wrong.clear();let miss=0,extra=0;
+  for(let i=0;i<8;i++)for(let k=0;k<=i;k++){const key=i+','+k,odd=T[i][k]===1,on=PS.marks.has(key);if(odd!==on){PS.wrong.add(key);odd?miss++:extra++;}}
+  if(!PS.wrong.size){PS.solved=true;toast('#toastP','全對！看到三角形裡的倒三角洞了嗎？試試 16、32、64 列！');}
+  else toast('#toastP',`還有 ${PS.wrong.size} 個不對（紅圈）：${miss?`漏塗 ${miss} 個奇數`:''}${miss&&extra?'、':''}${extra?`多塗 ${extra} 個偶數`:''}`);
+  drawPascal();
+};
+$('#pClear').onclick=()=>{PS.marks.clear();PS.wrong.clear();PS.showAns=false;$('#pShow').textContent='直接看答案';drawPascal();};
+$('#pShow').onclick=()=>{PS.showAns=!PS.showAns;$('#pShow').textContent=PS.showAns?'回到我的作答':'直接看答案';drawPascal();};
+function buildPascalBtns(){
+  const rb=$('#rowBtns');rb.innerHTML='';
+  for(const n of ROWOPT){const b=document.createElement('button');b.className='btn'+(n===PS.rows?' sel':'');b.textContent=n;b.onclick=()=>{PS.rows=n;buildPascalBtns();drawPascal();};rb.appendChild(b);}
+  const mb=$('#modBtns');mb.innerHTML='';
+  for(const m of MODS){const b=document.createElement('button');b.className='btn'+(m.m===PS.mod?' sel':'');b.textContent=m.n;b.onclick=()=>{PS.mod=m.m;buildPascalBtns();drawPascal();};mb.appendChild(b);}
+}
+
+/* ======================= tabs & loop ======================= */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['chaos','dig','pascal'])$('#p-'+t).hidden=t!==TAB;
+  if(TAB==='pascal')requestAnimationFrame(drawPascal);
+});
+new ResizeObserver(()=>{if(TAB==='pascal')drawPascal();}).observe(cp);
+function frame(now){
+  if(TAB==='chaos')chaosTick();else if(TAB==='dig')digTick(now);
+  requestAnimationFrame(frame);
+}
+buildPresets();syncRatio();chaosLayout();syncDig();buildPascalBtns();
+requestAnimationFrame(frame);
+})();
+</script>

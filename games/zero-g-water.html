@@ -1,0 +1,577 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>失重水球實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/objects/MarchingCubes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/environments/RoomEnvironment.js"></script>
+<style>
+/* Layout: lab bench split — 3D liquid stage with tool dock left, experiment rail right; stacks on phones */
+:root{
+  --panel:#f6f4ef;
+  --card:#ffffff;
+  --rule:#d8d3c8;
+  --ink:#1d2430;
+  --dim:#626b7a;
+  --water:#2f8fe0;
+  --good:#1f9d63;
+  --f-disp:"Archivo","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --panel:#20242c; --card:#272c35; --rule:#363c48; --ink:#e8ebf1; --dim:#9aa3b3; --water:#5fb0ff; --good:#5fd69b; color-scheme:dark } }
+:root[data-theme="dark"]{ --panel:#20242c; --card:#272c35; --rule:#363c48; --ink:#e8ebf1; --dim:#9aa3b3; --water:#5fb0ff; --good:#5fd69b; color-scheme:dark }
+html,body{height:100%}
+body{background:var(--panel);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 370px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#cfcabf}
+#cv{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 28px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-disp);font-weight:700;font-size:12px;letter-spacing:.22em;color:var(--water);text-transform:uppercase}
+h1{margin:2px 0 0;font-size:26px;font-weight:700;letter-spacing:.03em;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--dim);font-size:13.5px}
+section{display:flex;flex-direction:column;gap:9px}
+h2{margin:0;font-family:var(--f-disp);font-weight:700;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--card);border:1px solid var(--rule);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip:hover{border-color:var(--water)}
+.seg{display:grid;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:var(--card)}
+.seg button{background:transparent;border:0;padding:8px 4px;font-size:13px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--water);color:#fff;font-weight:700}
+.seg4{grid-template-columns:repeat(4,1fr)} .seg3{grid-template-columns:repeat(3,1fr)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:8px 10px;min-width:0}
+.stat span{display:block;font-size:11.5px;color:var(--dim)}
+.stat b{font-family:var(--f-disp);font-weight:800;font-size:22px;line-height:1.2;font-variant-numeric:tabular-nums;display:block;overflow-wrap:anywhere}
+.bo{font-size:12.5px;margin:0;color:var(--ink)}
+.bo b{font-family:var(--f-mono);font-weight:500}
+
+.ach{display:flex;flex-direction:column;gap:6px}
+.ach div{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:8px 10px;font-size:13px}
+.ach i{font-style:normal;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--rule);display:grid;place-items:center;font-size:11px;margin-top:2px}
+.ach .done{border-color:var(--good)}
+.ach .done i{background:var(--good);border-color:var(--good);color:#fff}
+.ach small{display:block;color:var(--dim);font-size:12px}
+
+.facts{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.facts li{font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:9px;padding:9px 11px}
+.facts b{color:var(--water)}
+
+/* stage overlays */
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;
+  padding-block:10px max(12px,env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.dock button{background:rgba(255,255,255,.92);color:#1d2430;border:1px solid #c9c3b6;border-radius:10px;padding:8px 14px;font-size:13.5px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.dock button[aria-pressed="true"]{background:#1d2430;color:#fff;border-color:#1d2430}
+.dock .sm{padding:8px 11px}
+.tag{position:absolute;top:max(12px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;
+  background:rgba(255,255,255,.88);color:#1d2430;border:1px solid #c9c3b6;border-radius:8px;padding:6px 10px;font-size:12.5px;display:flex;flex-direction:column}
+.tag b{font-size:14px}
+.help{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));pointer-events:none;
+  background:rgba(255,255,255,.8);color:#3a4250;border-radius:8px;padding:5px 10px;font-size:12px;max-width:46%;text-align:right}
+.toast{position:absolute;top:calc(max(12px,env(safe-area-inset-top,0px)) + 56px);left:50%;transform:translateX(-50%);max-width:min(80%,420px);
+  background:#1d2430;color:#fff;border-radius:9px;padding:8px 14px;font-size:13px;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#1d2430;background:#e9e6df}
+
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:70vh;min-height:460px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .help{display:none}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="太空站液體 3D 模擬"></canvas>
+    <div class="tag"><b id="gTag">微重力 · 國際太空站</b><span id="gSub">約為地表重力的百萬分之一</span><span style="color:#626b7a">地板上的深色短線 = 10 公分</span></div>
+    <div class="help" id="help">右鍵拖曳或選「轉視角」可以旋轉，滾輪縮放</div>
+    <div class="toast" id="toast"></div>
+    <div class="dock" id="dock">
+      <button data-tool="push" aria-pressed="true">撥動／戳</button>
+      <button data-tool="water" aria-pressed="false">注水</button>
+      <button data-tool="juice" aria-pressed="false">柳橙汁</button>
+      <button data-tool="sip" aria-pressed="false">吸管吸走</button>
+      <button data-tool="view" aria-pressed="false">轉視角</button>
+      <button class="sm" id="bPause" aria-label="暫停或繼續">❚❚</button>
+    </div>
+    <div class="err" id="err" hidden>這個瀏覽器無法啟用 WebGL，3D 畫面無法顯示。</div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="eyebrow">Microgravity Fluid Lab · 3D</div>
+      <h1>失重水球實驗室</h1>
+      <p class="lede">在太空站裡，水不會往下流。表面張力把它捏成一顆會晃動的球。用手指撥它、戳它、把它扯開，或拿吸管喝掉。轉動視角，從各個方向看這顆水球。</p>
+    </div>
+
+    <section>
+      <h2>實驗</h2>
+      <div class="chips" id="presets"></div>
+    </section>
+
+    <section>
+      <h2>重力</h2>
+      <div class="seg seg4" id="gSeg">
+        <button data-g="0" aria-pressed="true">太空站</button>
+        <button data-g="0.165" aria-pressed="false">月球</button>
+        <button data-g="0.38" aria-pressed="false">火星</button>
+        <button data-g="1" aria-pressed="false">地球</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>牆面材質</h2>
+      <div class="seg seg3" id="wSeg">
+        <button data-w="-1" aria-pressed="false">疏水</button>
+        <button data-w="0" aria-pressed="true">一般</button>
+        <button data-w="1" aria-pressed="false">親水</button>
+      </div>
+      <p class="note" id="wNote">一般牆面：水碰到會稍微黏住，但不會攤開。</p>
+    </section>
+
+    <section>
+      <h2>觀測</h2>
+      <div class="stats">
+        <div class="stat"><span>水量</span><b id="sVol">—</b></div>
+        <div class="stat"><span>水球數</span><b id="sBlobs">—</b></div>
+        <div class="stat"><span>最大水球</span><b id="sBig">—</b></div>
+      </div>
+      <p class="bo">邦德數 Bo = <b id="sBo">—</b>　<span id="sBoTxt"></span></p>
+      <p class="note">邦德數比較「重力」和「表面張力」誰比較大。小於 1 時表面張力主導，液體會縮成球。</p>
+    </section>
+
+    <section>
+      <h2>挑戰</h2>
+      <div class="ach" id="ach"></div>
+    </section>
+
+    <section>
+      <h2>太空站裡的水</h2>
+      <ul class="facts">
+        <li><b>為什麼是球？</b>表面張力會把液體的表面積縮到最小，而同樣體積下表面積最小的形狀就是球。地球上重力比它大得多，所以水只能攤在杯底。</li>
+        <li><b>戳一下會晃很久。</b>水的黏性很低，水球被戳後會像果凍一樣反覆振盪。科學家用振盪的頻率回推液體的表面張力。</li>
+        <li><b>水會黏在身上。</b>在太空站裡流汗或洗頭，水會黏在皮膚上變成一層水膜，不會滴落，得用毛巾擦掉。</li>
+        <li><b>喝水要用吸管。</b>太空人喝飲料用附吸管、有閥門的飲料袋。打開的杯子裡，水會沿著杯壁爬出來或整團飄走。</li>
+        <li><b>灑出來很危險。</b>飄散的水滴可能跑進電子設備，所以太空站裡的液體實驗都在密閉的手套箱裡做。</li>
+      </ul>
+    </section>
+    <p class="note">三維粒子流體模擬（雙密度鬆弛法），水面以 marching cubes 演算法即時生成。表面張力簡化為粒子間的吸引力，用來呈現定性現象。實驗艙空間約 36 × 24 × 24 公分。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv');
+
+// ---------- simulation (world units = mm, y up) ----------
+const WX = 360, WY = 240, WZ = 240;
+const H_ = 24, SP = 8.3, NMAX = 1600;
+let RHO0 = 10, K = 0.02, KN = 0.04, SIG = 0.06, BETA = 0.02;
+const G_EARTH = 0.06;
+let gScale = 0, wallMode = 0, tool = 'push', paused = false, n = 0;
+const px = new Float32Array(NMAX), py = new Float32Array(NMAX), pz = new Float32Array(NMAX);
+const vx = new Float32Array(NMAX), vy = new Float32Array(NMAX), vz = new Float32Array(NMAX);
+const ox = new Float32Array(NMAX), oy = new Float32Array(NMAX), oz = new Float32Array(NMAX), col = new Uint8Array(NMAX);
+const GX = Math.ceil(WX/H_) + 1, GY = Math.ceil(WY/H_) + 1, GZ = Math.ceil(WZ/H_) + 1;
+const head = new Int32Array(GX*GY*GZ), next = new Int32Array(NMAX);
+const nb = new Int32Array(512), nq = new Float32Array(512);
+
+function add(x, y, z, u, v, w, c){ if (n >= NMAX) return false; px[n] = x; py[n] = y; pz[n] = z; vx[n] = u; vy[n] = v; vz[n] = w; col[n] = c; n++; return true; }
+function remove(i){ n--; px[i] = px[n]; py[i] = py[n]; pz[i] = pz[n]; vx[i] = vx[n]; vy[i] = vy[n]; vz[i] = vz[n]; col[i] = col[n]; }
+function ball(cx, cy, cz, r, u = 0, v = 0, w = 0, c = 0){
+  for (let z = -r; z <= r; z += SP) for (let y = -r; y <= r; y += SP) for (let x = -r; x <= r; x += SP)
+    if (x*x + y*y + z*z <= r*r) add(cx + x + (Math.random() - .5), cy + y + (Math.random() - .5), cz + z + (Math.random() - .5), u, v, w, c);
+}
+const cell = (x, y, z) => {
+  const a = Math.min(GX - 1, Math.max(0, (x/H_) | 0)), b = Math.min(GY - 1, Math.max(0, (y/H_) | 0)), c = Math.min(GZ - 1, Math.max(0, (z/H_) | 0));
+  return (c*GY + b)*GX + a;
+};
+function buildGrid(){ head.fill(-1); for (let i = 0; i < n; i++){ const c = cell(px[i], py[i], pz[i]); next[i] = head[c]; head[c] = i; } }
+function neighbours(i, rad = H_){
+  let m = 0; const x = px[i], y = py[i], z = pz[i], r2 = rad*rad;
+  const cx = (x/H_) | 0, cy = (y/H_) | 0, cz = (z/H_) | 0;
+  for (let c = cz - 1; c <= cz + 1; c++){ if (c < 0 || c >= GZ) continue;
+    for (let b = cy - 1; b <= cy + 1; b++){ if (b < 0 || b >= GY) continue;
+      for (let a = cx - 1; a <= cx + 1; a++){ if (a < 0 || a >= GX) continue;
+        for (let j = head[(c*GY + b)*GX + a]; j !== -1; j = next[j]){
+          if (j === i) continue; const dx = px[j] - x, dy = py[j] - y, dz = pz[j] - z, d2 = dx*dx + dy*dy + dz*dz;
+          if (d2 < r2 && m < 512){ nb[m] = j; nq[m] = Math.sqrt(d2)/H_; m++; } } } } }
+  return m;
+}
+function step(){
+  const g = gScale*G_EARTH;
+  for (let i = 0; i < n; i++) vy[i] -= g;
+  buildGrid();
+  for (let i = 0; i < n; i++){
+    const m = neighbours(i);
+    for (let k = 0; k < m; k++){ const j = nb[k]; if (j < i) continue; const q = nq[k]; if (q <= 1e-6) continue;
+      const r = q*H_, ex = (px[j] - px[i])/r, ey = (py[j] - py[i])/r, ez = (pz[j] - pz[i])/r;
+      const u = (vx[i] - vx[j])*ex + (vy[i] - vy[j])*ey + (vz[i] - vz[j])*ez;
+      if (u > 0){ const I = (1 - q)*(SIG*u + BETA*u*u)*.5; vx[i] -= I*ex; vy[i] -= I*ey; vz[i] -= I*ez; vx[j] += I*ex; vy[j] += I*ey; vz[j] += I*ez; } }
+  }
+  for (let i = 0; i < n; i++){
+    const s2 = vx[i]*vx[i] + vy[i]*vy[i] + vz[i]*vz[i]; if (s2 > 100){ const s = 10/Math.sqrt(s2); vx[i] *= s; vy[i] *= s; vz[i] *= s; }
+    ox[i] = px[i]; oy[i] = py[i]; oz[i] = pz[i]; px[i] += vx[i]; py[i] += vy[i]; pz[i] += vz[i];
+  }
+  buildGrid();
+  for (let i = 0; i < n; i++){
+    const m = neighbours(i); let rho = 0, rhoN = 0;
+    for (let k = 0; k < m; k++){ const a = 1 - nq[k]; rho += a*a; rhoN += a*a*a; }
+    const P = K*(rho - RHO0), PN = KN*rhoN;
+    let dx = 0, dy = 0, dz = 0;
+    for (let k = 0; k < m; k++){
+      const j = nb[k], q = nq[k]; if (q <= 1e-6) continue;
+      const a = 1 - q, D = (P*a + PN*a*a)*.5, r = q*H_;
+      const ex = (px[j] - px[i])/r, ey = (py[j] - py[i])/r, ez = (pz[j] - pz[i])/r;
+      px[j] += D*ex; py[j] += D*ey; pz[j] += D*ez; dx -= D*ex; dy -= D*ey; dz -= D*ez;
+    }
+    px[i] += dx; py[i] += dy; pz[i] += dz;
+  }
+  const pad = 4, band = H_*.5, adh = wallMode === 1 ? .35 : wallMode === 0 ? .06 : -.08, fr = wallMode === 1 ? .35 : wallMode === 0 ? .05 : 0;
+  const lim = [[px, ox, WX, [py, oy], [pz, oz]], [py, oy, WY, [px, ox], [pz, oz]], [pz, oz, WZ, [px, ox], [py, oy]]];
+  for (let i = 0; i < n; i++){
+    for (const [p, o, L, [t1, o1], [t2, o2]] of lim){
+      const lo = p[i] - pad, hi = L - pad - p[i];
+      if (lo < band){ const f = 1 - lo/band; p[i] -= adh*f; if (fr){ t1[i] -= (t1[i] - o1[i])*fr*f; t2[i] -= (t2[i] - o2[i])*fr*f; } }
+      if (hi < band){ const f = 1 - hi/band; p[i] += adh*f; if (fr){ t1[i] -= (t1[i] - o1[i])*fr*f; t2[i] -= (t2[i] - o2[i])*fr*f; } }
+      if (p[i] < pad) p[i] = pad; else if (p[i] > L - pad) p[i] = L - pad;
+    }
+    vx[i] = px[i] - ox[i]; vy[i] = py[i] - oy[i]; vz[i] = pz[i] - oz[i];
+  }
+}
+
+// ---------- three.js scene ----------
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas:cv, antialias:true}); } catch (e) { $('#err').hidden = false; return; }
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xc9c4b8);
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(40, 1, 1, 6000);
+const controls = new THREE.OrbitControls(camera, cv);
+controls.target.set(WX/2, WY/2, WZ/2); controls.enableDamping = true; controls.enablePan = false;
+controls.minDistance = 180; controls.maxDistance = 1400;
+controls.mouseButtons = {LEFT:THREE.MOUSE.ROTATE, MIDDLE:THREE.MOUSE.DOLLY, RIGHT:THREE.MOUSE.ROTATE};
+controls.enableRotate = false;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb9b2a4, .55));
+const sun = new THREE.DirectionalLight(0xffffff, .9); sun.position.set(WX*.2, WY*1.6, WZ*1.4); scene.add(sun);
+
+// module interior (dollhouse box; near faces cull away)
+function panelTex(w, h, opts = {}){
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#f1eee7'); gr.addColorStop(1, '#dcd6ca'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  const cols = opts.cols || 3, pw = w/cols;
+  for (let i = 0; i < cols; i++){
+    g.strokeStyle = 'rgba(80,72,60,.22)'; g.lineWidth = 3; g.strokeRect(i*pw + 10, 12, pw - 20, h - 24);
+    g.fillStyle = 'rgba(80,72,60,.3)'; for (const yy of [26, h - 26]) for (const xx of [i*pw + 24, i*pw + pw - 24]){ g.beginPath(); g.arc(xx, yy, 4, 0, 6.3); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.55)'; g.fillRect(i*pw + pw*.25, h*.42, pw*.5, 22);
+    g.fillStyle = 'rgba(80,72,60,.25)'; g.fillRect(i*pw + pw*.25, h*.42, pw*.5, 2);
+  }
+  if (opts.label){ g.fillStyle = 'rgba(40,52,70,.88)'; g.fillRect(30, h - 70, 300, 40); g.fillStyle = '#fff'; g.font = '600 22px "IBM Plex Mono", monospace'; g.fillText(opts.label, 44, h - 42); }
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4;
+  t.wrapS = THREE.RepeatWrapping; t.repeat.x = -1;   // walls are seen from inside (BackSide), so un-mirror them
+  return t;
+}
+const boxMats = [
+  new THREE.MeshStandardMaterial({map:panelTex(512, 512, {cols:2}), side:THREE.BackSide, roughness:.85}),
+  new THREE.MeshStandardMaterial({map:panelTex(512, 512, {cols:2}), side:THREE.BackSide, roughness:.85}),
+  new THREE.MeshStandardMaterial({map:panelTex(768, 512, {cols:3}), side:THREE.BackSide, roughness:.85}),
+  new THREE.MeshStandardMaterial({map:panelTex(768, 512, {cols:3}), side:THREE.BackSide, roughness:.85}),
+  new THREE.MeshStandardMaterial({map:panelTex(768, 512, {cols:3}), side:THREE.BackSide, roughness:.85}),
+  new THREE.MeshStandardMaterial({map:panelTex(768, 512, {cols:3, label:'FLUIDS LAB · NODE 2'}), side:THREE.BackSide, roughness:.85})
+];
+const room = new THREE.Mesh(new THREE.BoxGeometry(WX, WY, WZ), boxMats); room.position.set(WX/2, WY/2, WZ/2); scene.add(room);
+{
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d');
+  g.fillStyle = '#04060c'; g.fillRect(0, 0, 256, 256);
+  const eg = g.createRadialGradient(100, 360, 60, 128, 400, 300); eg.addColorStop(0, '#6fb3ee'); eg.addColorStop(.7, '#2b6cb2'); eg.addColorStop(1, '#173a66');
+  g.fillStyle = eg; g.beginPath(); g.arc(128, 420, 300, 0, 6.3); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 9; i++){ g.beginPath(); g.ellipse(20 + i*28, 175 + (i % 3)*12, 18, 4, .2, 0, 6.3); g.fill(); }
+  g.strokeStyle = 'rgba(120,180,255,.7)'; g.lineWidth = 4; g.beginPath(); g.arc(128, 420, 302, Math.PI*1.2, Math.PI*1.8); g.stroke();
+  const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+  const win = new THREE.Mesh(new THREE.CircleGeometry(42, 48), new THREE.MeshBasicMaterial({map:tex}));
+  win.position.set(WX*.78, WY*.66, 1); scene.add(win);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(44, 5, 16, 64), new THREE.MeshStandardMaterial({color:0x8d949c, metalness:.6, roughness:.35}));
+  rim.position.set(WX*.78, WY*.66, 2); scene.add(rim);
+  const rail = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, WX*.36, 16), new THREE.MeshStandardMaterial({color:0xe2b33b, roughness:.45}));
+  rail.rotation.z = Math.PI/2; rail.position.set(WX*.25, WY*.86, 10); scene.add(rail);
+  for (const x of [WX*.07, WX*.43]){ const post = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 10, 12), new THREE.MeshStandardMaterial({color:0xb48a20})); post.rotation.x = Math.PI/2; post.position.set(x, WY*.86, 5); scene.add(post); }
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(WX, WY, WZ)), new THREE.LineBasicMaterial({color:0x8a8478}));
+  edges.position.copy(room.position); scene.add(edges);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(100, 1.5, 3), new THREE.MeshBasicMaterial({color:0x3a4a63})); bar.position.set(WX - 70, 1, WZ - 14); scene.add(bar);
+}
+
+// ---------- liquid surface (marching cubes over a splatted density field) ----------
+// finer surface grid on desktop; a bit coarser on phones to keep the frame rate up
+const RES = matchMedia('(pointer: coarse)').matches ? 58 : 76, L = WX, KR = SP*1.75;
+const waterMat = new THREE.MeshPhysicalMaterial({color:0xffffff, vertexColors:true, roughness:.02, metalness:0, transmission:.78, thickness:60, ior:1.33, clearcoat:1, clearcoatRoughness:.04, envMapIntensity:1.1, attenuationColor:new THREE.Color(0x4fb0f0), attenuationDistance:110});
+const mc = new THREE.MarchingCubes(RES, waterMat, false, true, 120000);
+mc.position.set(WX/2, WY/2, WZ/2); mc.scale.set(L/2, L/2, L/2);
+scene.add(mc);
+const W0 = 4*Math.PI*KR*KR*KR*(8/105)/(SP*SP*SP);
+mc.isolation = W0*.42;
+const jw = new Float32Array(RES*RES*RES), tmp = new Float32Array(RES*RES*RES), prevF = new Float32Array(RES*RES*RES);
+// separable 1-2-1 blur along x, y and z: removes the bumps each particle leaves in the surface
+// Works only inside the box (X0..X1, Y0..Y1, Z0..Z1) that holds liquid; the rest of the grid stays zero.
+function blur3(a, X0, X1, Y0, Y1, Z0, Z1){
+  const s = RES, s2 = s*s;
+  const ylo = Math.max(1, Y0 - 1), yhi = Math.min(s - 2, Y1 + 1), zlo = Math.max(1, Z0 - 1), zhi = Math.min(s - 2, Z1 + 1);
+  for (let z = zlo; z <= zhi; z++) for (let y = ylo; y <= yhi; y++){ const b = z*s2 + y*s; for (let x = X0; x <= X1; x++){ const o = b + x; tmp[o] = (a[o - 1] + 2*a[o] + a[o + 1])*.25; } }
+  for (let z = zlo; z <= zhi; z++) for (let y = Y0; y <= Y1; y++){ const b = z*s2 + y*s; for (let x = X0; x <= X1; x++){ const o = b + x; a[o] = (tmp[o - s] + 2*tmp[o] + tmp[o + s])*.25; } }
+  for (let z = Z0; z <= Z1; z++) for (let y = Y0; y <= Y1; y++){ const b = z*s2 + y*s; for (let x = X0; x <= X1; x++){ const o = b + x; tmp[o] = (a[o - s2] + 2*a[o] + a[o + s2])*.25; } }
+  for (let z = Z0; z <= Z1; z++) for (let y = Y0; y <= Y1; y++){ const b = z*s2 + y*s; for (let x = X0; x <= X1; x++){ const o = b + x; a[o] = tmp[o]; } }
+}
+let prevBox = null, palDirty = true;
+const C_W = [.5, .84, 1.0], C_J = [1.0, .52, .08];
+function updateSurface(){
+  const f = mc.field, pal = mc.palette, size = RES, s2 = size*size;
+  f.fill(0); jw.fill(0);
+  const k = size/L, ox0 = WX/2 - L/2, oy0 = WY/2 - L/2, oz0 = WZ/2 - L/2, rc = KR*k, r2 = rc*rc;
+  let bx0 = size, by0 = size, bz0 = size, bx1 = 0, by1 = 0, bz1 = 0, nj = 0;
+  for (let i = 0; i < n; i++){
+    const gx = (px[i] - ox0)*k, gy = (py[i] - oy0)*k, gz = (pz[i] - oz0)*k;
+    const x0 = Math.max(1, Math.floor(gx - rc)), x1 = Math.min(size - 2, Math.ceil(gx + rc));
+    const y0 = Math.max(1, Math.floor(gy - rc)), y1 = Math.min(size - 2, Math.ceil(gy + rc));
+    const z0 = Math.max(1, Math.floor(gz - rc)), z1 = Math.min(size - 2, Math.ceil(gz + rc));
+    if (x0 < bx0) bx0 = x0; if (x1 > bx1) bx1 = x1; if (y0 < by0) by0 = y0; if (y1 > by1) by1 = y1; if (z0 < bz0) bz0 = z0; if (z1 > bz1) bz1 = z1;
+    const juice = col[i] === 1; if (juice) nj++;
+    for (let z = z0; z <= z1; z++){ const dz = z - gz;
+      for (let y = y0; y <= y1; y++){ const dy = y - gy, dyz = dy*dy + dz*dz; if (dyz >= r2) continue;
+        for (let x = x0; x <= x1; x++){ const dx = x - gx, d2 = dx*dx + dyz; if (d2 >= r2) continue;
+          const a = 1 - d2/r2, w = a*a, o = x + y*size + z*s2; f[o] += w; if (juice) jw[o] += w; } } }
+  }
+  if (n){
+    const m = 2, cl = v => Math.max(1, Math.min(size - 2, v));
+    const box = [cl(bx0 - m), cl(bx1 + m), cl(by0 - m), cl(by1 + m), cl(bz0 - m), cl(bz1 + m)];
+    blur3(f, ...box);
+    // light temporal smoothing so the surface doesn't shimmer; covers last frame's box too so old liquid fades out
+    const u = prevBox ? [Math.min(box[0], prevBox[0]), Math.max(box[1], prevBox[1]), Math.min(box[2], prevBox[2]), Math.max(box[3], prevBox[3]), Math.min(box[4], prevBox[4]), Math.max(box[5], prevBox[5])] : box;
+    for (let z = u[4]; z <= u[5]; z++) for (let y = u[2]; y <= u[3]; y++){ const b = z*s2 + y*size; for (let x = u[0]; x <= u[1]; x++){ const o = b + x, v = f[o]*.75 + prevF[o]*.25; f[o] = v; prevF[o] = v; } }
+    prevBox = box;
+    if (pal && nj){
+      for (let z = box[4]; z <= box[5]; z++) for (let y = box[2]; y <= box[3]; y++){ const b = z*s2 + y*size; for (let x = box[0]; x <= box[1]; x++){
+        const o = b + x, w = f[o], t = w > 1e-4 ? Math.min(1, jw[o]/w) : 0, p = o*3;
+        pal[p] = C_W[0] + (C_J[0] - C_W[0])*t; pal[p + 1] = C_W[1] + (C_J[1] - C_W[1])*t; pal[p + 2] = C_W[2] + (C_J[2] - C_W[2])*t; } }
+      palDirty = true;
+    }
+  } else { prevF.fill(0); prevBox = null; }
+  if (pal && !nj && palDirty){ for (let o = 0; o < pal.length; o += 3){ pal[o] = C_W[0]; pal[o + 1] = C_W[1]; pal[o + 2] = C_W[2]; } palDirty = false; }
+  mc.update();
+}
+
+const cursor = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({color:0x1d2430, wireframe:true, transparent:true, opacity:.35}));
+cursor.visible = false; scene.add(cursor);
+const straw = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 90, 12), new THREE.MeshStandardMaterial({color:0xe05050, roughness:.4}));
+straw.visible = false; scene.add(straw);
+
+// ---------- interaction ----------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+const ptr = {down:false, hover:false, x:0, y:0, moved:0, t0:0, plane:new THREE.Plane(), hit:new THREE.Vector3(), last:new THREE.Vector3(), has:false, rotating:false};
+function setRay(cx, cy){ const r = cv.getBoundingClientRect(); ndc.set(((cx - r.left)/r.width)*2 - 1, -((cy - r.top)/r.height)*2 + 1); ray.setFromCamera(ndc, camera); }
+function pickPoint(){
+  const o = ray.ray.origin, d = ray.ray.direction; let bestT = Infinity;
+  for (let i = 0; i < n; i++){
+    const ax = px[i] - o.x, ay = py[i] - o.y, az = pz[i] - o.z, t = ax*d.x + ay*d.y + az*d.z;
+    if (t <= 0 || t > bestT) continue;
+    const qx = ax - d.x*t, qy = ay - d.y*t, qz = az - d.z*t;
+    if (qx*qx + qy*qy + qz*qz < 100) bestT = t;
+  }
+  const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+  const p = bestT < Infinity ? o.clone().addScaledVector(d, bestT) : null;
+  const anchor = p || controls.target.clone();
+  ptr.plane.setFromNormalAndCoplanarPoint(camDir, anchor);
+  const out = new THREE.Vector3(); ray.ray.intersectPlane(ptr.plane, out);
+  return out;
+}
+cv.addEventListener('pointerdown', e => {
+  ptr.rotating = tool === 'view' || e.button === 2;
+  controls.enableRotate = ptr.rotating;
+  if (ptr.rotating) return;
+  cv.setPointerCapture(e.pointerId);
+  setRay(e.clientX, e.clientY); const p = pickPoint();
+  Object.assign(ptr, {down:true, x:e.clientX, y:e.clientY, moved:0, t0:performance.now(), has:true});
+  ptr.hit.copy(p); ptr.last.copy(p);
+}, true);
+cv.addEventListener('pointermove', e => {
+  ptr.hover = true;
+  if (ptr.rotating) return;
+  setRay(e.clientX, e.clientY);
+  if (ptr.down){
+    ptr.moved += Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y); ptr.x = e.clientX; ptr.y = e.clientY;
+    const out = new THREE.Vector3(); if (ray.ray.intersectPlane(ptr.plane, out)) ptr.hit.copy(out);
+  } else { ptr.hit.copy(pickPoint()); ptr.last.copy(ptr.hit); ptr.has = true; }
+});
+const up = () => {
+  if (ptr.down && tool === 'push' && ptr.moved < 6 && performance.now() - ptr.t0 < 400) poke();
+  ptr.down = false; ptr.rotating = false; controls.enableRotate = tool === 'view';
+};
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+cv.addEventListener('pointerleave', () => { ptr.hover = false; });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+let pokes = 0, sipped = 0, fullWarned = false;
+function poke(){
+  const d = ray.ray.direction, h = ptr.hit, R = 34;
+  for (let i = 0; i < n; i++){ const dx = px[i] - h.x, dy = py[i] - h.y, dz = pz[i] - h.z, r = Math.hypot(dx, dy, dz);
+    if (r < R && r > .01){ const f = 2.6*(1 - r/R); vx[i] += (dx/r*.5 + d.x)*f; vy[i] += (dy/r*.5 + d.y)*f; vz[i] += (dz/r*.5 + d.z)*f; } }
+  pokes++;
+}
+function applyTool(){
+  const h = ptr.hit, mv = h.clone().sub(ptr.last); ptr.last.copy(h);
+  if (!ptr.down) return;
+  if (tool === 'push'){
+    const R = 30;
+    for (let i = 0; i < n; i++){ const dx = px[i] - h.x, dy = py[i] - h.y, dz = pz[i] - h.z, d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 < R*R){ const f = (1 - Math.sqrt(d2)/R)*.35; vx[i] += (mv.x*.5 - vx[i])*f; vy[i] += (mv.y*.5 - vy[i])*f; vz[i] += (mv.z*.5 - vz[i])*f; } }
+  } else if (tool === 'water' || tool === 'juice'){
+    const c = tool === 'juice' ? 1 : 0, sp = mv.length(), u = sp > .3 ? mv.clone().multiplyScalar(1.6/sp) : new THREE.Vector3();
+    for (let k = 0; k < 2; k++){
+      const ok = add(h.x + (Math.random() - .5)*5, h.y + (Math.random() - .5)*5, h.z + (Math.random() - .5)*5, u.x, u.y, u.z, c);
+      if (!ok){ if (!fullWarned){ toast('實驗艙裡的液體已經滿了'); fullWarned = true; } break; }
+    }
+  } else if (tool === 'sip'){
+    const R = 14; let k = 0;
+    for (let i = n - 1; i >= 0 && k < 4; i--){ const dx = px[i] - h.x, dy = py[i] - h.y, dz = pz[i] - h.z; if (dx*dx + dy*dy + dz*dz < R*R){ remove(i); k++; sipped++; } }
+    for (let i = 0; i < n; i++){ const dx = h.x - px[i], dy = h.y - py[i], dz = h.z - pz[i], d = Math.hypot(dx, dy, dz); if (d < 55 && d > .1){ const f = .1*(1 - d/55); vx[i] += dx/d*f; vy[i] += dy/d*f; vz[i] += dz/d*f; } }
+  }
+}
+
+// ---------- analysis ----------
+const parent = new Int32Array(NMAX);
+function find(a){ while (parent[a] !== a){ parent[a] = parent[parent[a]]; a = parent[a]; } return a; }
+let blobs = [], wallFrac = 0, juiceFrac = 0;
+function analyse(){
+  buildGrid();
+  for (let i = 0; i < n; i++) parent[i] = i;
+  for (let i = 0; i < n; i++){ const m = neighbours(i, SP*1.6); for (let k = 0; k < m; k++){ const a = find(i), b = find(nb[k]); if (a !== b) parent[a] = b; } }
+  const cnt = new Map(); let nearWall = 0, juice = 0, e = 20;
+  for (let i = 0; i < n; i++){ const r = find(i); cnt.set(r, (cnt.get(r) || 0) + 1);
+    if (px[i] < e || px[i] > WX - e || py[i] < e || py[i] > WY - e || pz[i] < e || pz[i] > WZ - e) nearWall++; if (col[i]) juice++; }
+  blobs = [...cnt.values()].filter(c => c >= 5).sort((a, b) => b - a);
+  wallFrac = n ? nearWall/n : 0; juiceFrac = n ? juice/n : 0;
+}
+const volOf = c => c*SP*SP*SP/1000;
+function fmtVol(v){ return v >= 1000 ? (v/1000).toFixed(2) + ' L' : Math.round(v) + ' ml'; }
+
+// ---------- challenges ----------
+const CH = [
+  {id:'wobble', t:'讓水球晃起來', d:'用「撥動／戳」點一下水球，看它像果凍一樣振盪。'},
+  {id:'split', t:'拆成 6 顆以上的小水珠', d:'用手指快速劃過水球，把它扯散。'},
+  {id:'merge', t:'讓水珠重新合體', d:'把散開的水珠推到一起，直到只剩一顆。'},
+  {id:'juice', t:'調一顆柳橙汁水球', d:'讓柳橙汁佔三成以上，而且全部融成同一顆。'},
+  {id:'wall', t:'讓水爬滿牆壁', d:'把牆面換成「親水」，讓六成以上的水貼在牆上。'},
+  {id:'drink', t:'用吸管把水喝光', d:'用吸管吸走 300 顆以上的水粒子，直到一滴不剩。'}
+];
+let done = {}; try { done = JSON.parse(localStorage.getItem('zg-water') || '{}') || {}; } catch (e) {}
+let hadSplit = false;
+function renderAch(){ $('#ach').innerHTML = CH.map(c => `<div class="${done[c.id] ? 'done' : ''}"><i>${done[c.id] ? '✓' : ''}</i><span>${c.t}<small>${c.d}</small></span></div>`).join(''); }
+function win(id){ if (done[id]) return; done[id] = true; try { localStorage.setItem('zg-water', JSON.stringify(done)); } catch (e) {} renderAch(); toast('挑戰完成：' + CH.find(c => c.id === id).t); }
+function checkAch(){
+  if (pokes > 0 && n > 100) win('wobble');
+  if (blobs.length >= 6){ win('split'); hadSplit = true; }
+  if (hadSplit && blobs.length === 1 && n > 150) win('merge');
+  if (juiceFrac >= .3 && blobs.length === 1 && n > 150) win('juice');
+  if (wallMode === 1 && wallFrac >= .6 && n > 150) win('wall');
+  if (sipped >= 300 && n === 0) win('drink');
+}
+
+// ---------- presets ----------
+let stream = null;
+function clear(){ n = 0; stream = null; sipped = 0; fullWarned = false; pokes = 0; hadSplit = false; }
+const C = [WX/2, WY/2, WZ/2];
+const PRE = {
+  ball:{name:'一顆大水球', run(){ clear(); ball(C[0], C[1], C[2], 50); }},
+  two:{name:'兩顆水球對撞', run(){ clear(); ball(WX*.24, C[1] + 8, C[2] - 10, 38, 1.1, 0, .15); ball(WX*.76, C[1] - 8, C[2] + 10, 38, -1.1, 0, -.15); }},
+  bag:{name:'擠飲料袋', run(){ clear(); stream = {x:8, y:C[1], z:C[2], u:[1.6, 0, 0], left:900, c:0}; toast('飲料袋從左邊擠出一道水柱'); }},
+  juice:{name:'柳橙汁混進水球', run(){ clear(); ball(C[0], C[1] - 10, C[2], 44); stream = {x:C[0], y:WY - 34, z:C[2], u:[0, -1.7, 0], left:420, c:1}; }},
+  rain:{name:'滿天小水珠', run(){ clear(); for (let k = 0; k < 30; k++) ball(25 + Math.random()*(WX - 50), 25 + Math.random()*(WY - 50), 25 + Math.random()*(WZ - 50), 10 + Math.random()*9, (Math.random() - .5)*.7, (Math.random() - .5)*.7, (Math.random() - .5)*.7); }},
+  earth:{name:'帶回地球', run(){ clear(); ball(C[0], WY*.62, C[2], 46); setG(1); toast('地球重力：水球撐不住自己的重量'); }}
+};
+Object.entries(PRE).forEach(([k, p]) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = p.name; b.onclick = () => { if (k !== 'earth' && gScale === 1) setG(0); p.run(); }; $('#presets').appendChild(b); });
+
+// ---------- controls ----------
+const GNAMES = {0:['微重力 · 國際太空站','約為地表重力的百萬分之一'], 0.165:['月球表面','地表重力的 1/6'], 0.38:['火星表面','地表重力的 38%'], 1:['地球表面','1 g']};
+function setG(g){ gScale = +g; document.querySelectorAll('#gSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.g === gScale)); $('#gTag').textContent = GNAMES[gScale][0]; $('#gSub').textContent = GNAMES[gScale][1]; }
+document.querySelectorAll('#gSeg button').forEach(b => b.onclick = () => setG(b.dataset.g));
+const WNOTES = {'-1':'疏水牆面（像塗了蠟）：水會被推開，在牆邊縮成水珠。', '0':'一般牆面：水碰到會稍微黏住，但不會攤開。', '1':'親水牆面（像乾淨的玻璃）：水一碰到就沿著牆面攤開、爬行。'};
+document.querySelectorAll('#wSeg button').forEach(b => b.onclick = () => { wallMode = +b.dataset.w; document.querySelectorAll('#wSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#wNote').textContent = WNOTES[b.dataset.w]; });
+document.querySelectorAll('#dock [data-tool]').forEach(b => b.onclick = () => { tool = b.dataset.tool; document.querySelectorAll('#dock [data-tool]').forEach(x => x.setAttribute('aria-pressed', x === b)); controls.enableRotate = tool === 'view'; cv.style.cursor = tool === 'view' ? 'move' : tool === 'push' ? 'grab' : 'crosshair'; });
+$('#bPause').onclick = () => { paused = !paused; $('#bPause').textContent = paused ? '▶' : '❚❚'; };
+let toastT; function toast(m){ const el = $('#toast'); el.textContent = m; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 3200); }
+if (matchMedia('(pointer: coarse)').matches) $('#help').textContent = '選「轉視角」旋轉，雙指縮放';
+
+function hud(){
+  const big = blobs[0] || 0;
+  $('#sVol').textContent = n ? fmtVol(volOf(n)) : '0 ml';
+  $('#sBlobs').textContent = blobs.length;
+  $('#sBig').textContent = big ? fmtVol(volOf(big)) : '—';
+  const Lm = big ? Math.cbrt(3*volOf(big)*1e-6/(4*Math.PI)) : 0.05;
+  const g = gScale === 0 ? 9.81e-6 : 9.81*gScale, Bo = 1000*g*Lm*Lm/0.072;
+  $('#sBo').textContent = Bo < 0.01 ? Bo.toExponential(1) : Bo < 10 ? Bo.toFixed(2) : Math.round(Bo).toLocaleString();
+  $('#sBoTxt').textContent = Bo < 1 ? '表面張力主導 → 縮成球' : '重力主導 → 往下流、攤平';
+}
+
+// ---------- sizing & loop ----------
+const stage = $('#stage');
+function resize(){
+  const r = stage.getBoundingClientRect();
+  renderer.setPixelRatio(Math.min(1.75, devicePixelRatio || 1));
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width/r.height;
+  const fitH = WY*1.25, fitW = WX*1.2, vf = camera.fov*Math.PI/180;
+  const dist = Math.max(fitH/2/Math.tan(vf/2), fitW/2/(Math.tan(vf/2)*camera.aspect)) + WZ/2;
+  if (!resize.done){ camera.position.set(WX/2 + dist*.18, WY/2 + dist*.16, WZ/2 + dist*.97); resize.done = true; }
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+renderAch();
+PRE.ball.run();
+
+let anaT = 0;
+function frame(now){
+  controls.update();
+  if (!paused){
+    applyTool();
+    if (stream && stream.left > 0){ for (let k = 0; k < 2; k++){ add(stream.x + (Math.random() - .5)*4, stream.y + (Math.random() - .5)*4, stream.z + (Math.random() - .5)*4, stream.u[0], stream.u[1], stream.u[2], stream.c); stream.left--; } }
+    step();
+  } else ptr.last.copy(ptr.hit);
+  updateSurface();
+  const show = (ptr.hover || ptr.down) && ptr.has && tool !== 'view' && !ptr.rotating;
+  const R = tool === 'push' ? 30 : tool === 'sip' ? 14 : 6;
+  cursor.visible = show; cursor.position.copy(ptr.hit); cursor.scale.setScalar(R);
+  cursor.material.color.set(tool === 'sip' ? 0xd04040 : tool === 'juice' ? 0xf08a24 : 0x1d2430);
+  straw.visible = show && tool === 'sip';
+  if (straw.visible){ const cd = new THREE.Vector3(); camera.getWorldDirection(cd); straw.position.copy(ptr.hit).addScaledVector(cd, -48); straw.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), cd.clone().negate()); }
+  renderer.render(scene, camera);
+  if (now - anaT > 400){ anaT = now; analyse(); checkAch(); hud(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__zg = {stats(){let mx=0,my=0,mz=0;for(let i=0;i<n;i++){mx+=px[i];my+=py[i];mz+=pz[i];}mx/=n;my/=n;mz/=n;let r=0,m=0;for(let i=0;i<n;i++){const d=Math.hypot(px[i]-mx,py[i]-my,pz[i]-mz);r+=d;m=Math.max(m,d);}return [n,Math.round(r/n),Math.round(m)];}, PRE, step, setG, get blobs(){return blobs}, analyse, updateSurface, mc, render(){renderer.render(scene,camera);}};
+})();
+</script>

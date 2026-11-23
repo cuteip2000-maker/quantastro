@@ -1,0 +1,373 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>不會重複的拼圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: tiling workshop — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#0b0a10;
+  --panel:#13121a;
+  --panel2:#1b1a24;
+  --rule:#2f2d3c;
+  --ink:#f0eef6;
+  --dim:#a19eb3;
+  --acc:#8fd9b6;
+  --sun:#ffd76a;
+  --flip:#ff6b8b;
+  --ok:#6fd38f;
+  --bad:#ff7a6a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--acc)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#07060b}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cB,#cC{touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(11,10,16,.86);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(330px,calc(100% - 24px))}
+.ro b{color:var(--sun);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .ok{color:var(--ok)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--acc);color:#06261a;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5}
+.toast.on{opacity:1}
+.toast.bad{background:var(--bad);color:#2a0606}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#06261a;font-weight:700}
+.btn.sel{border-color:var(--acc);color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-weight:700}
+.btn.done{border-color:var(--ok);color:var(--ok)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--acc);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.4em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--acc);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--acc)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:64vh;min-height:420px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(290px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 一塊磚拼滿<small>認識「帽子」</small></button>
+      <button data-tab="B" aria-pressed="false">② 拼拼看<small>把剪影填滿</small></button>
+      <button data-tab="C" aria-pressed="false">③ 會重複嗎？<small>滑動比對</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="aPlay">▶ 一塊一塊長出來</button>
+            <label class="sl">塊數<input id="aN" type="range" min="1" max="320" step="1" value="320"><b id="aNV"></b></label>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="aFlip" checked>標出「翻面」的帽子</label>
+            <label class="chk"><input type="checkbox" id="aKite">顯示風箏格子</label>
+            <label class="chk"><input type="checkbox" id="aOne">只看一塊（拆成 8 個風箏）</label>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">關卡</span><span class="row" id="lvls"></span>
+          </div>
+          <div class="row">
+            <button class="btn" id="bRot">⟳ 轉 60°（R）</button>
+            <button class="btn" id="bFlip">🔁 翻面（F）</button>
+            <button class="btn" id="bUndo">↶ 收回</button>
+            <button class="btn" id="bClear">清空</button>
+            <button class="btn" id="bHint">💡 提示一塊</button>
+          </div>
+          <div class="note" id="bNote">滑鼠：移到剪影上預覽，點一下放下。手機：點一下讓帽子移過去，再點帽子本身放下。點已經放好的帽子可以拿掉。</div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div><div class="toast" id="tC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">拼法</span>
+            <button class="btn" data-ty="sq">花磚地板（正方形）</button>
+            <button class="btn" data-ty="hex">蜂巢（六邊形）</button>
+            <button class="btn sel" data-ty="hat">帽子</button>
+          </div>
+          <div class="row">
+            <span class="grp"><button class="btn" data-mv="-1,0">◀</button> <button class="btn" data-mv="0,1">▲</button> <button class="btn" data-mv="0,-1">▼</button> <button class="btn" data-mv="1,0">▶</button></span>
+            <button class="btn" id="cZero">歸零</button>
+            <span class="note">也可以直接拖曳畫面上的透明複製品。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>一塊磚，拼滿全世界，卻永遠不重複</h1>
+    <p class="lede">2023 年，數學家找到了一個找了五十多年的形狀：只用它一種形狀，就能把整個平面拼滿、不留縫；但不管怎麼拼，圖案都不會規律地重複。</p>
+
+    <div class="card">
+      <h2>「Einstein」不是愛因斯坦</h2>
+      <p>這個名字來自德文 <b>ein Stein</b>，意思是「一塊石頭」。數學家用它來稱呼「只用一種形狀、而且只能拼出不重複圖案」的磚，也叫做<b>非週期單磚</b>。</p>
+      <p>因為它長得像一頂帽子，大家就叫它「<b>帽子</b>」。它是 13 邊形，可以拆成 8 個一樣的風箏形。</p>
+    </div>
+
+    <div class="card">
+      <h2>重複 vs 不重複</h2>
+      <p>浴室的正方形磁磚、蜂巢的六邊形，都是<b>週期性</b>拼法：把整片圖案往某個方向平移一段距離，就會和原來完全重合。</p>
+      <p>帽子拼出來的圖案是<b>非週期</b>的：不管往哪個方向、移多遠，都不會整片完全重合。到「③ 會重複嗎？」自己滑滑看。</p>
+    </div>
+
+    <div class="card">
+      <h2>要用到「翻面」</h2>
+      <p>拼帽子的時候，有一些必須翻到背面才放得進去，大約每 7 塊有 1 塊是翻面的。在「① 一塊磚拼滿」勾選「標出翻面的帽子」，就會看到它們。</p>
+      <p>同一年稍晚，同一組數學家又找到「幽靈」（spectre）形狀：<b>完全不用翻面</b>也只能拼出不重複的圖案。</p>
+    </div>
+
+    <div class="card">
+      <h2>一路找到「一塊」</h2>
+      <ul class="tl">
+        <li><b>1966</b><span>柏格證明非週期拼法存在，但他用了 20,426 種不同的磚</span></li>
+        <li><b>1971</b><span>羅賓森減少到 6 種</span></li>
+        <li><b>1974</b><span>潘洛斯只用 2 種（「風箏」和「飛鏢」）就做到</span></li>
+        <li><b>2023</b><span>英國的業餘數學愛好者大衛・史密斯，在玩紙片拼圖時發現了帽子；他和三位數學家一起證明它真的只能拼出不重複的圖案</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>關於這裡的拼圖</h2>
+      <p>畫面上這一大片 320 塊，是電腦用「試試看，卡住就退回」（回溯搜尋）一塊一塊拼出來的。它沒有空洞，但不代表一定能無限延伸下去。數學家用更巧妙的「越拼越大」的規則，證明了帽子可以拼滿整個無限大的平面。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,bad=false,ms=3800){const t=$(id);t.innerHTML=msg;t.classList.toggle('bad',bad);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const S3=Math.sqrt(3);
+let TAB='A';
+
+/* ---------- hat geometry ----------
+   Hex grid: hexagons of side 2, one vertex pointing along +x. Hex centres = a·U + b·V, U=(3,√3), V=(0,2√3).
+   Each hexagon is cut into 6 kites; kite k points at angle 60k°. The hat = 8 kites.
+   A placement is [r, f, a, b]: flip across the x-axis if f, rotate r×60°, translate to hex centre (a,b). */
+const hp=(x,y)=>[x+0.5*y,S3/2*y];
+const HAT=[[0,0],[-1,-1],[0,-2],[2,-2],[2,-1],[4,-2],[5,-1],[4,0],[3,0],[2,2],[0,3],[0,2],[-1,2]].map(p=>hp(p[0],p[1]));
+const BASEK=[[0,0,0],[0,0,1],[0,0,4],[0,0,5],[1,-1,1],[1,-1,2],[1,0,3],[1,0,4]];
+const hexC=(a,b)=>[3*a,S3*a+2*S3*b];
+function tfPt([x,y],r,f){if(f)y=-y;const an=r*Math.PI/3,c=Math.cos(an),s=Math.sin(an);return[x*c-y*s,x*s+y*c];}
+function hatPoly(p){const[r,f,a,b]=p,[cx,cy]=hexC(a,b);return HAT.map(q=>{const[x,y]=tfPt(q,r,f);return[x+cx,y+cy];});}
+function tfKite([a,b,k],r,f){if(f){b=-a-b;k=(6-k)%6;}for(let i=0;i<r;i++){[a,b]=[-b,a+b];k=(k+1)%6;}return[a,b,k];}
+function hatKites(p){const[r,f,ta,tb]=p;return BASEK.map(kt=>{const[a,b,k]=tfKite(kt,r,f);return`${a+ta},${b+tb},${k}`;});}
+function kitePoly(key){const[a,b,k]=key.split(',').map(Number),[cx,cy]=hexC(a,b),an=k*Math.PI/3,d=(t,R)=>[cx+R*Math.cos(t),cy+R*Math.sin(t)];
+  return[[cx,cy],d(an-Math.PI/6,S3),d(an,2),d(an+Math.PI/6,S3)];}
+const HATC=(()=>{let x=0,y=0;for(const kt of BASEK){const P=kitePoly(kt.join(','));x+=(P[0][0]+P[1][0]+P[2][0]+P[3][0])/4;y+=(P[0][1]+P[1][1]+P[2][1]+P[3][1])/4;}return[x/8,y/8];})();
+function hatCentre(p){const[x,y]=tfPt(HATC,p[0],p[1]),[cx,cy]=hexC(p[2],p[3]);return[x+cx,y+cy];}
+const PATCH=[[2,0,0,0],[1,0,0,-1],[3,0,2,-1],[4,1,-1,0],[0,0,-2,1],[2,0,1,0],[1,0,1,-2],[0,0,-1,-1],[0,0,-2,2],[4,0,0,2],[2,0,1,-3],[0,1,1,1],[0,0,2,0],[1,0,-3,1],[0,0,-2,3],[2,0,3,-2],[5,1,2,-2],[4,0,-2,0],[0,0,-1,-2],[3,0,1,2],[5,0,-3,3],[1,0,-1,3],[5,0,-2,-1],[2,0,2,1],[5,0,2,-3],[1,0,3,-3],[0,0,-4,1],[4,0,4,-1],[5,0,-4,3],[4,1,-2,4],[1,0,1,-4],[4,0,-3,4],[4,1,0,-3],[5,0,0,4],[1,0,3,0],[5,0,4,-2],[2,0,-3,-1],[0,0,1,3],[3,1,-4,2],[4,0,-2,-2],[2,0,3,1],[4,0,-1,-3],[0,0,3,-4],[1,0,4,-4],[0,0,-5,4],[2,0,-1,4],[0,0,0,-4],[0,0,-3,5],[3,0,3,-5],[5,0,-5,2],[2,1,-3,-2],[3,0,5,-1],[3,0,-4,0],[4,0,-4,5],[4,0,2,-5],[5,0,5,-2],[1,0,2,3],[3,0,6,-4],[1,0,3,2],[3,0,-5,3],[3,1,6,-2],[1,0,-1,5],[5,1,0,5],[5,0,4,1],[5,0,-4,6],[1,0,1,4],[2,0,4,-6],[0,0,-3,-3],[3,0,6,-5],[5,0,-1,-4],[0,0,0,-5],[4,0,-4,-1],[0,0,-3,6],[5,0,-6,2],[5,1,4,2],[0,0,5,0],[4,0,5,-5],[5,0,-6,5],[4,0,3,-6],[1,0,-2,6],[4,0,-5,0],[2,1,-5,5],[4,0,-6,3],[0,0,6,-3],[5,0,-4,-2],[2,1,4,-7],[5,0,-2,-4],[2,0,2,-7],[5,0,6,-1],[2,0,-5,6],[5,0,5,-6],[4,1,-3,7],[3,0,4,3],[5,0,2,5],[4,0,-4,7],[4,0,-6,6],[4,0,-6,1],[1,0,5,1],[1,0,-7,4],[3,0,0,6],[0,0,0,-6],[2,0,1,5],[2,0,7,-5],[1,0,-1,-6],[1,1,6,-6],[3,0,-3,-4],[2,0,-5,-2],[0,0,-8,4],[2,0,-7,2],[2,0,-7,5],[4,0,5,-7],[1,0,-5,-3],[2,0,5,2],[3,1,-2,-5],[5,0,3,-7],[1,0,7,-3],[3,0,7,-7],[1,0,6,0],[2,1,-7,1],[1,0,7,-6],[2,0,-2,7],[0,0,-7,0],[3,0,4,4],[5,0,7,-1],[0,0,-4,8],[4,0,2,6],[4,0,8,-4],[0,0,-6,8],[1,0,2,-8],[2,0,-1,7],[4,1,1,-7],[5,1,7,0],[4,0,-7,7],[3,0,-6,7],[3,0,7,-8],[0,0,-2,-6],[1,0,-5,8],[2,0,-8,5],[5,0,8,-5],[4,0,0,-7],[0,0,0,7],[4,0,-4,-4],[0,0,4,-8],[4,0,5,4],[3,0,-8,3],[0,1,-9,5],[0,0,8,-3],[0,0,-7,-1],[3,0,7,1],[4,0,6,-8],[5,0,-3,-5],[1,1,3,5],[2,0,6,2],[0,0,8,-2],[4,1,-6,-2],[5,0,-8,1],[0,1,-1,8],[4,1,9,-4],[4,0,-8,2],[0,0,-9,7],[0,0,1,-8],[3,0,9,-7],[3,0,4,-9],[0,0,-6,-3],[0,0,-4,9],[4,0,8,-7],[5,0,-7,9],[1,0,1,7],[3,0,3,6],[2,0,-9,4],[4,0,-2,9],[0,0,-9,8],[1,0,8,-1],[1,0,-8,-1],[2,0,8,0],[1,0,-6,9],[4,0,3,-9],[2,0,-1,-8],[1,0,4,5],[5,0,-5,10],[5,0,5,-9],[5,0,-4,-5],[0,0,9,-5],[1,0,-8,8],[5,0,8,-8],[5,0,6,-9],[4,0,-9,3],[3,0,-9,6],[5,1,-7,10],[0,1,6,3],[3,1,8,-9],[0,0,9,-6],[3,0,-2,-7],[0,0,7,2],[5,0,7,-9],[3,1,5,-10],[0,0,-6,-4],[5,0,0,-8],[2,0,0,8],[3,0,6,4],[5,0,-9,1],[2,0,10,-4],[3,0,-1,9],[0,0,1,-9],[1,0,9,-2],[4,0,-7,-2],[0,0,-4,10],[5,0,9,-8],[0,0,-10,2],[2,0,-8,9],[3,0,3,7],[3,1,10,-8],[2,0,-10,4],[5,0,-10,8],[4,0,-10,6],[5,0,-5,-5],[1,0,10,-5],[2,0,-6,10],[2,0,1,8],[4,0,9,1],[1,0,-3,10],[5,0,10,-7],[2,1,-10,3],[5,0,4,-10],[2,0,4,6],[5,0,-7,-3],[2,0,7,3],[1,0,-4,-7],[1,0,-1,-9],[4,1,-9,9],[5,0,9,0],[5,0,3,-10],[1,0,10,-3],[0,0,-9,-1],[3,0,-2,-8],[1,0,-8,10],[5,0,5,6],[4,0,-5,11],[1,0,6,-11],[4,1,-4,11],[4,0,11,-6],[3,0,8,-11],[3,1,-9,0],[0,0,-10,10],[1,0,9,-10],[1,1,-2,-9],[5,0,-2,11],[5,0,2,-10],[2,0,2,8],[4,0,-10,9],[0,0,8,-10],[1,0,8,2],[1,0,-11,7],[3,0,-6,-5],[0,0,6,5],[0,0,-1,10],[3,0,1,-10],[5,0,-11,3],[3,0,-10,1],[3,0,11,-2],[5,0,11,-7],[5,0,11,-4],[3,1,-5,-6],[0,0,5,-11],[3,0,-11,5],[3,0,12,-6],[3,0,-11,6],[0,0,-9,-2],[4,0,5,7],[0,0,3,8],[0,0,10,-9],[2,0,-11,8],[5,0,-10,0],[4,0,-11,4],[5,0,-8,-3],[3,0,-7,11],[2,0,8,3],[5,1,11,-3],[0,0,-10,11],[3,1,2,-11],[4,0,-3,-8],[4,0,0,-10],[4,0,1,10],[0,0,-7,12],[3,0,11,-1],[1,1,10,0],[2,0,-3,11],[0,1,2,9],[1,0,11,-9],[1,1,-12,7],[0,0,-5,-7],[1,0,7,-12],[1,0,-9,11],[3,0,10,1],[0,0,-5,12],[3,0,5,-12],[2,0,9,-12],[0,0,10,-10],[1,0,-6,12],[0,0,6,6],[1,1,12,-7],[0,0,-12,10],[1,0,-10,-2],[1,0,3,-12],[1,0,-12,2],[2,0,12,-3],[3,0,-1,-10],[4,0,10,-11],[1,0,-11,10],[5,0,-6,-6],[4,0,0,11],[2,0,6,-13],[4,1,6,7],[0,0,12,-5],[2,0,7,-13],[2,1,-1,11],[4,0,-7,-5],[4,0,8,5],[4,0,-12,5],[3,0,13,-8]];
+const ROTCOL=['#8ecae6','#ffd166','#95d5b2','#cdb4ff','#f4a261','#a0e7e5'];
+function pathOf(a,poly,X,Y){a.beginPath();poly.forEach(([x,y],i)=>i?a.lineTo(X(x),Y(y)):a.moveTo(X(x),Y(y)));a.closePath();}
+function inPoly(x,y,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,yi]=P[i],[xj,yj]=P[j];if((yi>y)!==(yj>y)&&x<xi+(y-yi)*(xj-xi)/(yj-yi))c=!c;}return c;}
+function drawKiteGrid(a,X,Y,x0,x1,y0,y1,col){a.strokeStyle=col;a.lineWidth=1;a.beginPath();
+  const A0=Math.floor(x0/3)-1,A1=Math.ceil(x1/3)+1;
+  for(let A=A0;A<=A1;A++){const B0=Math.floor((y0-S3*A)/(2*S3))-1,B1=Math.ceil((y1-S3*A)/(2*S3))+1;
+    for(let B=B0;B<=B1;B++){const[cx,cy]=hexC(A,B);
+      for(let k=0;k<6;k++){const t=k*Math.PI/3;a.moveTo(X(cx+2*Math.cos(t)),Y(cy+2*Math.sin(t)));a.lineTo(X(cx+2*Math.cos(t+Math.PI/3)),Y(cy+2*Math.sin(t+Math.PI/3)));
+        a.moveTo(X(cx),Y(cy));a.lineTo(X(cx+S3*Math.cos(t+Math.PI/6)),Y(cy+S3*Math.sin(t+Math.PI/6)));}}}
+  a.stroke();}
+
+/* ================= A: gallery ================= */
+const A={n:320,play:false,last:0};
+$('#aN').oninput=e=>{A.n=+e.target.value;A.play=false;syncA();};
+$('#aPlay').onclick=()=>{A.play=!A.play;if(A.play&&A.n>=PATCH.length)A.n=1;syncA();};
+['aFlip','aKite','aOne'].forEach(id=>$('#'+id).onchange=syncA);
+function syncA(){$('#aN').value=A.n;$('#aNV').textContent=A.n;$('#aPlay').textContent=A.play?'⏸ 暫停':'▶ 一塊一塊長出來';
+  const fl=PATCH.slice(0,A.n).filter(p=>p[1]).length;
+  $('#roA').innerHTML=$('#aOne').checked?`<span class="big">一頂「帽子」</span><span class="st">13 條邊、8 個一樣的風箏形</span><span class="st">右邊是它<b>翻面</b>後的樣子</span>`
+   :`<span class="big">${A.n} 塊帽子，形狀全部一樣</span><span class="st">翻面的有 <b>${fl}</b> 塊（約每 ${fl?Math.round(A.n/fl):'–'} 塊 1 塊）</span><span class="st">顏色只代表轉的方向不同</span>`;}
+function drawA(a,w,h,now){
+  a.fillStyle='#07060b';a.fillRect(0,0,w,h);
+  if(A.play&&now-A.last>45){A.last=now;A.n=Math.min(PATCH.length,A.n+1);if(A.n>=PATCH.length)A.play=false;syncA();}
+  const flipOn=$('#aFlip').checked,kite=$('#aKite').checked;
+  if($('#aOne').checked){
+    const s=Math.min(w/16,h/9),cx=w/2,cy=h/2+20;
+    for(const[i,f]of[[0,0],[1,1]]){const ox=cx+(i?3.2:-4.2)*s,X=x=>ox+(x-2)*s,Y=y=>cy-y*s;
+      if(kite)drawKiteGrid(a,X,Y,-6,10,-6,6,'rgba(255,255,255,.07)');
+      const p=[0,f,0,0];
+      for(const key of hatKites(p)){pathOf(a,kitePoly(key),X,Y);a.fillStyle=f?'#ff6b8b':'#8ecae6';a.globalAlpha=0.9;a.fill();a.globalAlpha=1;a.strokeStyle='rgba(0,0,0,.45)';a.lineWidth=1;a.stroke();}
+      pathOf(a,hatPoly(p),X,Y);a.strokeStyle='#fff';a.lineWidth=2.5;a.stroke();
+      a.fillStyle='#f0eef6';a.font='600 14px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText(f?'翻面':'正面',X(2),Y(-3.6));}
+    return;}
+  const R=62,s=Math.min(w,h)/(2*R)*1.05,cx=w/2,cy=h/2+10,X=x=>cx+x*s,Y=y=>cy-y*s;
+  if(kite)drawKiteGrid(a,X,Y,-R*w/h,R*w/h,-R,R,'rgba(255,255,255,.06)');
+  a.lineJoin='round';
+  for(let i=0;i<A.n;i++){const p=PATCH[i];pathOf(a,hatPoly(p),X,Y);
+    a.fillStyle=p[1]&&flipOn?'#ff6b8b':ROTCOL[p[0]];a.fill();a.strokeStyle='#14131c';a.lineWidth=Math.max(0.8,s*0.18);a.stroke();}
+  if(kite){a.strokeStyle='rgba(0,0,0,.25)';a.lineWidth=0.7;for(let i=0;i<A.n;i++)for(const key of hatKites(PATCH[i])){pathOf(a,kitePoly(key),X,Y);a.stroke();}}
+  if(A.play&&A.n<PATCH.length){pathOf(a,hatPoly(PATCH[A.n-1]),X,Y);a.strokeStyle='#fff';a.lineWidth=2.5;a.stroke();}
+}
+
+/* ================= B: puzzle ================= */
+const LV=[3,5,8,12,17];
+const B={lv:0,placed:[],r:0,f:0,ghost:null,hint:null,won:{}};
+function target(){return new Set(PATCH.slice(0,LV[B.lv]).flatMap(hatKites));}
+let TGT=target();
+function buildLv(){const box=$('#lvls');box.innerHTML='';LV.forEach((n,i)=>{const b=document.createElement('button');b.className='btn'+(i===B.lv?' sel':'')+(B.won[i]?' done':'');b.textContent=`${i+1}（${n} 塊）`;
+  b.onclick=()=>{B.lv=i;B.placed=[];B.hint=null;TGT=target();buildLv();roB();};box.appendChild(b);});}
+function occupied(){const m=new Map();B.placed.forEach((p,i)=>hatKites(p).forEach(k=>m.set(k,i)));return m;}
+function roB(){const occ=occupied(),inside=[...occ.keys()].filter(k=>TGT.has(k)).length,out=occ.size-inside;
+  $('#roB').innerHTML=`<span class="big">第 ${B.lv+1} 關：用 ${LV[B.lv]} 頂帽子填滿剪影</span><span class="st">已放 <b>${B.placed.length}</b> 塊・填滿 <b>${Math.round(inside/TGT.size*100)}%</b>${out?`・<span style="color:var(--bad)">有 ${out/8|0} 塊超出去了</span>`:''}</span><span class="st">手上這塊：${B.f?'<span style="color:var(--flip)">翻面</span>':'正面'}，轉了 ${B.r*60}°</span>`;
+  if(occ.size===TGT.size&&inside===TGT.size&&!B.won[B.lv]){B.won[B.lv]=true;buildLv();
+    toast('#tB',B.lv<LV.length-1?`🎉 第 ${B.lv+1} 關完成！${PATCH.slice(0,LV[B.lv]).some(p=>p[1])?'你有發現嗎？標準答案裡有一塊是翻面的。':''}`:'🏆 全部過關！你親手拼出了一片「不會重複」的拼圖。',false,6000);}}
+const V={s:30,cx:0,cy:0,ox:0,oy:0};
+function viewB(w,h){const top=$('#roB').offsetHeight+16;let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for(const k of TGT)for(const[x,y]of kitePoly(k)){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+  const pad=7;V.s=Math.min(w/(x1-x0+2*pad),(h-top)/(y1-y0+2*pad));V.ox=(x0+x1)/2;V.oy=(y0+y1)/2;V.cx=w/2;V.cy=top+(h-top)/2;}
+const BX=x=>V.cx+(x-V.ox)*V.s,BY=y=>V.cy-(y-V.oy)*V.s,toW=(px,py)=>[(px-V.cx)/V.s+V.ox,-(py-V.cy)/V.s+V.oy];
+function snapAt(wx,wy){const[hx,hy]=tfPt(HATC,B.r,B.f),tx=wx-hx,ty=wy-hy;const a0=Math.round(tx/3),b0=Math.round((ty-S3*a0)/(2*S3));let best=null,bd=1e9;
+  for(let da=-1;da<=1;da++)for(let db=-1;db<=1;db++){const a=a0+da,b=b0+db,[cx,cy]=hexC(a,b),d=(cx-tx)**2+(cy-ty)**2;if(d<bd){bd=d;best=[B.r,B.f,a,b];}}return best;}
+function tryPlace(p){const occ=occupied();if(hatKites(p).some(k=>occ.has(k))){toast('#tB','這裡和別塊重疊了。',true,1800);return;}
+  B.placed.push(p);B.hint=null;roB();}
+const cvB=$('#cB');
+function evPos(e){const r=cvB.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];}
+cvB.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const[px,py]=evPos(e),[wx,wy]=toW(px,py);B.ghost=snapAt(wx,wy);});
+cvB.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')B.ghost=null;});
+cvB.addEventListener('pointerdown',e=>{const[px,py]=evPos(e),[wx,wy]=toW(px,py);
+  const hit=B.placed.findIndex(p=>inPoly(wx,wy,hatPoly(p)));
+  if(e.pointerType==='mouse'){if(hit>=0){B.placed.splice(hit,1);roB();return;}tryPlace(snapAt(wx,wy));return;}
+  // touch / pen: first tap moves the ghost, tapping the ghost places it
+  if(B.ghost&&inPoly(wx,wy,hatPoly(B.ghost))){tryPlace(B.ghost);return;}
+  if(hit>=0){B.placed.splice(hit,1);roB();return;}
+  B.ghost=snapAt(wx,wy);});
+function rot(){B.r=(B.r+1)%6;if(B.ghost)B.ghost=[B.r,B.f,B.ghost[2],B.ghost[3]];roB();}
+function flp(){B.f^=1;if(B.ghost)B.ghost=[B.r,B.f,B.ghost[2],B.ghost[3]];roB();}
+$('#bRot').onclick=rot;$('#bFlip').onclick=flp;
+$('#bUndo').onclick=()=>{B.placed.pop();roB();};
+$('#bClear').onclick=()=>{B.placed=[];roB();};
+$('#bHint').onclick=()=>{const occ=occupied();const sol=PATCH.slice(0,LV[B.lv]).find(p=>!hatKites(p).some(k=>occ.has(k)));
+  if(!sol){toast('#tB','目前放的位置和標準答案不一樣，先拿掉一些再試試。',true);return;}
+  B.hint={p:sol,t:performance.now()};toast('#tB',`提示：虛線那一塊${sol[1]?'要<b>翻面</b>，':''}轉 ${sol[0]*60}°。`);};
+addEventListener('keydown',e=>{if(TAB!=='B')return;if(e.key==='r'||e.key==='R')rot();if(e.key==='f'||e.key==='F')flp();});
+function drawB(a,w,h,now){
+  a.fillStyle='#07060b';a.fillRect(0,0,w,h);viewB(w,h);
+  const[x0,y1]=toW(0,0),[x1,y0]=toW(w,h);drawKiteGrid(a,BX,BY,x0,x1,y0,y1,'rgba(255,255,255,.05)');
+  // target silhouette
+  a.fillStyle='rgba(143,217,182,.13)';for(const k of TGT){pathOf(a,kitePoly(k),BX,BY);a.fill();}
+  a.strokeStyle='rgba(143,217,182,.18)';a.lineWidth=1;for(const k of TGT){pathOf(a,kitePoly(k),BX,BY);a.stroke();}
+  // outline of silhouette: kite edges not shared
+  {const cnt=new Map();for(const k of TGT){const P=kitePoly(k);for(let i=0;i<4;i++){const p=P[i],q=P[(i+1)%4],key=[p,q].map(v=>v.map(c=>c.toFixed(2)).join(',')).sort().join('|');cnt.set(key,(cnt.get(key)||0)+1);}}
+    a.strokeStyle='#8fd9b6';a.lineWidth=2.5;a.beginPath();for(const[key,c]of cnt){if(c!==1)continue;const[p,q]=key.split('|').map(s=>s.split(',').map(Number));a.moveTo(BX(p[0]),BY(p[1]));a.lineTo(BX(q[0]),BY(q[1]));}a.stroke();}
+  a.lineJoin='round';
+  for(const p of B.placed){const out=hatKites(p).some(k=>!TGT.has(k));pathOf(a,hatPoly(p),BX,BY);a.fillStyle=out?'#ff7a6a':p[1]?'#ff6b8b':ROTCOL[p[0]];a.fill();a.strokeStyle='#14131c';a.lineWidth=2;a.stroke();}
+  if(B.hint&&now-B.hint.t<4000){pathOf(a,hatPoly(B.hint.p),BX,BY);a.setLineDash([6,5]);a.strokeStyle='#ffd76a';a.lineWidth=2.5;a.stroke();a.setLineDash([]);}
+  if(B.ghost){const occ=occupied(),bad=hatKites(B.ghost).some(k=>occ.has(k));pathOf(a,hatPoly(B.ghost),BX,BY);a.globalAlpha=0.55;a.fillStyle=bad?'#ff7a6a':B.f?'#ff6b8b':'#ffffff';a.fill();a.globalAlpha=1;a.strokeStyle='#fff';a.lineWidth=2;a.stroke();}
+}
+
+/* ================= C: does it repeat? ================= */
+const C={ty:'hat',sa:0,sb:0,best:0,drag:null};
+// square & hex tilings with a colour pattern so that only some shifts match
+const SQ=(()=>{const t=[];for(let i=-14;i<=14;i++)for(let j=-14;j<=14;j++)t.push({i,j,c:((i%3+3)%3)+3*((j%2+2)%2)});return t;})();
+const HX=(()=>{const t=[];for(let a=-12;a<=12;a++)for(let b=-12;b<=12;b++)t.push({a,b,c:(((a-b)%3)+3)%3});return t;})();
+const HATSET=new Set(PATCH.map(p=>p.join(',')));
+const INNER=26; // radius (world units) inside which every tiling is complete
+function shiftVec(){if(C.ty==='sq')return[C.sa*2.4,C.sb*2.4];if(C.ty==='hex')return hexC(C.sa,C.sb);return hexC(C.sa,C.sb);}
+function matchInfo(){let n=0,m=0;const[dx,dy]=shiftVec();
+  if(C.ty==='hat'){for(const p of PATCH){const q=[p[0],p[1],p[2]+C.sa,p[3]+C.sb];const[x,y]=hatCentre(q);if(Math.hypot(x,y)>INNER)continue;const[x0,y0]=hatCentre(p);if(Math.hypot(x0,y0)>INNER+40)continue;n++;if(HATSET.has(q.join(',')))m++;}}
+  else if(C.ty==='sq'){const map=new Map(SQ.map(t=>[t.i+','+t.j,t.c]));for(const t of SQ){const x=(t.i+C.sa)*2.4,y=(t.j+C.sb)*2.4;if(Math.hypot(x,y)>INNER)continue;n++;if(map.get((t.i+C.sa)+','+(t.j+C.sb))===t.c)m++;}}
+  else{const map=new Map(HX.map(t=>[t.a+','+t.b,t.c]));for(const t of HX){const[x,y]=hexC(t.a+C.sa,t.b+C.sb);if(Math.hypot(x,y)>INNER)continue;n++;if(map.get((t.a+C.sa)+','+(t.b+C.sb))===t.c)m++;}}
+  return{n,m,pct:n?m/n:0,dist:Math.hypot(dx,dy)};}
+const SQCOL=['#8ecae6','#ffd166','#95d5b2','#cdb4ff','#f4a261','#a0e7e5'];
+function roC(){const M=matchInfo(),zero=C.sa===0&&C.sb===0;if(!zero)C.best=Math.max(C.best,M.pct);
+  $('#roC').innerHTML=`<span class="big">${zero?'把透明的複製品移開看看':M.pct>0.999?'<span class="ok">完全重合！</span>':'重合 '+Math.round(M.pct*100)+'%'}</span>`
+   +`<span class="st">平移距離 <b>${M.dist.toFixed(1)}</b>・這種拼法目前找到的最高 <b>${Math.round(C.best*100)}%</b></span>`
+   +`<span class="st">${C.ty==='hat'?'帽子：要位置、方向都對上才算重合':'磁磚：位置和顏色都對上才算重合'}</span>`;
+  if(!zero&&M.pct>0.999&&C.ty!=='hat'&&!C.told){C.told=true;toast('#tC','整片完全重合了！這就是「週期性」：往這個方向移這麼遠，圖案就重複一次。');}}
+function moveC(da,db){C.sa+=da;C.sb+=db;roC();}
+$$('[data-mv]').forEach(b=>b.onclick=()=>{const[x,y]=b.dataset.mv.split(',').map(Number);if(C.ty==='sq')moveC(x,y);else if(x)moveC(x,0);else moveC(0,y);});
+$('#cZero').onclick=()=>{C.sa=C.sb=0;roC();};
+$$('[data-ty]').forEach(b=>b.onclick=()=>{C.ty=b.dataset.ty;C.sa=C.sb=0;C.best=0;C.told=false;$$('[data-ty]').forEach(x=>x.classList.toggle('sel',x===b));roC();
+  if(C.ty==='hat')toast('#tC','試試看：帽子拼法不管怎麼移，都找不到 100% 重合的位置。');});
+const VC={s:10,cx:0,cy:0};
+const cvC=$('#cC');
+cvC.addEventListener('pointerdown',e=>{cvC.setPointerCapture(e.pointerId);const r=cvC.getBoundingClientRect();C.drag={x:e.clientX-r.left,y:e.clientY-r.top,sa:C.sa,sb:C.sb};});
+cvC.addEventListener('pointermove',e=>{if(!C.drag)return;const r=cvC.getBoundingClientRect(),dx=(e.clientX-r.left-C.drag.x)/VC.s,dy=-(e.clientY-r.top-C.drag.y)/VC.s;
+  let sa,sb;if(C.ty==='sq'){sa=C.drag.sa+Math.round(dx/2.4);sb=C.drag.sb+Math.round(dy/2.4);}
+  else{const[bx,by]=hexC(C.drag.sa,C.drag.sb),tx=bx+dx,ty=by+dy;sa=Math.round(tx/3);sb=Math.round((ty-S3*sa)/(2*S3));}
+  if(sa!==C.sa||sb!==C.sb){C.sa=sa;C.sb=sb;roC();}});
+cvC.addEventListener('pointerup',()=>C.drag=null);
+function drawC(a,w,h){
+  a.fillStyle='#07060b';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+14,R=INNER+1;VC.s=Math.min(w,h-top)/(2*R);VC.cx=w/2;VC.cy=top+(h-top)/2;
+  const X=x=>VC.cx+x*VC.s,Y=y=>VC.cy-y*VC.s,[dx,dy]=shiftVec();
+  a.save();a.beginPath();a.arc(VC.cx,VC.cy,INNER*VC.s,0,7);a.clip();a.lineJoin='round';
+  const drawSet=(ox,oy,ghost)=>{
+    if(C.ty==='hat'){for(const p of PATCH){const poly=hatPoly(p).map(([x,y])=>[x+ox,y+oy]);pathOf(a,poly,X,Y);
+        if(ghost){const q=[p[0],p[1],p[2]+C.sa,p[3]+C.sb],ok=HATSET.has(q.join(','));a.fillStyle=ok?'rgba(111,211,143,.45)':'rgba(255,122,106,.35)';a.fill();a.strokeStyle='rgba(255,255,255,.9)';a.lineWidth=1.3;a.stroke();}
+        else{a.fillStyle=p[1]?'#ff6b8b':ROTCOL[p[0]];a.globalAlpha=0.55;a.fill();a.globalAlpha=1;a.strokeStyle='#14131c';a.lineWidth=1;a.stroke();}}}
+    else if(C.ty==='sq'){const map=new Map(SQ.map(t=>[t.i+','+t.j,t.c]));for(const t of SQ){const x=t.i*2.4+ox,y=t.j*2.4+oy;const poly=[[x-1.2,y-1.2],[x+1.2,y-1.2],[x+1.2,y+1.2],[x-1.2,y+1.2]];pathOf(a,poly,X,Y);
+        if(ghost){const ok=map.get((t.i+C.sa)+','+(t.j+C.sb))===t.c;a.fillStyle=ok?'rgba(111,211,143,.45)':'rgba(255,122,106,.35)';a.fill();a.strokeStyle='rgba(255,255,255,.9)';a.lineWidth=1.3;a.stroke();}
+        else{a.fillStyle=SQCOL[t.c];a.globalAlpha=0.55;a.fill();a.globalAlpha=1;a.strokeStyle='#14131c';a.stroke();}}}
+    else{const map=new Map(HX.map(t=>[t.a+','+t.b,t.c]));for(const t of HX){const[cx,cy]=hexC(t.a,t.b);const poly=[0,1,2,3,4,5].map(k=>[cx+ox+2*Math.cos(k*Math.PI/3),cy+oy+2*Math.sin(k*Math.PI/3)]);pathOf(a,poly,X,Y);
+        if(ghost){const ok=map.get((t.a+C.sa)+','+(t.b+C.sb))===t.c;a.fillStyle=ok?'rgba(111,211,143,.45)':'rgba(255,122,106,.35)';a.fill();a.strokeStyle='rgba(255,255,255,.9)';a.lineWidth=1.3;a.stroke();}
+        else{a.fillStyle=['#ffd166','#8ecae6','#95d5b2'][t.c];a.globalAlpha=0.55;a.fill();a.globalAlpha=1;a.strokeStyle='#14131c';a.stroke();}}}
+  };
+  drawSet(0,0,false);
+  if(C.sa||C.sb)drawSet(dx,dy,true);
+  a.restore();
+  a.strokeStyle='#2f2d3c';a.lineWidth=2;a.beginPath();a.arc(VC.cx,VC.cy,INNER*VC.s,0,7);a.stroke();
+  if(C.sa||C.sb){a.strokeStyle='#ffd76a';a.lineWidth=2;a.beginPath();a.moveTo(VC.cx,VC.cy);a.lineTo(X(dx),Y(dy));a.stroke();a.fillStyle='#ffd76a';a.beginPath();a.arc(X(dx),Y(dy),4,0,7);a.fill();}
+  a.fillStyle='#a19eb3';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='bottom';a.fillText('綠＝對得上　紅＝對不上',w-10,h-8);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else drawC(a,w,h);requestAnimationFrame(loop);}
+syncA();buildLv();roB();roC();requestAnimationFrame(loop);
+})();
+</script>

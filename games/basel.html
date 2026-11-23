@@ -1,0 +1,357 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>巴賽爾問題</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: math lab — canvas/work panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#09090d;
+  --panel:#121219;
+  --panel2:#1a1a24;
+  --rule:#2e2e3e;
+  --ink:#efeff5;
+  --dim:#a0a0b4;
+  --acc:#7ee0a8;
+  --gold:#ffd76a;
+  --pink:#ff8fb3;
+  --bad:#ff8a7a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--acc)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#06060a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.work{flex:1;min-height:0;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+.ro{position:absolute;left:12px;top:10px;background:rgba(9,9,13,.88);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(360px,calc(100% - 24px))}
+.ro b{color:var(--gold);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .mono{font-family:var(--f-mono);color:var(--ink)}
+.ro .ok{color:var(--acc)}
+.toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--acc);color:#05261a;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+.toast.bad{background:var(--bad);color:#2a0606}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#05261a;font-weight:700}
+.btn.sel{border-color:var(--acc);color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-weight:700}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--pink);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+
+/* ② detective */
+.big-num{font-family:var(--f-mono);font-size:clamp(20px,4vw,30px);font-weight:700;letter-spacing:.02em}
+.range{margin:6px 0 12px;font-size:14px;color:var(--dim)}
+.range b{font-family:var(--f-mono);color:var(--gold)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.cand{background:var(--panel2);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;text-align:left;transition:opacity .3s}
+.cand .f{font-family:var(--f-num);font-size:18px;font-weight:700;display:block}
+.cand .v{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+.cand .nm{font-size:12px;color:var(--dim);display:block}
+.cand.out{opacity:.3;text-decoration:line-through}
+.cand.win{border-color:var(--acc);background:rgba(126,224,168,.12)}
+.cand:hover:not(.out){border-color:var(--gold)}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:14px}
+.box h3{margin:0 0 4px;font-family:var(--f-disp);font-size:16px}
+.box p{margin:0 0 6px}.box p:last-child{margin:0}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:66vh;min-height:460px}
+  .work{height:66vh;min-height:440px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 一直加下去<small>正方形裝得進盒子嗎？</small></button>
+      <button data-tab="B" aria-pressed="false">② 歐拉當偵探<small>答案是哪個數？</small></button>
+      <button data-tab="C" aria-pressed="false">③ 用互質抓 π<small>隨便抽兩個數</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">加到第</span>
+            <button class="btn" data-add="1">＋1 項</button>
+            <button class="btn" data-add="10">＋10 項</button>
+            <button class="btn pri" data-mul="10">×10 項</button>
+            <button class="btn" id="aReset">↺ 只剩第 1 項</button>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="harm">對照組：改成 1 ＋ ½ ＋ ⅓ ＋ ¼ ＋ …（沒有平方）</label>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="work" id="wB"></div>
+        <div class="toast" id="tB"></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">加幾項</span>
+            <button class="btn" data-bn="10">10 項</button>
+            <button class="btn" data-bn="100">100 項</button>
+            <button class="btn" data-bn="1000">1,000 項</button>
+            <button class="btn pri" id="euler">✨ 歐拉的秘訣（只加 10 項）</button>
+            <button class="btn" id="bReset">↺ 重來</button>
+          </div>
+          <div class="note">算得越精確，答案的範圍就越窄，不可能的候選人會被刪掉。剩下的那一個就是答案！</div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">抽數字</span>
+            <button class="btn" data-draw="1">抽 1 對</button>
+            <button class="btn" data-draw="100">抽 100 對</button>
+            <button class="btn pri" data-draw="10000">抽 1 萬對</button>
+            <button class="btn" id="cReset">↺ 清空</button>
+          </div>
+          <div class="note">點點圖是「果園」：站在左下角的黃點，看得到的樹（綠色）剛好就是兩個座標互質的點。點一棵樹看看它被誰擋住。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>1 ＋ ¼ ＋ ⅑ ＋ … 會加到多少？</h1>
+    <p class="lede">把 1、2、3、4 … 的平方倒過來一直加下去，會不會加到無限大？如果不會，最後是多少？這個問題難倒了歐洲數學家將近 100 年。</p>
+
+    <div class="card">
+      <h2>巴賽爾問題</h2>
+      <div class="fx">1/1² ＋ 1/2² ＋ 1/3² ＋ 1/4² ＋ … ＝ ？</div>
+      <p>1644 年，義大利數學家門戈利提出這個問題。瑞士巴賽爾的伯努利家族（好幾代都是大數學家）一直解不出來，所以叫它「巴賽爾問題」。</p>
+      <p>1734 年，28 歲的<b>歐拉</b>終於算出答案：</p>
+      <div class="fx">π² ⁄ 6 ≈ 1.6449340668…</div>
+      <p>最神奇的是：題目裡完全沒有圓，答案卻跑出了圓周率 π！</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼加不到無限大？</h2>
+      <p>把每一項畫成正方形：第 n 個的邊長是 1/n，面積就是 1/n²。</p>
+      <p>第 1 個放左邊；第 2～3 個疊成一排，寬度不超過 ½、高度不超過 1；第 4～7 個疊成一排，寬度不超過 ¼……每一排都塞得進高度 1 的格子，寬度加起來不超過 1。</p>
+      <p>所以全部的正方形都裝得進一個 2 × 1 的長方形裡，總和一定小於 2。</p>
+    </div>
+
+    <div class="card">
+      <h2>少了平方就完全不同</h2>
+      <p>1 ＋ ½ ＋ ⅓ ＋ ¼ ＋ … 叫做<b>調和級數</b>，它會加到無限大，只是非常非常慢：要加超過 1 萬 2 千項才會超過 10。</p>
+      <p>證明方法很巧妙：⅓＋¼ 比 ½ 大，⅕＋⅙＋⅐＋⅛ 也比 ½ 大……可以分出無限多組，每組都超過 ½，所以會一直變大。</p>
+    </div>
+
+    <div class="card">
+      <h2>歐拉怎麼猜到的？</h2>
+      <p>直接加的話，加一千項也只對 2 位小數。歐拉發明了「修正尾巴」的方法，只加幾項就算出 1.644934…，再認出這個數就是 π²/6，最後才想辦法證明它。</p>
+      <p>先算、再猜、最後證明：這也是很多數學發現的過程。</p>
+    </div>
+
+    <div class="card">
+      <h2>和互質有什麼關係？</h2>
+      <p>隨便抽兩個正整數，它們<b>互質</b>（最大公因數是 1）的機率是：</p>
+      <div class="fx">6 ⁄ π² ≈ 60.8%</div>
+      <p>剛好是巴賽爾問題答案的倒數！所以只要抽很多對數字、算算互質的比例，就能估出 π。</p>
+    </div>
+
+    <div class="card">
+      <h2>還沒解開的謎</h2>
+      <p>如果把平方換成立方：1 ＋ 1/8 ＋ 1/27 ＋ …，到現在都沒有人找到像 π²/6 這麼漂亮的答案。1978 年才證明它是無理數。</p>
+      <p>這類「倒數的次方加起來」的式子，後來發展成黎曼 ζ 函數，和數學界最有名的未解難題「黎曼猜想」有關。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,bad=false,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.toggle('bad',bad);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const fmt=(x,d=0)=>x.toLocaleString('zh-TW',{maximumFractionDigits:d,minimumFractionDigits:d});
+const Z2=Math.PI**2/6;
+let TAB='A';
+
+/* partial sums up to 10^6 */
+const NMAX=1000000;
+const SQ=new Float64Array(NMAX+1),HM=new Float64Array(NMAX+1);
+{let s=0,h=0;for(let n=1;n<=NMAX;n++){s+=1/(n*n);h+=1/n;SQ[n]=s;HM[n]=h;}}
+function sameDigits(a,b){const x=a.toFixed(10),y=b.toFixed(10);let k=0;for(let i=0;i<x.length;i++){if(x[i]!==y[i])break;if(x[i]!=='.')k++;}return Math.max(0,k-1);}
+
+/* ================= A ================= */
+const A={N:1,harm:false,told:{}};
+$$('[data-add]').forEach(b=>b.onclick=()=>setN(A.N+ +b.dataset.add));
+$$('[data-mul]').forEach(b=>b.onclick=()=>setN(A.N*10));
+$('#aReset').onclick=()=>setN(1);
+$('#harm').onchange=e=>{A.harm=e.target.checked;roA();};
+function setN(n){A.N=Math.min(NMAX,Math.max(1,n));roA();
+  if(A.N>=NMAX&&!A.told.max){A.told.max=1;toast('#tA','已經加到 100 萬項，還是只對 5 位小數。直接硬加實在太慢了！到「② 歐拉當偵探」看歐拉怎麼做。',false,6000);}}
+function roA(){const N=A.N,s=SQ[N],h=HM[N];
+  let t=`<span class="big">加了 ${fmt(N)} 項</span>`
+   +`<span class="st">1 ＋ ¼ ＋ ⅑ ＋ … ＝ <span class="mono">${s.toFixed(8)}</span></span>`
+   +`<span class="st">π²/6 ＝ <span class="mono">${Z2.toFixed(8)}</span>（小數點後對了 <b>${sameDigits(s,Z2)}</b> 位）</span>`
+   +`<span class="st">還差 <b>${(Z2-s).toFixed(Math.min(9,Math.ceil(-Math.log10(Z2-s))+2))}</b>，大約是 1/${fmt(N)}</span>`;
+  if(A.harm)t+=`<span class="st" style="color:var(--pink)">沒有平方：1 ＋ ½ ＋ ⅓ ＋ … ＝ <span class="mono">${h.toFixed(4)}</span>，還在一直變大</span>`;
+  $('#roA').innerHTML=t;}
+const HUES=['#7ee0a8','#ffd76a','#8ecae6','#ff8fb3','#cdb4ff','#f4a261','#a0e7e5','#e9c46a','#b5e48c','#ffadad','#9bf6ff','#fdffb6','#caffbf','#bdb2ff','#ffc6ff','#fffffc','#a0c4ff','#ffd6a5','#d0f4de','#e4c1f9'];
+// square n (side 1/n): n=1 at the left; n in [2^k, 2^(k+1)) stacked in column k of width 1/2^k
+const PX=new Float64Array(4097),PY=new Float64Array(4097),PK=new Uint8Array(4097);
+for(let n=2;n<=4096;n++){const k=Math.floor(Math.log2(n)+1e-9);PK[n]=k;PX[n]=1+(1-1/2**(k-1));PY[n]=n===2**k?0:PY[n-1]+1/(n-1);}
+function drawA(a,w,h){
+  a.fillStyle='#06060a';a.fillRect(0,0,w,h);
+  const top=$('#roA').offsetHeight+22,wide=w>=700;
+  // square packing in a 2×1 box
+  const bw=wide?w*0.52:w,bh=wide?h-top:(h-top)*0.48,s=Math.min((bw-40)/2,(bh-40)/1),ox=(bw-2*s)/2,oy=top+(bh-s)/2;
+  const X=x=>ox+x*s,Y=y=>oy+s-y*s;
+  a.strokeStyle='rgba(255,255,255,.35)';a.setLineDash([5,4]);a.lineWidth=1.5;a.strokeRect(X(0),Y(1),2*s,s);a.setLineDash([]);
+  a.fillStyle='#a0a0b4';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='bottom';a.fillText('2 × 1 的盒子（面積 2）',X(2),Y(1)-4);
+  const N=Math.min(A.N,4096);
+  for(let n=1;n<=N;n++){
+    const x=PX[n],y=PY[n],k=PK[n];
+    const side=1/n,px=X(x),py=Y(y+side),ps=side*s;
+    a.fillStyle=HUES[k%HUES.length];a.globalAlpha=0.85;a.fillRect(px,py,Math.max(0.6,ps),Math.max(0.6,ps));a.globalAlpha=1;
+    if(ps>3){a.strokeStyle='#06060a';a.lineWidth=1;a.strokeRect(px,py,ps,ps);}
+    if(ps>26){a.fillStyle='#06060a';a.font=`700 ${Math.min(16,ps/3)}px Lexend,sans-serif`;a.textAlign='center';a.textBaseline='middle';a.fillText(n===1?'1':`1/${n}²`,px+ps/2,py+ps/2);}
+  }
+  a.fillStyle='#a0a0b4';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';
+  a.fillText(A.N>4096?'（太小的正方形畫不出來了，但都裝在盒子裡）':'同一種顏色疊成一排',X(0),Y(0)+6);
+  // partial-sum chart
+  const cx=wide?bw+8:12,cy=wide?top:top+bh+10,cw=wide?w-bw-20:w-24,ch=wide?h-top-12:h-cy-12;
+  const pl=cx+44,pr=cx+cw-8,pt=cy+18,pb=cy+ch-24;
+  const ymax=A.harm?15:1.8,ymin=A.harm?0:0.9,XL=lg=>pl+lg/6*(pr-pl),YV=v=>pb-(v-ymin)/(ymax-ymin)*(pb-pt);
+  a.fillStyle='#121219';a.strokeStyle='#2e2e3e';a.lineWidth=1;a.beginPath();a.roundRect(cx,cy,cw,ch,8);a.fill();a.stroke();
+  a.font='10.5px Lexend,sans-serif';a.fillStyle='#a0a0b4';
+  for(let e=0;e<=6;e++){const x=XL(e);a.strokeStyle='rgba(255,255,255,.05)';a.beginPath();a.moveTo(x,pt);a.lineTo(x,pb);a.stroke();a.textAlign='center';a.textBaseline='top';a.fillText(e<4?fmt(10**e):e===4?'1萬':e===5?'10萬':'100萬',x,pb+4);}
+  const ticks=A.harm?[0,5,10,15]:[1,1.2,1.4,1.6,1.8];
+  for(const v of ticks){const y=YV(v);a.beginPath();a.moveTo(pl,y);a.lineTo(pr,y);a.stroke();a.textAlign='right';a.textBaseline='middle';a.fillText(v,pl-4,y);}
+  a.setLineDash([5,4]);a.strokeStyle='#ffd76a';a.beginPath();a.moveTo(pl,YV(Z2));a.lineTo(pr,YV(Z2));a.stroke();a.setLineDash([]);
+  a.fillStyle='#ffd76a';a.textAlign='right';a.textBaseline='bottom';a.font='600 11.5px "Noto Sans TC",sans-serif';a.fillText('π²/6',pr-2,YV(Z2)-3);
+  const lgN=Math.log10(A.N);
+  const curve=(arr,col)=>{a.strokeStyle=col;a.lineWidth=2.2;a.beginPath();for(let i=0;i<=240;i++){const lg=i/240*lgN,n=Math.max(1,Math.round(10**lg)),x=XL(lg),y=YV(arr[n]);i?a.lineTo(x,y):a.moveTo(x,y);}a.stroke();
+    a.fillStyle=col;a.beginPath();a.arc(XL(lgN),YV(arr[A.N]),4,0,7);a.fill();};
+  curve(SQ,'#7ee0a8');if(A.harm)curve(HM,'#ff8fb3');
+  a.fillStyle='#efeff5';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText(A.harm?'綠：有平方　粉紅：沒平方':'加越多項，總和越接近 π²/6',pl,cy+4);
+}
+
+/* ================= B: detective ================= */
+const CANDS=[
+  {f:'φ',nm:'黃金比例',v:(1+Math.sqrt(5))/2},
+  {f:'5/3',nm:'分數',v:5/3},
+  {f:'√e',nm:'e 開根號',v:Math.sqrt(Math.E)},
+  {f:'π − 1.5',nm:'圓周率減 1.5',v:Math.PI-1.5},
+  {f:'√(8/3)',nm:'根號',v:Math.sqrt(8/3)},
+  {f:'1.645',nm:'剛好的小數',v:1.645},
+  {f:'ln 5',nm:'自然對數',v:Math.log(5)},
+  {f:'π²/6',nm:'圓周率平方除以 6',v:Z2},
+];
+const B={lo:1,hi:2,how:'',out:new Set(),won:false,steps:[]};
+function narrow(lo,hi,how){B.lo=Math.max(B.lo,lo);B.hi=Math.min(B.hi,hi);B.how=how;B.steps.push(how);
+  CANDS.forEach((c,i)=>{if(c.v<B.lo||c.v>B.hi)B.out.add(i);});renderB();
+  const left=CANDS.filter((c,i)=>!B.out.has(i));if(left.length===1)toast('#tB','只剩一個候選人了！點它說出你的答案。',false,4000);}
+$$('[data-bn]').forEach(b=>b.onclick=()=>{const N=+b.dataset.bn,s=SQ[N];narrow(s,s+1/N,`加 ${fmt(N)} 項`);});
+$('#euler').onclick=()=>{const N=10,s=SQ[N],e=s+1/N-1/(2*N*N)+1/(6*N**3);narrow(e-1e-6,e+1e-6,'歐拉的秘訣');};
+$('#bReset').onclick=()=>{Object.assign(B,{lo:1,hi:2,how:'',out:new Set(),won:false,steps:[]});renderB();};
+function renderB(){
+  const width=B.hi-B.lo,dig=Math.max(0,Math.ceil(-Math.log10(width))+1);
+  const show=v=>v.toFixed(Math.min(9,Math.max(2,dig)));
+  const left=CANDS.filter((c,i)=>!B.out.has(i)).length;
+  $('#wB').innerHTML=`<div class="box"><h3>案件：1 ＋ ¼ ＋ ⅑ ＋ 1/16 ＋ … 到底等於哪個數？</h3><p>嫌疑人有 8 個，答案就藏在裡面。可是一直加下去永遠加不完，只能算到一部分，再估計「剩下的尾巴」有多大。</p></div>
+   <div class="range">${B.how?`用「${B.how}」算出，答案一定在：`:'目前只知道答案在：'}</div>
+   <div class="big-num">${show(B.lo)} ～ ${show(B.hi)}</div>
+   <div class="range">範圍寬度 <b>${width<1e-4?width.toExponential(1):width.toFixed(4)}</b>・還剩 <b>${left}</b> 個嫌疑人</div>
+   <div class="cards">${CANDS.map((c,i)=>`<button class="cand ${B.out.has(i)?'out':''} ${B.won&&c.v===Z2?'win':''}" data-c="${i}"><span class="f">${c.f}</span><span class="nm">${c.nm}</span><span class="v">${c.v.toFixed(B.steps.length?6:3)}</span></button>`).join('')}</div>
+   <div class="box" style="margin-top:12px"><h3>線索：尾巴有多大？</h3><p>加到第 N 項之後，剩下的 1/(N+1)² ＋ 1/(N+2)² ＋ … 加起來，一定比 <b>1/N</b> 小。所以「答案」在「加到第 N 項的總和」和「再多加 1/N」之間。</p><p>歐拉更厲害：他算出尾巴大約是 1/N − 1/(2N²) ＋ 1/(6N³)，只加 10 項就能準到小數點後 6 位。</p></div>`;
+  $$('#wB [data-c]').forEach(b=>b.onclick=()=>{const i=+b.dataset.c,c=CANDS[i];if(B.out.has(i))return;
+    if(c.v===Z2&&left===1){B.won=true;renderB();toast('#tB','🎉 破案！答案就是 π²/6。1734 年歐拉就是這樣：先算出 1.644934…，再認出它是 π²/6。',false,7000);}
+    else if(c.v===Z2)toast('#tB','你可能猜對了，但其他嫌疑人還沒被排除。再算精確一點！',false,3800);
+    else toast('#tB',`還不能確定是 ${c.f}，再算精確一點，看看它會不會被刪掉。`,true,3500);});
+}
+
+/* ================= C: coprime ================= */
+const gcd=(a,b)=>{while(b){[a,b]=[b,a%b];}return a;};
+const C={n:0,k:0,last:[],hist:[],pick:null};
+$$('[data-draw]').forEach(b=>b.onclick=()=>{const m=+b.dataset.draw;for(let i=0;i<m;i++){const x=1+Math.floor(Math.random()*1e6),y=1+Math.floor(Math.random()*1e6),g=gcd(x,y);C.n++;if(g===1)C.k++;if(m<=100||i>=m-6){C.last.unshift([x,y,g]);if(C.last.length>6)C.last.pop();}
+  if(C.n<=200||C.n%50===0)C.hist.push([C.n,C.k/C.n]);}roC();});
+$('#cReset').onclick=()=>{Object.assign(C,{n:0,k:0,last:[],hist:[]});roC();};
+function piEst(){const p=C.k/C.n;return p>0?Math.sqrt(6/p):NaN;}
+function roC(){let t=`<span class="big">抽了 ${fmt(C.n)} 對（1～100 萬的數）</span>`;
+  if(C.n){const p=C.k/C.n,pe=piEst();t+=`<span class="st">互質的有 ${fmt(C.k)} 對，佔 <b>${(p*100).toFixed(2)}%</b>（理論值 60.79%）</span><span class="st">估計 π ≈ √(6 ÷ ${p.toFixed(4)}) ＝ <b>${pe.toFixed(4)}</b>（真的 π ＝ 3.1416）</span>`;
+    t+=C.last.slice(0,3).map(([x,y,g])=>`<span class="st mono">(${fmt(x)}, ${fmt(y)}) → 最大公因數 ${fmt(g)} ${g===1?'✓ 互質':'✗'}</span>`).join('');}
+  else t+='<span class="st">按「抽 1 對」開始。</span>';
+  $('#roC').innerHTML=t;}
+const cvC=$('#cC');
+cvC.addEventListener('click',e=>{const g=drawC.g;if(!g)return;const r=cvC.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const i=Math.round((x-g.ox)/g.cs),j=Math.round((g.oy-y)/g.cs);if(i>=1&&j>=1&&i<=g.n&&j<=g.n)C.pick=[i,j];});
+function drawC(a,w,h){
+  a.fillStyle='#06060a';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+22,wide=w>=700;
+  const gw=wide?w*0.5:w,gh=wide?h-top:(h-top)*0.55,n=24,cs=Math.min((gw-50)/n,(gh-40)/n),ox=(gw-cs*n)/2-cs/2,oy=top+(gh+cs*n)/2;
+  drawC.g={ox,oy,cs,n};
+  let vis=0;
+  for(let i=1;i<=n;i++)for(let j=1;j<=n;j++){const g=gcd(i,j),x=ox+i*cs,y=oy-j*cs;if(g===1)vis++;
+    a.fillStyle=g===1?'#7ee0a8':'#3a3a4a';a.beginPath();a.arc(x,y,Math.max(1.6,cs*0.28),0,7);a.fill();}
+  a.fillStyle='#ffd76a';a.beginPath();a.arc(ox,oy,5,0,7);a.fill();
+  a.fillStyle='#a0a0b4';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText(`看得到的樹：${vis} / ${n*n} ＝ ${(vis/n/n*100).toFixed(1)}%`,ox,oy+8);
+  if(C.pick){const[i,j]=C.pick,g=gcd(i,j),x=ox+i*cs,y=oy-j*cs;a.strokeStyle=g===1?'#7ee0a8':'#ff8a7a';a.lineWidth=1.5;a.beginPath();a.moveTo(ox,oy);a.lineTo(x,y);a.stroke();
+    a.strokeStyle='#fff';a.lineWidth=2;a.beginPath();a.arc(x,y,cs*0.42,0,7);a.stroke();
+    if(g>1){const bx=ox+(i/g)*cs,by=oy-(j/g)*cs;a.strokeStyle='#ffd76a';a.beginPath();a.arc(bx,by,cs*0.42,0,7);a.stroke();}
+    a.fillStyle='#efeff5';a.font='600 12.5px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='bottom';
+    a.fillText(g===1?`(${i}, ${j}) 互質：看得到 ✓`:`(${i}, ${j}) 最大公因數 ${g}：被 (${i/g}, ${j/g}) 擋住了`,ox,top-2);}
+  // estimate chart
+  const cx=wide?gw+8:12,cy=wide?top:top+gh+8,cw=wide?w-gw-20:w-24,ch=wide?h-top-12:h-cy-12;
+  const pl=cx+44,pr=cx+cw-8,pt=cy+22,pb=cy+ch-24;
+  a.fillStyle='#121219';a.strokeStyle='#2e2e3e';a.lineWidth=1;a.beginPath();a.roundRect(cx,cy,cw,ch,8);a.fill();a.stroke();
+  const ymin=2.6,ymax=3.7,YV=v=>pb-(Math.min(ymax,Math.max(ymin,v))-ymin)/(ymax-ymin)*(pb-pt),nmax=Math.max(100,C.n),XL=k=>pl+Math.log10(k)/Math.log10(nmax)*(pr-pl);
+  a.font='10.5px Lexend,sans-serif';a.fillStyle='#a0a0b4';
+  for(const v of [2.8,3.0,3.2,3.4,3.6]){const y=YV(v);a.strokeStyle='rgba(255,255,255,.05)';a.beginPath();a.moveTo(pl,y);a.lineTo(pr,y);a.stroke();a.textAlign='right';a.textBaseline='middle';a.fillText(v.toFixed(1),pl-4,y);}
+  a.setLineDash([5,4]);a.strokeStyle='#ffd76a';a.beginPath();a.moveTo(pl,YV(Math.PI));a.lineTo(pr,YV(Math.PI));a.stroke();a.setLineDash([]);
+  a.fillStyle='#ffd76a';a.textAlign='right';a.textBaseline='bottom';a.fillText('π',pr-2,YV(Math.PI)-2);
+  if(C.hist.length){a.strokeStyle='#7ee0a8';a.lineWidth=2;a.beginPath();C.hist.forEach(([k,p],i)=>{const v=p>0?Math.sqrt(6/p):ymax,x=XL(k),y=YV(v);i?a.lineTo(x,y):a.moveTo(x,y);});a.stroke();}
+  a.fillStyle='#efeff5';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('估計的 π（抽越多越準）',pl,cy+5);
+  a.fillStyle='#a0a0b4';a.font='10.5px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText('抽的對數（對數刻度）',(pl+pr)/2,pb+6);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(){if(TAB!=='B'){const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);TAB==='A'?drawA(a,w,h):drawC(a,w,h);}requestAnimationFrame(loop);}
+roA();renderB();roC();requestAnimationFrame(loop);
+})();
+</script>

@@ -1,0 +1,248 @@
+<!doctype html>
+<title>只有五種正多面體</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* Layout: a cyanotype blueprint. The model sits on the drafting sheet, the geometer's notes run beside it. */
+:root{color-scheme:dark;
+  --sea:#0f3560;--plate:#174778;--raise:#215a92;--line:#5a8cc0;
+  --text:#f5f9ff;--mute:#c6d9ee;--sun:#ffd166;--coral:#ff8a73;--mint:#7fe3c0;
+  --title:"Noto Serif TC","Songti TC",serif;--sans:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;--num:"IBM Plex Mono",Consolas,monospace}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{margin:0;background-color:var(--sea);background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:26px 26px;color:var(--text);font:400 16px/1.7 var(--sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.top{max-width:1240px;margin:0 auto 12px}
+h1{margin:0;font:900 clamp(28px,4.6vw,44px)/1.25 var(--title);text-wrap:balance}
+h1 em{font-style:normal;color:var(--sun)}
+.top p{margin:2px 0 0;color:var(--mute);font-size:15.5px}
+.tabs{max-width:1240px;margin:0 auto 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tabs button{min-width:0;padding:10px 5px;border:1px solid var(--line);background:var(--plate);border-radius:4px;font-weight:700;font-size:15px;line-height:1.3}
+.tabs button[aria-selected=true]{background:var(--sun);color:var(--sea);border-color:var(--sun)}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 365px;gap:16px;align-items:start}
+.pane{background:var(--plate);border:1px solid var(--line);border-radius:6px;padding:clamp(12px,2vw,18px);display:grid;gap:11px;min-width:0}
+.hint{margin:0;color:var(--mute);font-size:15px}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,300px);gap:12px;align-items:start}
+canvas.v{display:block;width:100%;aspect-ratio:1.18;background:#0c2c50;border-radius:4px;touch-action:none;cursor:grab}
+.side{display:grid;gap:9px;min-width:0}
+.big{font:700 clamp(23px,3vw,31px)/1.2 var(--num);color:var(--sun)}
+.lab{display:block;font-size:13px;color:var(--mute);line-height:1.35}
+.stat{padding:7px 10px;background:var(--sea);border-radius:4px}
+.ctl{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.btn{min-height:42px;padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:var(--raise);font-weight:700;font-size:15px}
+.btn.go{background:var(--sun);border-color:var(--sun);color:var(--sea)}
+.btn.on{background:var(--mint);border-color:var(--mint);color:var(--sea)}
+.btn:disabled{opacity:.42;cursor:default}
+.seg{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.seg span{font-size:14px;color:var(--mute);margin-right:3px}
+.seg button{min-width:42px;min-height:40px;padding:3px 7px;border:1px solid var(--line);border-radius:4px;background:var(--raise);font:700 15px var(--num)}
+.seg button.on{background:var(--mint);border-color:var(--mint);color:var(--sea)}
+.sl{flex:1 1 220px;min-width:0;font-size:14px}
+.sl b{font:700 15px var(--num);color:var(--sun)}
+input[type=range]{display:block;width:100%;accent-color:var(--sun)}
+.toast{min-height:50px;padding:9px 13px;border-radius:4px;background:var(--sea);font-size:15.5px;line-height:1.55}
+.toast b{color:var(--sun)}
+.gridwrap{overflow-x:auto}
+table.g{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;font-size:12.5px;line-height:1.25}
+table.g th{font-weight:500;color:var(--mute);padding:2px}
+table.g th:first-child{width:21%;text-align:right}
+table.g button{width:100%;min-height:39px;padding:2px;border:1px solid var(--line);border-radius:3px;background:var(--sea);font-size:12px;line-height:1.2;color:var(--mute)}
+table.g button.now{outline:2px solid var(--sun);outline-offset:0}
+table.g button.solid{background:var(--sun);border-color:var(--sun);color:var(--sea);font-weight:700}
+table.g button.flat{background:var(--mint);border-color:var(--mint);color:var(--sea);font-weight:700}
+table.g button.over{background:#7b3a4a;border-color:var(--coral);color:#fff}
+.vef{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.pick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.pick button{min-height:44px;padding:3px;border:1px solid var(--line);border-radius:4px;background:var(--raise);font-weight:700;font-size:14px;line-height:1.25}
+.pick button.on{background:var(--sun);border-color:var(--sun);color:var(--sea)}
+.minis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.minis svg{display:block;width:100%;aspect-ratio:1;background:var(--sea);border-radius:3px}
+.rail{display:grid;gap:12px;min-width:0}
+.rail article{background:var(--raise);border-radius:6px;padding:14px 15px}
+.rail h2{margin:0 0 5px;font:900 18px/1.4 var(--title);color:var(--sun);text-wrap:balance}
+.rail p{margin:0 0 7px;font-size:15.5px}
+.rail p:last-child{margin:0}
+.eq{font:700 15px/1.6 var(--num);color:var(--mint);overflow-wrap:anywhere}
+.rail table{width:100%;border-collapse:collapse;font-size:14px}
+.rail td,.rail th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+@media(max-width:1000px){.wrap{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:680px){.stage{grid-template-columns:minmax(0,1fr)}.tabs button{font-size:14px}.btn{padding:6px 10px;font-size:14.5px}.pick button{font-size:12.5px}}
+</style>
+
+<header class="top">
+  <h1>正多邊形有無數種，正多面體<em>只有 5 種</em></h1>
+  <p>答案藏在一個頂點上：幾塊多邊形圍起來，角度加起來必須小於 360°。</p>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tabA" aria-selected="true">① 拼一個頂點</button>
+  <button role="tab" id="tabB" aria-selected="false">② 五個立體</button>
+  <button role="tab" id="tabC" aria-selected="false">③ 摺得起來嗎</button>
+</nav>
+
+<div class="wrap">
+<main>
+  <section class="pane" id="paneA">
+    <p class="hint">選一種正多邊形，決定一個頂點放幾塊，再按「摺起來」。把下面的表格試完，看看究竟有幾種成功。</p>
+    <div class="ctl"><div class="seg" id="segN"><span>多邊形</span></div></div>
+    <div class="ctl"><div class="seg" id="segK"><span>每個頂點放</span></div><button class="btn go" id="aFold">摺起來</button><button class="btn" id="aReset">攤平</button></div>
+    <div class="stage">
+      <canvas class="v" id="cvA" aria-label="圍繞一個頂點的多邊形，可拖曳旋轉"></canvas>
+      <div class="side">
+        <div class="stat"><div class="big" id="aSum">324°</div><span class="lab" id="aSumL">角度和</span></div>
+        <div class="stat"><div class="big" id="aGap">36°</div><span class="lab">距離 360° 還差</span></div>
+        <div class="gridwrap"><table class="g" id="grid"></table></div>
+      </div>
+    </div>
+    <div class="toast" id="tA"></div>
+  </section>
+
+  <section class="pane" id="paneB" hidden>
+    <p class="hint">拖曳旋轉。拉動滑桿把立體攤成展開圖，或打開對偶，看每一面的中心連成另一個正多面體。</p>
+    <div class="pick" id="pick"></div>
+    <div class="stage">
+      <canvas class="v" id="cvB" aria-label="正多面體，可拖曳旋轉"></canvas>
+      <div class="side">
+        <div class="vef"><div class="stat"><div class="big" id="vV">8</div><span class="lab">頂點 V</span></div><div class="stat"><div class="big" id="vE">12</div><span class="lab">稜 E</span></div><div class="stat"><div class="big" id="vF">6</div><span class="lab">面 F</span></div></div>
+        <div class="stat"><div class="big" id="vEu" style="font-size:19px"></div><span class="lab">歐拉公式 V − E + F</span></div>
+        <div class="stat"><div class="big" id="vSym" style="font-size:19px"></div><span class="lab" id="vSymL"></span></div>
+        <div class="ctl"><button class="btn" id="bSpin">停止旋轉</button><button class="btn" id="bDual">看對偶</button></div>
+      </div>
+    </div>
+    <div class="ctl"><label class="sl" for="bT">展開 <b id="bTv">0%</b><input type="range" id="bT" min="0" max="100" value="0"></label><button class="btn go" id="bPlay">攤開</button></div>
+    <div class="toast" id="tB"></div>
+  </section>
+
+  <section class="pane" id="paneC" hidden>
+    <p class="hint">六個正方形連在一起共有 35 種形狀，其中只有 11 種能摺成正方體。先判斷，再看它真的摺起來。</p>
+    <div class="stage">
+      <canvas class="v" id="cvC" aria-label="六格展開圖的摺疊動畫，可拖曳旋轉"></canvas>
+      <div class="side">
+        <div class="stat"><div class="big" id="cScore">0 / 0</div><span class="lab">答對題數</span></div>
+        <div><span class="lab" style="margin-bottom:4px">11 種展開圖收集：<b id="cFound" style="color:var(--sun)">0</b> / 11</span><div class="minis" id="minis"></div></div>
+      </div>
+    </div>
+    <div class="ctl"><button class="btn go" id="cYes">能摺成正方體</button><button class="btn" id="cNo">摺不成</button><button class="btn" id="cNext" disabled>下一題</button><button class="btn" id="cAgain" disabled>再摺一次</button></div>
+    <div class="toast" id="tC"></div>
+  </section>
+</main>
+
+<aside class="rail">
+  <article><h2>什麼叫正多面體</h2><p>要同時滿足三件事：外形凸出沒有凹陷、每一面都是同一種正多邊形、每個頂點圍著的面數都相同。</p><p>少了最後一條，就會多出很多形狀。例如兩個正四面體黏起來，每面都是正三角形，但頂點有的接 3 面、有的接 4 面。</p></article>
+  <article><h2>證明只要一行</h2><p>一個頂點至少要 3 塊面才圍得起來，而且凸出的角，角度和一定小於 360°。</p><p class="eq">k × (180° − 360°/n) &lt; 360°</p><p>整理後得到：</p><p class="eq">1/n + 1/k &gt; 1/2</p><p>n 和 k 都至少是 3，符合的整數組合只有 5 組。</p></article>
+  <article><h2>六邊形為什麼不行</h2><p>正六邊形內角 120°，3 塊剛好 360°，會平鋪成蜂巢，鼓不起來。七邊形以上的內角更大，3 塊就超過 360°。所以面只可能是三角形、正方形或五邊形。</p></article>
+  <article><h2>五個立體的資料</h2><table><tr><th>名稱</th><th>面</th><th>V</th><th>E</th><th>F</th></tr><tr><td>正四面體</td><td>三角</td><td>4</td><td>6</td><td>4</td></tr><tr><td>正方體</td><td>正方</td><td>8</td><td>12</td><td>6</td></tr><tr><td>正八面體</td><td>三角</td><td>6</td><td>12</td><td>8</td></tr><tr><td>正十二面體</td><td>五邊</td><td>20</td><td>30</td><td>12</td></tr><tr><td>正二十面體</td><td>三角</td><td>12</td><td>30</td><td>20</td></tr></table></article>
+  <article><h2>對偶：五個其實是三組</h2><p>把每一面的中心連起來，正方體變正八面體，正十二面體變正二十面體，正四面體變回自己。對偶後 V 和 F 互換，E 不變。</p></article>
+  <article><h2>2000 多年前的發現</h2><p>柏拉圖在《蒂邁歐篇》把它們對應到火、土、氣、水和宇宙，所以又叫柏拉圖立體。歐幾里得《幾何原本》最後一卷，就在證明正多面體只有這五種。</p></article>
+  <article><h2>5 種的但書</h2><p>「只有 5 種」說的是凸的正多面體。如果允許面或頂點像星星一樣互相穿過，還有 4 種克卜勒－龐索星形正多面體。</p></article>
+  <article><h2>生活裡的正多面體</h2><p>桌遊的 D4、D6、D8、D12、D20 骰子就是這五種，每一面機會相同。許多病毒的外殼也採用二十面體對稱，因為能用很多相同的小單元圍成封閉的殼。</p></article>
+</aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,TAU=Math.PI*2,PHI=(1+Math.sqrt(5))/2;
+/* vectors and quaternions */
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],len=a=>Math.sqrt(dot(a,a)),norm=a=>mul(a,1/(len(a)||1));
+const avg=P=>mul(P.reduce(add,[0,0,0]),1/P.length);
+const qAxis=(ax,a)=>{const n=norm(ax),s=Math.sin(a/2);return[Math.cos(a/2),n[0]*s,n[1]*s,n[2]*s];};
+const qMul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qNorm=q=>{const l=Math.hypot(...q);return q.map(x=>x/l);};
+const qRot=(q,v)=>{const u=[q[1],q[2],q[3]],t=mul(cross(u,v),2);return add(add(v,mul(t,q[0])),cross(u,t));};
+const qLerp=(a,b,t)=>{const s=a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]<0?-1:1;return qNorm(a.map((x,i)=>x+(s*b[i]-x)*t));};
+const rotAbout=(p,a,b,ang)=>{const k=norm(sub(b,a)),v=sub(p,a),c=Math.cos(ang),s=Math.sin(ang);return add(a,add(add(mul(v,c),mul(cross(k,v),s)),mul(k,dot(k,v)*(1-c))));};
+const qTilt=qMul(qAxis([1,0,0],-.62),qAxis([0,1,0],.5));
+
+/* canvas renderer */
+function fit(cv){const d=Math.min(devicePixelRatio||1,2),w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return null;const W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};}
+const hex=c=>[1,3,5].map(i=>parseInt(c.substr(i,2),16)),LIGHT=norm([-.45,.65,.8]);
+function render(f,polys,q,o={}){const{g,w,h}=f,D=o.persp||6.5,S=(o.scale||.4)*Math.min(w,h),cx=w/2,cy=h/2,c0=o.center||[0,0,0],out=[];
+  const pr=v=>{const k=D/(D-v[2]);return[cx+v[0]*S*k,cy-v[1]*S*k];};
+  for(const P of polys){const V=P.p.map(x=>qRot(q,sub(x,c0))),n=norm(cross(sub(V[1],V[0]),sub(V[2],V[0]))),c=avg(V),front=dot(sub([0,0,D],c),n)>0;if(o.cull&&!front)continue;out.push({V,n:front?n:mul(n,-1),z:c[2],P,front});}
+  out.sort((a,b)=>a.z-b.z);g.lineJoin='round';
+  for(const x of out){const b=(.42+.62*Math.max(0,dot(x.n,LIGHT)))*(x.front||!o.backDark?1:.72),C=hex(x.P.c);g.fillStyle=`rgba(${C.map(v=>Math.min(255,Math.round(v*b))).join(',')},${x.P.a??o.alpha??.96})`;g.strokeStyle=x.P.s||'rgba(255,255,255,.92)';g.lineWidth=o.lw||1.6;g.beginPath();x.V.forEach((v,i)=>{const[a,y]=pr(v);i?g.lineTo(a,y):g.moveTo(a,y);});g.closePath();g.fill();g.stroke();}
+  return pr;}
+function orbit(cv,get,set){let last=null;cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);last=[e.clientX,e.clientY];cv.style.cursor='grabbing';});cv.addEventListener('pointermove',e=>{if(!last)return;const dx=e.clientX-last[0],dy=e.clientY-last[1];last=[e.clientX,e.clientY];set(qNorm(qMul(qMul(qAxis([0,1,0],dx*.011),qAxis([1,0,0],dy*.011)),get())));dirty=true;});['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,()=>{last=null;cv.style.cursor='grab';}));}
+let dirty=true;
+
+/* ① one vertex */
+const NN={3:'三角形',4:'正方形',5:'五邊形',6:'六邊形',7:'七邊形',8:'八邊形'},SOL={'3,3':'正四面體','3,4':'正八面體','3,5':'正二十面體','4,3':'正方體','5,3':'正十二面體'};
+const ang=n=>180-360/n,A={n:5,k:3,s:0,target:0,q:qTilt,seen:{},cols:['#ffd166','#7fe3c0','#ff9f80','#8ec9ff','#e6b3ff','#ffe7a3']};
+const kind=(n,k)=>{const x=k*ang(n);return Math.abs(x-360)<1e-9?'flat':x<360?'solid':'over';};
+function polyIn(n,e1,e2){const th=ang(n)*Math.PI/180,P2=[[0,0]];for(let i=1;i<n;i++){const a=-(i-1)*(Math.PI-th);P2.push([P2[i-1][0]+Math.cos(a),P2[i-1][1]+Math.sin(a)]);}/* P2 turns clockwise from +x; express in the (e1,last edge) basis */const last=P2[n-1],sinT=last[0]*0-last[1]*1;const B=(p)=>{const b=-p[1]/Math.sin(th)*1,a=p[0]-b*Math.cos(th);return add(mul(e1,a),mul(e2,b));};return P2.map(B);}
+function fanPolys(n,k,s){const th=ang(n)*Math.PI/180,sum=k*th,polys=[];let d=th,alpha=Math.PI/2;if(sum<TAU-1e-9){const d1=TAU/k;d=th+(d1-th)*s;const sa=Math.sqrt(clamp((1-Math.cos(th))/(1-Math.cos(d)),0,1));alpha=Math.asin(sa);}const dir=i=>{const a=i*d-(k-1)*d/2-d/2;return[Math.sin(alpha)*Math.cos(a),Math.sin(alpha)*Math.sin(a),Math.cos(alpha)];};for(let i=0;i<k;i++){const over=(i+1)*th>TAU+1e-6;polys.push({p:polyIn(n,dir(i),dir(i+1)),c:over?'#ff6f7d':A.cols[i%A.cols.length],a:over?.62:.95});}return{polys,top:[0,0,Math.cos(alpha)]};}
+function tilePolys(n){const R=[],seen=new Set(),key=c=>Math.round(c[0]*20)+','+Math.round(c[1]*20),first=polyIn(n,[1,0,0],[Math.cos(ang(n)*Math.PI/180),Math.sin(ang(n)*Math.PI/180),0]),Q=[first];seen.add(key(avg(first)));while(Q.length&&R.length<130){const P=Q.shift();R.push(P);for(let i=0;i<n;i++){const a=P[i],b=P[(i+1)%n],N=P.map(v=>{const ab=norm(sub(b,a)),t=sub(v,a),par=mul(ab,dot(t,ab));return add(a,sub(mul(par,2),t));}),c=avg(N),k=key(c);if(!seen.has(k)&&len(c)<4.6){seen.add(k);Q.push(N);}}}return R;}
+const TILE={3:tilePolys(3),4:tilePolys(4),6:tilePolys(6)};
+function drawA(){const f=fit($('#cvA'));if(!f)return;const{n,k,s}=A,K=kind(n,k);let polys,c;if(K==='flat'&&s>.5){polys=TILE[n].map((p,i)=>({p,c:len(avg(p))<(n===3?.7:n===4?.8:1)?'#ffd166':'#7fe3c0',a:len(avg(p))<(n===3?.7:n===4?.8:1)?.98:.42}));render(f,polys,qLerp(A.q,[1,0,0,0],clamp((s-.5)*2,0,1)),{scale:.17,persp:30,lw:1.2});return;}const r=fanPolys(n,k,K==='solid'?s:0);polys=r.polys;c=avg(polys.flatMap(x=>x.p));const ext=Math.max(...polys.flatMap(x=>x.p.map(v=>len(sub(v,c)))));render(f,polys,A.q,{center:c,scale:.45/ext,backDark:true});}
+function roA(){const{n,k}=A,sum=k*ang(n),rs=Math.round(sum*100)/100,gap=Math.round((360-sum)*100)/100;$('#aSum').textContent=`${k} × ${Math.round(ang(n)*100)/100}° = ${rs}°`;$('#aSum').style.fontSize=sum%1?'17px':'19px';$('#aSumL').textContent=`一個頂點的角度和（${NN[n]}內角 ${Math.round(ang(n)*100)/100}°）`;$('#aGap').textContent=gap>0?`${gap}°`:gap===0?'0°':`超過 ${-gap}°`;$('#aGap').style.color=gap>0?'var(--sun)':gap===0?'var(--mint)':'var(--coral)';}
+function paintGrid(){$$('#grid button').forEach(b=>{const n=+b.dataset.n,k=+b.dataset.k,key=n+','+k,h=A.seen[key],K=kind(n,k);b.className=(n===A.n&&k===A.k?'now ':'')+(h?K:'');b.textContent=h?(K==='solid'?SOL[key].replace('正',''):K==='flat'?'平鋪':'超過'):'?';b.setAttribute('aria-label',`${NN[n]}，每個頂點 ${k} 塊${h?'，'+b.textContent:''}`);});$$('#segN button').forEach(b=>b.classList.toggle('on',+b.dataset.n===A.n));$$('#segK button').forEach(b=>b.classList.toggle('on',+b.dataset.k===A.k));}
+function setA(n,k){A.n=n;A.k=k;A.s=0;A.target=0;A.q=qTilt;roA();paintGrid();const sum=k*ang(n);$('#tA').innerHTML=`${k} 塊${NN[n]}攤在桌上。按<b>摺起來</b>，看缺口能不能合起來。`;dirty=true;}
+function resultA(){const{n,k}=A,key=n+','+k,K=kind(n,k);A.seen[key]=1;paintGrid();const found=Object.keys(SOL).filter(x=>A.seen[x]).length;let m;if(K==='solid')m=`缺口合起來了，鼓成一個尖角！這種頂點長成<b>${SOL[key]}</b>。已找到 <b>${found} / 5</b>。`;else if(K==='flat')m=`角度和剛好 360°，沒有缺口可以摺，只能<b>平鋪</b>成一整片。`;else m=`角度和超過 360°，放不下，紅色那塊會疊在第一塊上，<b>圍不成凸的尖角</b>。`;if(found===5&&K==='solid'&&!A.allDone){A.allDone=true;m+=' 五種全部到齊。表格裡其他格都失敗，這就是證明。';}$('#tA').innerHTML=m;}
+{let h='<tr><th></th>'+[3,4,5,6].map(k=>`<th>${k} 塊</th>`).join('')+'</tr>';for(const n of[3,4,5,6,7,8]){h+=`<tr><th>${NN[n]}</th>`+[3,4,5,6].map(k=>`<td><button data-n="${n}" data-k="${k}"></button></td>`).join('')+'</tr>';}$('#grid').innerHTML=h;$$('#grid button').forEach(b=>b.onclick=()=>setA(+b.dataset.n,+b.dataset.k));
+for(const n of[3,4,5,6,7,8])$('#segN').insertAdjacentHTML('beforeend',`<button data-n="${n}" aria-label="${NN[n]}">${n}邊</button>`);for(const k of[3,4,5,6])$('#segK').insertAdjacentHTML('beforeend',`<button data-k="${k}">${k}塊</button>`);$$('#segN button').forEach(b=>b.onclick=()=>setA(+b.dataset.n,A.k));$$('#segK button').forEach(b=>b.onclick=()=>setA(A.n,+b.dataset.k));}
+$('#aFold').onclick=()=>{A.target=1;if(reduce)A.s=1;resultA();dirty=true;};$('#aReset').onclick=()=>{A.target=0;if(reduce)A.s=0;dirty=true;};
+orbit($('#cvA'),()=>A.q,q=>A.q=q);
+
+/* solids */
+const cyc=(a,b,c)=>[[a,b,c],[c,a,b],[b,c,a]];
+const SG=(v)=>{const R=[];for(const x of v[0]?[v[0],-v[0]]:[0])for(const y of v[1]?[v[1],-v[1]]:[0])for(const z of v[2]?[v[2],-v[2]]:[0])R.push([x,y,z]);return R;};
+const RAWV={tet:[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]],cube:SG([1,1,1]),oct:cyc(1,0,0).flatMap(SG),dod:[...SG([1,1,1]),...cyc(0,1/PHI,PHI).flatMap(SG)],ico:cyc(0,1,PHI).flatMap(SG)};
+function faces(V,nGon){const F=[],seen=new Set(),m=V.length;for(let a=0;a<m;a++)for(let b=a+1;b<m;b++)for(let c=b+1;c<m;c++){let n=cross(sub(V[b],V[a]),sub(V[c],V[a]));if(len(n)<1e-9)continue;n=norm(n);const d=dot(n,V[a]),ds=V.map(v=>dot(n,v)-d);if(ds.some(x=>x>1e-7)&&ds.some(x=>x<-1e-7))continue;const on=ds.map((x,i)=>Math.abs(x)<1e-7?i:-1).filter(i=>i>=0);if(on.length!==nGon)continue;const key=on.join(',');if(seen.has(key))continue;seen.add(key);const out=ds.some(x=>x>1e-7)?mul(n,-1):n,C=avg(on.map(i=>V[i])),u=norm(sub(V[on[0]],C)),w=cross(out,u);on.sort((p,q)=>{const P=sub(V[p],C),Q=sub(V[q],C);return Math.atan2(dot(P,w),dot(P,u))-Math.atan2(dot(Q,w),dot(Q,u));});F.push({v:on.slice(),n:out});}return F;}
+const INFO=[['tet','正四面體',3,3,'#ff9f80'],['cube','正方體',4,3,'#ffd166'],['oct','正八面體',3,4,'#7fe3c0'],['dod','正十二面體',5,3,'#8ec9ff'],['ico','正二十面體',3,5,'#e6b3ff']];
+const SD={};INFO.forEach(([id,name,n,k,col])=>{const r=Math.max(...RAWV[id].map(len)),V=RAWV[id].map(v=>mul(v,1/r)),F=faces(V,n),edges=new Map();F.forEach((f,i)=>f.v.forEach((a,j)=>{const b=f.v[(j+1)%n],key=a<b?a+'-'+b:b+'-'+a;if(!edges.has(key))edges.set(key,[]);edges.get(key).push(i);}));SD[id]={id,name,n,k,col,V,F,E:edges.size,edges};});
+/* hinge folding: fold.par[f], fold.h[f]=[a,b], fold.ang[f] */
+const foldPts=(fd,i,t)=>{let P=fd.P[i].map(x=>x.slice());for(let c=i;fd.par[c]>=0;c=fd.par[c]){const[a,b]=fd.h[c],x=fd.ang[c]*t;P=P.map(v=>rotAbout(v,a,b,x));}return P;};
+function satOverlap(A,B){const proj=(P,n)=>{let a=1e9,b=-1e9;for(const p of P){const v=p[0]*n[0]+p[1]*n[1];a=Math.min(a,v);b=Math.max(b,v);}return[a,b];};for(const Q of[A,B])for(let i=0;i<Q.length;i++){const p=Q[i],q=Q[(i+1)%Q.length],l=Math.hypot(q[0]-p[0],q[1]-p[1]),n=[-(q[1]-p[1])/l,(q[0]-p[0])/l],a=proj(A,n),b=proj(B,n);if(a[1]<=b[0]+1e-5||b[1]<=a[0]+1e-5)return false;}return true;}
+function makeNet(S){let seed=12345;const rnd=()=>(seed=seed*16807%2147483647)/2147483647,nF=S.F.length,adj=Array.from({length:nF},()=>[]);for(const[key,[x,y]]of S.edges){const[a,b]=key.split('-').map(Number);adj[x].push([y,a,b]);adj[y].push([x,a,b]);}const P=S.F.map(f=>f.v.map(i=>S.V[i]));for(let tr=0;tr<6000;tr++){const par=Array(nF).fill(-2),h=Array(nF),stack=[0];par[0]=-1;const frontier=[...adj[0].map(e=>[0,e])];while(frontier.length){const[u,e]=frontier.splice(Math.floor(rnd()*frontier.length),1)[0],[w,a,b]=e;if(par[w]!==-2)continue;par[w]=u;h[w]=[S.V[a],S.V[b]];frontier.push(...adj[w].map(x=>[w,x]));}const angs=Array(nF).fill(0);for(let i=1;i<nF;i++){const[a,b]=h[i],pn=S.F[par[i]].n,ni=S.F[i].n,dih=Math.PI-Math.acos(clamp(dot(pn,ni),-1,1)),d=Math.PI-dih,c=avg(P[i]),pc=avg(P[par[i]]),plane=dot(pn,a);let best=d,bv=-1e9;for(const sg of[d,-d]){const x=rotAbout(c,a,b,sg),off=-Math.abs(dot(pn,x)-plane)*1000+len(sub(x,pc));if(off>bv){bv=off;best=sg;}}angs[i]=best;}const fd={P,par,h,ang:angs},root=S.F[0].n,u=norm(sub(S.V[S.F[0].v[0]],avg(P[0]))),w=cross(root,u),flat=P.map((_,i)=>foldPts(fd,i,1).map(v=>[dot(v,u),dot(v,w)]));let ok=true;for(let i=0;i<nF&&ok;i++)for(let j=0;j<i;j++)if(satOverlap(flat[i],flat[j])){ok=false;break;}if(ok){fd.tries=tr+1;return fd;}}return null;}
+INFO.forEach(([id])=>{SD[id].net=makeNet(SD[id]);const n=SD[id].F[0].n,ax=cross(n,[0,0,1]);SD[id].qFlat=len(ax)<1e-6?(n[2]>0?[1,0,0,0]:qAxis([1,0,0],Math.PI)):qAxis(ax,Math.acos(clamp(n[2],-1,1)));});
+
+/* ② gallery */
+const B={id:'cube',q:qTilt,t:0,target:0,spin:true,dual:false};
+$('#pick').innerHTML=INFO.map(x=>`<button data-id="${x[0]}">${x[1].replace('正','')}</button>`).join('');
+function drawB(){const f=fit($('#cvB'));if(!f)return;const S=SD[B.id],t=B.t,net=S.net,polys=S.F.map((_,i)=>({p:foldPts(net,i,t),c:S.col,a:B.dual&&t<.01?.2:.96})),all=polys.flatMap(x=>x.p),c=mul(avg(all),t),ext=Math.max(...all.map(v=>len(sub(v,c)))),q=qLerp(B.q,S.qFlat,clamp(t*1.6,0,1)),pr=render(f,polys,q,{cull:t<.001&&!B.dual,center:c,scale:.43/Math.max(1,ext),backDark:true});
+  if(B.dual&&t<.01){const g=f.g,CS=S.F.map(F=>avg(F.v.map(i=>S.V[i]))),P=CS.map(v=>pr(qRot(q,v)));g.strokeStyle='#ffffff';g.lineWidth=2.4;g.beginPath();for(const[,[x,y]]of S.edges){g.moveTo(...P[x]);g.lineTo(...P[y]);}g.stroke();g.fillStyle='#ffd166';for(const p of P){g.beginPath();g.arc(p[0],p[1],3.8,0,7);g.fill();}}}
+const DUALN={tet:'正四面體',cube:'正八面體',oct:'正方體',dod:'正二十面體',ico:'正十二面體'};
+function setB(id){B.id=id;const S=SD[id],V=S.V.length,E=S.E,F=S.F.length;$$('#pick button').forEach(b=>b.classList.toggle('on',b.dataset.id===id));$('#vV').textContent=V;$('#vE').textContent=E;$('#vF').textContent=F;$('#vEu').textContent=`${V} − ${E} + ${F} = ${V-E+F}`;$('#vSym').textContent=`{${S.n}, ${S.k}}`;$('#vSymL').textContent=`每面 ${S.n} 邊，每個頂點 ${S.k} 面，角度和 ${S.k*ang(S.n)}°`;tellB();dirty=true;}
+function tellB(){const S=SD[B.id];$('#tB').innerHTML=B.dual?`${S.name}的 ${S.F.length} 個面中心，連起來是<b>${DUALN[S.id]}</b>。`:`<b>${S.name}</b>：${S.F.length} 面 × ${S.n} 邊 ÷ 2 = ${S.E} 條稜，因為每條稜被兩個面共用。`;}
+$$('#pick button').forEach(b=>b.onclick=()=>setB(b.dataset.id));
+$('#bT').oninput=e=>{B.target=null;B.t=+e.target.value/100;if(B.t>0)B.spin=false;syncB();dirty=true;};
+function syncB(){$('#bTv').textContent=Math.round(B.t*100)+'%';$('#bT').value=Math.round(B.t*100);$('#bSpin').textContent=B.spin?'停止旋轉':'開始旋轉';$('#bPlay').textContent=(B.target??B.t)>.5?'摺回去':'攤開';}
+$('#bPlay').onclick=()=>{B.target=(B.target??B.t)>.5?0:1;B.spin=false;if(reduce)B.t=B.target;syncB();dirty=true;};
+$('#bSpin').onclick=()=>{B.spin=!B.spin;if(B.spin){B.target=0;}syncB();dirty=true;};
+$('#bDual').onclick=()=>{B.dual=!B.dual;if(B.dual)B.target=0;$('#bDual').classList.toggle('on',B.dual);tellB();syncB();dirty=true;};
+orbit($('#cvB'),()=>B.q,q=>{B.q=q;});
+
+/* ③ hexominoes */
+function canon(c){let best=null;for(let m=0;m<8;m++){let P=c.map(([x,y])=>{let a=m&4?-x:x,b=y;for(let r=0;r<(m&3);r++)[a,b]=[-b,a];return[a,b];});const mx=Math.min(...P.map(p=>p[0])),my=Math.min(...P.map(p=>p[1]));P=P.map(p=>[p[0]-mx,p[1]-my]).sort((u,v)=>u[0]-v[0]||u[1]-v[1]);const s=P.map(p=>p.join(':')).join(',');if(best===null||s<best.s)best={s,P};}return best;}
+function hexominoes(){let L=new Map([[canon([[0,0]]).s,canon([[0,0]]).P]]);for(let n=2;n<=6;n++){const N=new Map();for(const P of L.values())for(const[x,y]of P)for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const q=[x+dx,y+dy];if(P.some(p=>p[0]===q[0]&&p[1]===q[1]))continue;const c=canon([...P,q]);N.set(c.s,c.P);}L=N;}return[...L.values()];}
+function cellFold(H){const idx=new Map(H.map((c,i)=>[c.join(':'),i])),nb=c=>[[1,0],[-1,0],[0,1],[0,-1]].map(([x,y])=>idx.get((c[0]+x)+':'+(c[1]+y))).filter(x=>x!==undefined);let root=0,bd=-1;H.forEach((c,i)=>{if(nb(c).length>bd){bd=nb(c).length;root=i;}});const cx=H[root][0]+.5,cy=H[root][1]+.5,P=H.map(([x,y])=>[[x-cx,y-cy,0],[x+1-cx,y-cy,0],[x+1-cx,y+1-cy,0],[x-cx,y+1-cy,0]]),par=Array(6).fill(-2),h=Array(6),an=Array(6).fill(0),Q=[root];par[root]=-1;while(Q.length){const u=Q.shift();for(const w of nb(H[u])){if(par[w]!==-2)continue;par[w]=u;Q.push(w);const sh=P[w].filter(v=>P[u].some(z=>len(sub(v,z))<1e-9));h[w]=[sh[0],sh[1]];const c=avg(P[w]);an[w]=rotAbout(c,sh[0],sh[1],.2)[2]>0?Math.PI/2:-Math.PI/2;}}return{P,par,h,ang:an};}
+const has22=H=>H.some(([x,y])=>[[1,0],[0,1],[1,1]].every(([a,b])=>H.some(c=>c[0]===x+a&&c[1]===y+b)));
+const faceKeys=(fd,t=1)=>fd.P.map((_,i)=>{const c=avg(foldPts(fd,i,t));return c.map(x=>Math.round(x*2)).join(',');});
+const isNet=H=>!has22(H)&&new Set(faceKeys(cellFold(H))).size===6;
+const HEX=hexominoes().map(c=>({c,ok:isNet(c)})),VALID=HEX.filter(x=>x.ok),BAD=HEX.filter(x=>!x.ok);
+const C={deck:[],i:0,cur:null,fd:null,t:0,target:0,q:[1,0,0,0],right:0,asked:0,ans:false,found:new Set()};
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+$('#minis').innerHTML=VALID.map((v,i)=>{const w=Math.max(...v.c.map(p=>p[0]))+1,h=Math.max(...v.c.map(p=>p[1]))+1,s=Math.max(w,h);return `<svg viewBox="-.4 -.4 ${s+.8} ${s+.8}" id="mini${i}" aria-label="第 ${i+1} 種展開圖">${v.c.map(p=>`<rect x="${p[0]+(s-w)/2}" y="${p[1]+(s-h)/2}" width=".92" height=".92" fill="transparent"></rect>`).join('')}</svg>`;}).join('');
+function deal(){C.deck=shuffle([...shuffle([...VALID]).slice(0,6),...shuffle([...BAD]).slice(0,6)]);C.i=0;}
+function nextC(){if(C.i>=C.deck.length)deal();C.cur=C.deck[C.i++];C.fd=cellFold(C.cur.c);C.t=0;C.target=0;C.ans=false;C.q=[1,0,0,0];$('#cYes').disabled=$('#cNo').disabled=false;$('#cNext').disabled=$('#cAgain').disabled=true;$('#tC').innerHTML='這張圖能摺成正方體嗎？在腦中摺摺看，再選答案。';dirty=true;}
+function drawC(){const f=fit($('#cvC'));if(!f||!C.fd)return;const fd=C.fd,t=C.t,keys=t>.98?faceKeys(fd):null,count={};if(keys)keys.forEach(k=>count[k]=(count[k]||0)+1);const polys=fd.P.map((_,i)=>({p:foldPts(fd,i,t),c:keys&&count[keys[i]]>1?'#ff6f7d':i===fd.par.indexOf(-1)?'#ffd166':'#8ec9ff',a:.9})),all=polys.flatMap(x=>x.p),c=avg(all),ext=Math.max(...all.map(v=>len(sub(v,c))));render(f,polys,qLerp(C.q,qMul(C.q,qTilt),clamp(t*1.3,0,1)),{center:c,scale:.43/Math.max(1,ext),backDark:true});}
+function answer(y){if(C.ans)return;C.ans=true;C.asked++;const ok=y===C.cur.ok;if(ok)C.right++;$('#cScore').textContent=`${C.right} / ${C.asked}`;$('#cYes').disabled=$('#cNo').disabled=true;$('#cNext').disabled=$('#cAgain').disabled=false;C.target=1;if(reduce)C.t=1;if(C.cur.ok){const i=VALID.indexOf(C.cur);C.found.add(i);$$(`#mini${i} rect`).forEach(r=>r.setAttribute('fill','#ffd166'));$('#cFound').textContent=C.found.size;}const keys=faceKeys(C.fd),miss=6-new Set(keys).size;$('#tC').innerHTML=`${ok?'<b>答對了。</b>':'不是喔。'}${C.cur.ok?'六個面剛好各佔一面，摺成正方體。':has22(C.cur.c)?'圖裡有 2×2 的方塊，四格圍著一個點，角度和已經 360°，那個角鼓不起來。':`紅色的面疊在一起，正方體少了 ${miss} 面。`}${C.found.size===11?' 11 種全部收集完成！':''}`;dirty=true;}
+$('#cYes').onclick=()=>answer(true);$('#cNo').onclick=()=>answer(false);$('#cNext').onclick=nextC;$('#cAgain').onclick=()=>{C.t=0;C.target=1;if(reduce)C.t=1;dirty=true;};
+orbit($('#cvC'),()=>C.q,q=>{C.q=q;});
+
+/* loop */
+const TABS=[['#tabA','#paneA'],['#tabB','#paneB'],['#tabC','#paneC']];
+TABS.forEach(([t,p])=>$(t).onclick=()=>{TABS.forEach(([x,y])=>{$(x).setAttribute('aria-selected',x===t);$(y).hidden=y!==p;});dirty=true;});
+const toward=(v,target,step)=>v<target?Math.min(target,v+step):Math.max(target,v-step);
+let lastT=0;function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-lastT)/1000||.016);lastT=now;
+  if(!$('#paneA').hidden){if(A.s!==A.target){A.s=toward(A.s,A.target,dt*.75);dirty=true;}if(dirty)drawA();}
+  else if(!$('#paneB').hidden){if(B.target!==null&&B.t!==B.target){B.t=toward(B.t,B.target,dt*.55);syncB();dirty=true;}if(B.spin&&!reduce&&B.t===0){B.q=qNorm(qMul(qAxis([.25,1,.1],dt*.45),B.q));dirty=true;}if(dirty)drawB();}
+  else{if(C.t!==C.target){C.t=toward(C.t,C.target,dt*.6);dirty=true;}if(dirty)drawC();}
+  dirty=false;}
+new ResizeObserver(()=>dirty=true).observe($('main'));
+setA(5,3);setB('cube');syncB();nextC();requestAnimationFrame(loop);
+</script>

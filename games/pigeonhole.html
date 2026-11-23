@@ -1,0 +1,437 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>鴿巢原理遊樂場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: town-square look — game panes with tabs left, explainer rail right; stacks on phones. Single light look. */
+:root{
+  --stone:#f4f0e8;
+  --sheet:#fffdf8;
+  --rule:#ddd5c4;
+  --ink:#232a36;
+  --dim:#6a6f7c;
+  --dove:#6f7f98;
+  --coral:#e4604e;
+  --teal:#1f8f86;
+  --gold:#e3a72f;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--stone);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#ebe4d4;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--coral)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;overflow-y:auto;padding-block:18px 24px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+.ph{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.ph h2{margin:0;font-family:var(--f-disp);font-size:22px;line-height:1.35}
+.ph .lv{font-family:var(--f-num);font-weight:700;color:var(--coral);font-size:14px}
+.task{font-size:15px;margin:0}
+.task b{font-family:var(--f-num);color:var(--coral)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:8px 14px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.no{background:var(--coral);border-color:var(--coral);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--coral);box-shadow:inset 0 0 0 1px var(--coral)}
+.wait{background:#f6f2ea;border:1px dashed var(--rule);border-radius:12px;padding:10px 12px;min-height:56px;display:flex;flex-wrap:wrap;gap:2px;align-items:center}
+.wait .lab{font-size:13px;color:var(--dim);margin-right:8px}
+.holes{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.hole{background:#fff;border:2px solid var(--rule);border-radius:14px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px;transition:border-color .2s,background .2s}
+.hole.over{border-color:var(--coral);background:#fdeeea}
+.hole .top{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--dim)}
+.hole .top b{font-family:var(--f-num);font-size:16px;color:var(--ink)}
+.hole.over .top b{color:var(--coral)}
+.hole .birds{display:flex;flex-wrap:wrap;gap:1px;min-height:48px;align-content:flex-start;background:repeating-linear-gradient(0deg,#f3eee3 0 2px,transparent 2px 12px);border-radius:8px;padding:4px}
+.hole .ctl{display:flex;gap:6px}
+.hole .ctl button{flex:1;background:#f4f0e8;border:1px solid var(--rule);border-radius:8px;font-size:16px;line-height:1;padding:6px 0}
+.hole .ctl button:hover{border-color:var(--ink)}
+svg.pg{width:22px;height:18px;flex:none}
+.fb{border-radius:12px;padding:12px 14px;font-size:14.5px;background:#f6f2ea;border-left:4px solid var(--dove)}
+.fb.good{border-left-color:var(--teal);background:#e8f5f2}
+.fb.bad{border-left-color:var(--coral);background:#fcece8}
+.fb b{font-family:var(--f-num)}
+.lvls{display:flex;gap:6px;flex-wrap:wrap}
+.lvls button{width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid var(--rule);font-family:var(--f-num);font-weight:700;font-size:13px}
+.lvls button.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.lvls button.cur{box-shadow:0 0 0 2px var(--coral)}
+
+.sub{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;align-self:flex-start;background:#fff}
+.sub button{background:transparent;border:0;padding:7px 14px;font-size:14px;color:var(--dim)}
+.sub button+button{border-left:1px solid var(--rule)}
+.sub button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+.socks{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;align-items:flex-end}
+.sock{width:26px;height:44px;border-radius:6px 6px 12px 4px;position:relative}
+.sock::after{content:"";position:absolute;bottom:0;right:-8px;width:16px;height:12px;border-radius:0 8px 8px 0;background:inherit}
+.hist{display:flex;gap:10px;align-items:flex-end;height:130px;padding-top:10px}
+.hist div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:12px;color:var(--dim)}
+.hist i{display:block;width:100%;background:var(--dove);border-radius:6px 6px 0 0;min-height:2px}
+.hist b{font-family:var(--f-num);color:var(--ink)}
+.cal{display:grid;grid-template-columns:repeat(31,1fr);gap:2px;max-width:640px}
+.cal span{aspect-ratio:1;border-radius:3px;background:#efe9dc}
+.cal span.one{background:var(--dove)}
+.cal span.two{background:var(--coral)}
+.big{font-family:var(--f-num);font-weight:700;font-size:34px;line-height:1.1}
+.big small{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--dim);margin-left:6px}
+.sl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--dim);max-width:560px}
+.sl input{flex:1;min-width:0;accent-color:var(--coral)}
+.sl output{font-family:var(--f-num);color:var(--ink);min-width:64px;text-align:right}
+.geo{position:relative;flex:1;min-height:320px;border:1px solid var(--rule);border-radius:14px;background:#fff;overflow:hidden}
+.pane-in{display:flex;flex-direction:column;gap:12px}
+#gcv{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+
+.rail{background:var(--stone);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-num);font-weight:700;font-size:12px;letter-spacing:.2em;color:var(--coral);text-transform:uppercase}
+h1{margin:2px 0 0;font-family:var(--f-disp);font-weight:900;font-size:29px;line-height:1.3;text-wrap:balance}
+.lede{margin:8px 0 0;font-size:14.5px;color:#3b4250}
+section{display:flex;flex-direction:column;gap:10px}
+section h3{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+section h3::after{content:"";flex:1;height:1px;background:var(--rule)}
+.card{background:#fff;border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#3b4250}
+.card b{color:var(--ink)}
+.card .t{display:block;font-weight:700;color:var(--ink);font-size:15px;margin-bottom:2px}
+.eq{font-family:var(--f-num);text-align:center;font-size:18px;margin:6px 0;color:var(--ink)}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:48px 1fr;gap:10px;font-size:13.5px;color:#3b4250}
+.tl time{font-family:var(--f-num);font-weight:700;color:var(--coral)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:86vh;min-height:620px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .holes{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="pg" viewBox="0 0 44 36"><path d="M6 22c4-1 8-4 10-8 2-5 7-8 12-7 3 0 5 2 6 4l6 1-5 3c0 6-3 11-9 13-6 2-14 1-20-6z" fill="#7d8ca6"/><path d="M14 20c5 0 11-2 15-6-1 6-6 10-13 10z" fill="#5c6b85"/><circle cx="31" cy="10" r="1.6" fill="#232a36"/><path d="M38 11l5 1-5 2z" fill="#e3a72f"/><path d="M27 15c2 1 4 1 5 0" stroke="#7fb8a4" stroke-width="2" fill="none"/></symbol>
+</defs></svg>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="cage" aria-pressed="true">鴿籠挑戰<small>8 個關卡</small></button>
+      <button data-t="life" aria-pressed="false">生活實驗<small>襪子・生日・頭髮</small></button>
+      <button data-t="geo" aria-pressed="false">點點挑戰<small>幾何證明</small></button>
+    </div>
+    <div class="view">
+      <!-- TAB 1 -->
+      <div class="pane" id="pCage">
+        <div class="ph"><span class="lv" id="lvTag">第 1 關</span><h2 id="lvTitle"></h2></div>
+        <p class="task" id="lvTask"></p>
+        <div class="lvls" id="lvls"></div>
+        <div class="wait" id="wait"></div>
+        <div class="holes" id="holes"></div>
+        <div class="row">
+          <button class="btn pri" id="bCheck">排好了，檢查！</button>
+          <button class="btn no" id="bNo">這不可能！</button>
+          <button class="btn" id="bRand">隨便亂放</button>
+          <button class="btn" id="bReset">重來</button>
+          <button class="btn" id="bNext">下一關 →</button>
+        </div>
+        <div class="fb" id="fb">把所有鴿子放進鴿籠：點鴿籠上的「＋」放一隻進去，「－」拿一隻出來。如果你認為怎麼放都做不到，就按「這不可能！」。</div>
+      </div>
+
+      <!-- TAB 2 -->
+      <div class="pane" id="pLife" hidden>
+        <div class="sub" id="lifeSub">
+          <button data-s="sock" aria-pressed="true">襪子抽屜</button>
+          <button data-s="bday" aria-pressed="false">生日撞期</button>
+          <button data-s="hair" aria-pressed="false">頭髮一樣多</button>
+        </div>
+
+        <div id="sSock" class="pane-in">
+          <div class="ph"><h2>黑漆漆的抽屜裡有紅、藍、黑三種顏色的襪子，各 10 隻</h2></div>
+          <p class="task">停電了，你看不見顏色。最少要拿出幾隻，才能<b>保證</b>其中有兩隻同色、湊成一雙？</p>
+          <div class="row" id="sockQ"></div>
+          <div class="fb" id="sockFb">先選你的答案，再開始抽。</div>
+          <div class="socks" id="socks"></div>
+          <div class="row"><button class="btn pri" id="sockOne">抽一隻</button><button class="btn" id="sockAgain">把襪子放回去</button><button class="btn" id="sockMany">自動抽 1000 次</button></div>
+          <div><p class="task">每次要抽幾隻才湊成一雙（1000 次實驗）</p><div class="hist" id="sockHist"></div></div>
+        </div>
+
+        <div id="sBday" class="pane-in" hidden>
+          <div class="ph"><h2>一個班有幾個人，就一定有人同一天生日？</h2></div>
+          <div class="sl"><span>人數</span><input id="bN" type="range" min="2" max="400" value="30"><output id="bNo2"></output></div>
+          <div class="row"><div class="big" id="bProb">—</div></div>
+          <p class="task" id="bText"></p>
+          <div class="row"><button class="btn pri" id="bRoll">隨機產生一班</button><button class="btn" data-n="23">23 人</button><button class="btn" data-n="50">50 人</button><button class="btn" data-n="366">366 人</button><button class="btn" data-n="367">367 人</button></div>
+          <div class="cal" id="cal"></div>
+          <p class="note" id="bClass"></p>
+        </div>
+
+        <div id="sHair" class="pane-in" hidden>
+          <div class="ph"><h2>台灣一定有兩個人的頭髮一樣多嗎？</h2></div>
+          <p class="task">一個人的頭髮大約 10 萬到 15 萬根。就算保守一點，假設<b>沒有人超過 100 萬根</b>。</p>
+          <div class="row" id="hairPlaces"></div>
+          <div class="big" id="hairBig">—</div>
+          <p class="task" id="hairText"></p>
+          <div class="fb">鴿籠是「頭髮的根數」：0 根、1 根、2 根……一直到 100 萬根，總共 1,000,001 個鴿籠。每個人是一隻鴿子，看自己有幾根頭髮就飛進哪一個籠子。</div>
+        </div>
+      </div>
+
+      <!-- TAB 3 -->
+      <div class="pane" id="pGeo" hidden>
+        <div class="ph"><h2 id="gTitle"></h2></div>
+        <p class="task" id="gTask"></p>
+        <div class="row"><div class="sub" id="geoSub"><button data-g="sq" aria-pressed="true">正方形</button><button data-g="tri" aria-pressed="false">正三角形</button></div>
+          <button class="btn" id="gClear">清除所有點</button><button class="btn" id="gProof">看證明</button></div>
+        <div class="geo"><canvas id="gcv" aria-label="在圖形中放點"></canvas></div>
+        <div class="fb" id="gFb"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">Pigeonhole Principle</div>
+      <h1>鴿巢原理：簡單到不行，卻能證明大事</h1>
+      <p class="lede">10 隻鴿子飛進 9 個鴿籠，一定有一個鴿籠擠了至少 2 隻。聽起來是廢話，但數學家用這句「廢話」，證明了許多看起來不可思議的事。在華人的數學課本裡，它也叫做「抽屜原理」。</p>
+    </div>
+
+    <section>
+      <h3>原理</h3>
+      <div class="card"><span class="t">基本版</span>把 n 隻鴿子放進 m 個鴿籠，如果 <b>n 比 m 大</b>，至少有一個鴿籠裡有 2 隻以上。</div>
+      <div class="card"><span class="t">加強版</span>至少有一個鴿籠裡，鴿子不少於
+        <div class="eq">⌈ n ÷ m ⌉</div>
+        ⌈ ⌉ 是「無條件進位」的意思。例如 10 隻鴿子、3 個鴿籠：10 ÷ 3 = 3.33…，進位是 4，所以一定有一個鴿籠至少 4 隻。<br><br>理由很簡單：如果每個鴿籠都只有 3 隻以下，最多只能放 9 隻，放不下 10 隻。</div>
+    </section>
+
+    <section>
+      <h3>解題的關鍵</h3>
+      <div class="card">鴿巢原理的難處，不在算數，而在<b>決定什麼是鴿子、什麼是鴿籠</b>。襪子是鴿子、顏色是鴿籠；人是鴿子、生日是鴿籠；點是鴿子、切出來的小區塊是鴿籠。找對了鴿籠，答案常常一句話就說完。</div>
+    </section>
+
+    <section>
+      <h3>更多例子</h3>
+      <div class="card"><span class="t">握手問題</span>一場聚會裡，至少有兩個人握過手的次數一樣多。（提示：n 個人，握手次數只可能是 0 到 n−1，但「0 次」和「n−1 次」不會同時出現。）</div>
+      <div class="card"><span class="t">壓縮檔的極限</span>沒有任何壓縮程式能把<b>所有</b>檔案都變小。長度 n 的檔案有 2ⁿ 種，比它短的檔案加起來只有 2ⁿ−1 種，鴿籠不夠用，一定有兩個檔案會被壓成同一個，就無法還原了。</div>
+      <div class="card"><span class="t">六個人的派對（拉姆齊理論）</span>任意 6 個人裡，一定有 3 個人彼此都認識，或 3 個人彼此都不認識。證明的第一步就是鴿巢原理。</div>
+    </section>
+
+    <section>
+      <h3>時間軸</h3>
+      <ul class="tl">
+        <li><time>1622</time><span>法國耶穌會士勒雷尚（Leurechon）在書中寫道：一定有兩個人的頭髮數量完全一樣。這是已知最早的記載。</span></li>
+        <li><time>1834</time><span>德國數學家狄利克雷（Dirichlet）把它叫做「抽屜原理」並用來證明數論定理，所以也叫狄利克雷原理。</span></li>
+        <li><time>1930</time><span>拉姆齊（Ramsey）把這個想法推廣成一整門數學：拉姆齊理論。</span></li>
+      </ul>
+    </section>
+    <p class="note">生日實驗把 2 月 29 日也算進去，一年共 366 個鴿籠，並假設每天出生的機率相同。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const bird = '<svg class="pg" aria-hidden="true"><use href="#pg"/></svg>';
+let done = {}; try { done = JSON.parse(localStorage.getItem('pigeon-lv') || '{}') || {}; } catch (e) {}
+
+// ================= TAB 1: cage levels =================
+const LV = [
+  {n:4, m:5, k:1}, {n:6, m:5, k:1}, {n:9, m:4, k:2}, {n:12, m:4, k:3},
+  {n:13, m:4, k:3}, {n:20, m:6, k:4}, {n:31, m:6, k:5}, {n:50, m:7, k:7}
+];
+let li = 0, holes = [], answered = false;
+const ceilDiv = (a, b) => Math.ceil(a/b);
+function loadLv(i){
+  li = i; const L = LV[i]; holes = Array(L.m).fill(0); answered = false;
+  $('#lvTag').textContent = `第 ${i + 1} 關`;
+  $('#lvTitle').textContent = `${L.n} 隻鴿子，${L.m} 個鴿籠`;
+  $('#lvTask').innerHTML = `把全部 <b>${L.n}</b> 隻鴿子放進 <b>${L.m}</b> 個鴿籠，而且每個鴿籠<b>最多 ${L.k} 隻</b>。做得到嗎？`;
+  $('#fb').className = 'fb'; $('#fb').textContent = '點鴿籠上的「＋」放一隻鴿子進去，「－」拿一隻出來。如果你認為怎麼放都做不到，就按「這不可能！」。';
+  renderLv();
+}
+function renderLv(){
+  const L = LV[li], placed = holes.reduce((a, b) => a + b, 0), left = L.n - placed;
+  $('#wait').innerHTML = `<span class="lab">還沒進籠：${left} 隻</span>` + bird.repeat(Math.min(left, 60));
+  $('#holes').innerHTML = holes.map((c, i) => `<div class="hole ${c > L.k ? 'over' : ''}"><div class="top"><span>鴿籠 ${i + 1}</span><b>${c} / ${L.k}</b></div>
+    <div class="birds">${bird.repeat(c)}</div><div class="ctl"><button data-i="${i}" data-d="-1" aria-label="從鴿籠 ${i + 1} 拿出一隻">－</button><button data-i="${i}" data-d="1" aria-label="放一隻進鴿籠 ${i + 1}">＋</button></div></div>`).join('');
+  document.querySelectorAll('.hole .ctl button').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, d = +b.dataset.d;
+    if (d > 0 && holes.reduce((a, c) => a + c, 0) >= L.n) return;
+    if (d < 0 && holes[i] === 0) return;
+    holes[i] += d; renderLv();
+  });
+  $('#lvls').innerHTML = LV.map((_, i) => `<button class="${done[i] ? 'done' : ''} ${i === li ? 'cur' : ''}" data-l="${i}" aria-label="第 ${i + 1} 關">${i + 1}</button>`).join('');
+  document.querySelectorAll('#lvls button').forEach(b => b.onclick = () => loadLv(+b.dataset.l));
+}
+function win(){ done[li] = true; try { localStorage.setItem('pigeon-lv', JSON.stringify(done)); } catch (e) {} renderLv(); }
+$('#bCheck').onclick = () => {
+  const L = LV[li], placed = holes.reduce((a, b) => a + b, 0), over = holes.filter(c => c > L.k).length, fb = $('#fb');
+  if (placed < L.n){ fb.className = 'fb bad'; fb.textContent = `還有 ${L.n - placed} 隻鴿子沒進籠喔！`; return; }
+  if (over){ fb.className = 'fb bad'; fb.innerHTML = `有 ${over} 個鴿籠超過 ${L.k} 隻了。再調整看看，或者……這根本做不到？`; return; }
+  fb.className = 'fb good'; fb.innerHTML = `成功！${L.n} 隻鴿子 ≤ ${L.m} 個鴿籠 × 每籠 ${L.k} 隻 = <b>${L.m*L.k}</b> 隻，空間夠用。`; win();
+};
+$('#bNo').onclick = () => {
+  const L = LV[li], fb = $('#fb'), cap = L.m*L.k;
+  if (L.n > cap){ fb.className = 'fb good'; fb.innerHTML = `答對了，真的不可能！${L.m} 個鴿籠每籠最多 ${L.k} 隻，最多只能放 <b>${cap}</b> 隻，可是有 <b>${L.n}</b> 隻。鴿巢原理：${L.n} ÷ ${L.m} = ${(L.n/L.m).toFixed(2)}，進位是 <b>${ceilDiv(L.n, L.m)}</b>，一定有某個鴿籠至少 ${ceilDiv(L.n, L.m)} 隻。`; win(); }
+  else { fb.className = 'fb bad'; fb.innerHTML = `其實做得到喔！${L.m} 個鴿籠每籠 ${L.k} 隻，可以放 <b>${cap}</b> 隻，比 ${L.n} 隻多。試著平均分配看看。`; }
+};
+$('#bRand').onclick = () => { const L = LV[li]; holes = Array(L.m).fill(0); for (let i = 0; i < L.n; i++) holes[Math.floor(Math.random()*L.m)]++; renderLv(); $('#fb').className = 'fb'; $('#fb').textContent = `亂放的結果：最擠的鴿籠有 ${Math.max(...holes)} 隻。亂放很容易超過上限，試著平均分配。`; };
+$('#bReset').onclick = () => loadLv(li);
+$('#bNext').onclick = () => loadLv((li + 1) % LV.length);
+
+// ================= TAB 2: life experiments =================
+// socks
+const SOCK = ['#d9483b', '#2f6fd6', '#232a36'];
+let sockGuess = null, drawer = [], hand = [], hist = [0, 0, 0, 0, 0];
+$('#sockQ').innerHTML = [2, 3, 4, 5, 10].map(v => `<button class="btn" data-v="${v}">${v} 隻</button>`).join('');
+document.querySelectorAll('#sockQ button').forEach(b => b.onclick = () => {
+  sockGuess = +b.dataset.v; document.querySelectorAll('#sockQ button').forEach(x => x.classList.toggle('sel', x === b));
+  const fb = $('#sockFb');
+  if (sockGuess === 4){ fb.className = 'fb good'; fb.innerHTML = '答對了！顏色只有 3 種（3 個鴿籠）。最倒楣的情況是前 3 隻剛好紅、藍、黑各一，第 <b>4</b> 隻不管是什麼顏色，一定和前面某一隻配成一雙。'; }
+  else if (sockGuess < 4){ fb.className = 'fb bad'; fb.innerHTML = `${sockGuess} 隻不夠保證：你可能剛好拿到 ${sockGuess} 種不同的顏色。抽抽看，然後再想一次。`; }
+  else { fb.className = 'fb bad'; fb.innerHTML = `${sockGuess} 隻一定夠，但不是「最少」。想一想最倒楣的情況：會連續拿到幾種不同的顏色？`; }
+});
+function refill(){ drawer = []; for (let c = 0; c < 3; c++) for (let i = 0; i < 10; i++) drawer.push(c); hand = []; renderSocks(); }
+function renderSocks(){ $('#socks').innerHTML = hand.map(c => `<span class="sock" style="background:${SOCK[c]}"></span>`).join('') || '<span class="note">手上還沒有襪子</span>'; }
+function pairFound(){ return new Set(hand).size < hand.length; }
+$('#sockOne').onclick = () => {
+  if (pairFound()){ refill(); }
+  const k = Math.floor(Math.random()*drawer.length); hand.push(drawer.splice(k, 1)[0]); renderSocks();
+  if (pairFound()){ $('#sockFb').className = 'fb good'; $('#sockFb').innerHTML = `抽了 <b>${hand.length}</b> 隻就湊成一雙了。${hand.length === 4 ? '這次是最倒楣的情況！' : ''}`; }
+};
+$('#sockAgain').onclick = refill;
+function sockTrial(){ const left = [10, 10, 10]; const seen = new Set(); for (let n = 1; ; n++){ const tot = left[0] + left[1] + left[2]; let r = Math.random()*tot, c = 0; while (r >= left[c]){ r -= left[c]; c++; } left[c]--; if (seen.has(c)) return n; seen.add(c); } }
+function renderHist(){ const tot = hist.reduce((a, b) => a + b, 0) || 1, mx = Math.max(...hist, 1);
+  $('#sockHist').innerHTML = [2, 3, 4, 5].map(n => `<div><b>${hist[n] || 0}</b><i style="height:${(hist[n] || 0)/mx*100}%;${n === 5 ? 'background:#ddd5c4' : ''}"></i>${n} 隻${n === 5 ? '（從沒發生）' : ''}</div>`).join(''); }
+$('#sockMany').onclick = () => { hist = [0, 0, 0, 0, 0, 0]; for (let i = 0; i < 1000; i++) hist[sockTrial()]++; renderHist(); };
+refill(); renderHist();
+
+// birthdays
+let bN = 30;
+function probShared(n){ if (n > 366) return 1; let p = 1; for (let i = 0; i < n; i++) p *= (366 - i)/366; return 1 - p; }
+function renderBday(){
+  $('#bNo2').textContent = bN + ' 人';
+  const p = probShared(bN);
+  $('#bProb').innerHTML = `${p >= .99995 && bN <= 366 ? '>99.99' : (p*100).toFixed(p > .999 ? 2 : 1)}%<small>有人同一天生日的機率</small>`;
+  $('#bText').innerHTML = bN > 366 ? `<b>${bN}</b> 人 &gt; 366 天：鴿巢原理<b>保證</b>一定有人同一天生日，機率是 100%，不用靠運氣。`
+    : bN === 366 ? '366 人還不能「保證」：理論上每個人可能剛好各佔一天。只要再多 1 人就一定撞期。'
+    : bN >= 23 ? `才 ${bN} 人，機率就超過一半了！這叫「生日悖論」：配對的組合比想像中多得多。但這只是機率，不是保證；要「保證」，得要 367 人。`
+    : `${bN} 人有人撞期的機率還不到一半。`;
+}
+function rollClass(){
+  const days = new Array(366).fill(0); for (let i = 0; i < bN; i++) days[Math.floor(Math.random()*366)]++;
+  $('#cal').innerHTML = days.map(c => `<span class="${c >= 2 ? 'two' : c === 1 ? 'one' : ''}"></span>`).join('');
+  const dup = days.filter(c => c >= 2).length;
+  $('#bClass').textContent = `這一班 ${bN} 人：有 ${dup} 天出現兩人以上同天生日（紅色），每一格是一天。`;
+}
+$('#bN').oninput = e => { bN = +e.target.value; renderBday(); };
+$('#bRoll').onclick = rollClass;
+document.querySelectorAll('#sBday [data-n]').forEach(b => b.onclick = () => { bN = +b.dataset.n; $('#bN').value = bN; renderBday(); rollClass(); });
+renderBday(); rollClass();
+
+// hair
+const PLACES = [['你的班級', 30], ['台中市', 2850000], ['台灣', 23300000], ['全世界', 8100000000]];
+let hp = 2;
+function renderHair(){
+  $('#hairPlaces').innerHTML = PLACES.map(([n], i) => `<button class="btn ${i === hp ? 'sel' : ''}" data-i="${i}">${n}</button>`).join('');
+  document.querySelectorAll('#hairPlaces button').forEach(b => b.onclick = () => { hp = +b.dataset.i; renderHair(); });
+  const [name, P] = PLACES[hp], cages = 1000001, k = Math.ceil(P/cages);
+  $('#hairBig').innerHTML = P > cages ? `至少 ${k.toLocaleString()} 人<small>頭髮根數完全一樣</small>` : '不一定<small>人數比鴿籠少</small>';
+  $('#hairText').innerHTML = P > cages ? `${name}約有 ${P.toLocaleString()} 人，比 1,000,001 個鴿籠多。${P.toLocaleString()} ÷ 1,000,001 進位是 <b>${k.toLocaleString()}</b>，所以一定有一群至少 ${k.toLocaleString()} 人，頭髮的根數一根都不差。我們不知道是誰，但確定他們存在！`
+    : `${name}只有 ${P} 人，比 1,000,001 個鴿籠少得多，鴿巢原理沒辦法保證。`;
+}
+renderHair();
+document.querySelectorAll('#lifeSub button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#lifeSub button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  $('#sSock').hidden = b.dataset.s !== 'sock'; $('#sBday').hidden = b.dataset.s !== 'bday'; $('#sHair').hidden = b.dataset.s !== 'hair';
+});
+
+// ================= TAB 3: geometry =================
+const gcv = $('#gcv'), g = gcv.getContext('2d');
+let shape = 'sq', pts = [], proof = false, GW = 0, GH = 0, drag = -1;
+const SHAPES = {
+  sq:{title:'在邊長 2 的正方形裡放 5 個點', task:'挑戰：放 5 個點，讓<b>每兩點之間的距離都大於 √2（約 1.414）</b>。點一下放點，可以拖曳移動。', target:Math.SQRT2, n:5,
+      verts:[[0, 0], [2, 0], [2, 2], [0, 2]], inside:(x, y) => x >= 0 && x <= 2 && y >= 0 && y <= 2, clamp:(x, y) => [Math.max(0, Math.min(2, x)), Math.max(0, Math.min(2, y))],
+      proof:'把正方形切成 4 個邊長 1 的小正方形（4 個鴿籠）。5 個點（5 隻鴿子）放進 4 個小正方形，一定有兩個點落在同一個小正方形裡。小正方形裡最遠的距離是對角線 √2，所以這兩點的距離不會超過 √2。'},
+  tri:{title:'在邊長 2 的正三角形裡放 5 個點', task:'挑戰：放 5 個點，讓<b>每兩點之間的距離都大於 1</b>。點一下放點，可以拖曳移動。', target:1, n:5,
+      verts:[[0, 0], [2, 0], [1, Math.sqrt(3)]], inside:(x, y) => y >= 0 && y <= Math.sqrt(3)*x + 1e-9 && y <= Math.sqrt(3)*(2 - x) + 1e-9,
+      clamp:(x, y) => { y = Math.max(0, Math.min(Math.sqrt(3), y)); const xl = y/Math.sqrt(3), xr = 2 - y/Math.sqrt(3); return [Math.max(xl, Math.min(xr, x)), y]; },
+      proof:'連接三邊的中點，把大三角形切成 4 個邊長 1 的小正三角形（4 個鴿籠）。5 個點一定有兩個落在同一個小三角形裡，而小三角形裡最遠的距離就是邊長 1。'}
+};
+function geoLayout(){ const S = SHAPES[shape], pad = 40, h = shape === 'sq' ? 2 : Math.sqrt(3); const sc = Math.min((GW - pad*2)/2, (GH - pad*2)/h); const ox = (GW - 2*sc)/2, oy = (GH + h*sc)/2; return {sc, ox, oy, X:x => ox + x*sc, Y:y => oy - y*sc, ix:px => (px - ox)/sc, iy:py => (oy - py)/sc}; }
+function minPair(){ let best = Infinity, bi = -1, bj = -1; for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++){ const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]); if (d < best){ best = d; bi = i; bj = j; } } return [best, bi, bj]; }
+function drawGeo(){
+  const r = gcv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); GW = r.width; GH = r.height;
+  if (gcv.width !== Math.round(GW*dpr)){ gcv.width = Math.round(GW*dpr); gcv.height = Math.round(GH*dpr); }
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#fff'; g.fillRect(0, 0, GW, GH);
+  const S = SHAPES[shape], Lt = geoLayout();
+  g.beginPath(); S.verts.forEach(([x, y], i) => i ? g.lineTo(Lt.X(x), Lt.Y(y)) : g.moveTo(Lt.X(x), Lt.Y(y))); g.closePath();
+  g.fillStyle = '#f7f3ea'; g.fill(); g.strokeStyle = '#232a36'; g.lineWidth = 2.5; g.stroke();
+  if (proof){
+    g.strokeStyle = '#e3a72f'; g.lineWidth = 2; g.setLineDash([7, 5]); g.beginPath();
+    if (shape === 'sq'){ g.moveTo(Lt.X(1), Lt.Y(0)); g.lineTo(Lt.X(1), Lt.Y(2)); g.moveTo(Lt.X(0), Lt.Y(1)); g.lineTo(Lt.X(2), Lt.Y(1)); }
+    else { const s3 = Math.sqrt(3); g.moveTo(Lt.X(.5), Lt.Y(s3/2)); g.lineTo(Lt.X(1.5), Lt.Y(s3/2)); g.lineTo(Lt.X(1), Lt.Y(0)); g.closePath(); }
+    g.stroke(); g.setLineDash([]);
+  }
+  const [d, bi, bj] = minPair(), S2 = SHAPES[shape];
+  // close pairs
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++){
+    const dd = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
+    if (dd <= S2.target + 1e-9){ g.strokeStyle = 'rgba(228,96,78,.8)'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(Lt.X(pts[i][0]), Lt.Y(pts[i][1])); g.lineTo(Lt.X(pts[j][0]), Lt.Y(pts[j][1])); g.stroke(); }
+  }
+  // target radius halo on each point
+  pts.forEach(([x, y], i) => {
+    g.strokeStyle = 'rgba(111,127,152,.25)'; g.lineWidth = 1; g.beginPath(); g.arc(Lt.X(x), Lt.Y(y), S2.target*Lt.sc, 0, Math.PI*2); g.stroke();
+    g.fillStyle = (i === bi || i === bj) && d <= S2.target + 1e-9 ? '#e4604e' : '#1f8f86'; g.beginPath(); g.arc(Lt.X(x), Lt.Y(y), 9, 0, Math.PI*2); g.fill();
+    g.fillStyle = '#fff'; g.font = '700 11px "Lexend", sans-serif'; g.textAlign = 'center'; g.fillText(i + 1, Lt.X(x), Lt.Y(y) + 4); g.textAlign = 'start';
+  });
+  g.fillStyle = '#6a6f7c'; g.font = '12px "Noto Sans TC", sans-serif'; g.fillText('淡灰色圓圈：每個點周圍的「禁區」半徑', 12, GH - 12);
+}
+function geoFb(){
+  const S = SHAPES[shape], [d] = minPair(), fb = $('#gFb');
+  $('#gTitle').textContent = S.title; $('#gTask').innerHTML = S.task;
+  if (proof){ fb.className = 'fb good'; fb.innerHTML = '<b>證明：</b>' + S.proof; return; }
+  if (pts.length < 2){ fb.className = 'fb'; fb.innerHTML = `已放 ${pts.length} / ${S.n} 個點。`; return; }
+  const ok = d > S.target + 1e-9;
+  if (pts.length < S.n){ fb.className = ok ? 'fb good' : 'fb bad'; fb.innerHTML = `已放 ${pts.length} / ${S.n} 個點，目前最近的兩點相距 <b>${d.toFixed(3)}</b>。${ok ? '到目前為止都成功！' : '太近了，拖開一點。'}`; }
+  else { fb.className = ok ? 'fb good' : 'fb bad'; fb.innerHTML = ok ? '你成功了？！請再檢查一次……' : `5 個點都放好了，最近的兩點相距 <b>${d.toFixed(3)}</b>，沒有超過 ${S.target === 1 ? '1' : '√2'}。${Math.abs(d - S.target) < .02 ? '已經非常接近極限了！' : '再拖拖看，'}其實這永遠做不到，按「看證明」看看為什麼。`; }
+}
+function gPos(e){ const r = gcv.getBoundingClientRect(), Lt = geoLayout(); return [Lt.ix(e.clientX - r.left), Lt.iy(e.clientY - r.top)]; }
+gcv.addEventListener('pointerdown', e => {
+  const [x, y] = gPos(e), Lt = geoLayout();
+  drag = pts.findIndex(([px, py]) => Math.hypot(px - x, py - y)*Lt.sc < 16);
+  if (drag < 0){ if (pts.length >= SHAPES[shape].n) return; if (!SHAPES[shape].inside(x, y)) return; pts.push([x, y]); drag = pts.length - 1; }
+  gcv.setPointerCapture(e.pointerId); geoFb();
+});
+gcv.addEventListener('pointermove', e => { if (drag < 0) return; const [x, y] = gPos(e); pts[drag] = SHAPES[shape].clamp(x, y); geoFb(); });
+const gUp = () => drag = -1; gcv.addEventListener('pointerup', gUp); gcv.addEventListener('pointercancel', gUp);
+$('#gClear').onclick = () => { pts = []; proof = false; geoFb(); };
+$('#gProof').onclick = () => { proof = !proof; $('#gProof').textContent = proof ? '隱藏證明' : '看證明'; geoFb(); };
+document.querySelectorAll('#geoSub button').forEach(b => b.onclick = () => { shape = b.dataset.g; pts = []; proof = false; $('#gProof').textContent = '看證明'; document.querySelectorAll('#geoSub button').forEach(x => x.setAttribute('aria-pressed', x === b)); geoFb(); });
+
+// ================= shell =================
+function setTab(t){
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  $('#pCage').hidden = t !== 'cage'; $('#pLife').hidden = t !== 'life'; $('#pGeo').hidden = t !== 'geo';
+  if (t === 'geo') geoFb();
+  tab = t;
+}
+let tab = 'cage';
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+loadLv(0); geoFb();
+function frame(){ if (tab === 'geo') drawGeo(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+})();
+</script>

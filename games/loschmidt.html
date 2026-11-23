@@ -1,0 +1,436 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>時光倒轉實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: lab-notebook look — gas box + entropy chart stage with tabs left, explainer rail right; stacks on phones.
+   Deliberately a single light "graph paper" theme. */
+:root{
+  --paper:#f7f4ec;
+  --sheet:#fffdf7;
+  --grid:#d9e3ef;
+  --rule:#d8d1c0;
+  --ink:#1f2a44;
+  --dim:#5f6880;
+  --arrow:#e2513d;
+  --back:#2b7bd6;
+  --good:#2e9d6a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--arrow);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#efe9da;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--arrow)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+.read{position:absolute;top:10px;left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;display:flex;flex-direction:column;gap:1px;max-width:min(62%,460px)}
+.read .big{font-family:var(--f-disp);font-weight:900;font-size:22px;line-height:1.3}
+.read .line{font-size:14px}
+.read .line b{font-family:var(--f-mono);color:var(--arrow)}
+.read .sub{font-size:13px;color:var(--dim)}
+.dock{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;
+  padding-block:8px max(10px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:rgba(247,244,236,.96);border-top:1px solid var(--rule)}
+.dock button{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:8px 14px;font-size:14px;font-weight:500}
+.dock button:hover:not(:disabled){border-color:var(--ink)}
+.dock button:disabled{opacity:.4;cursor:default}
+.dock button.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.dock button.rev{background:var(--back);border-color:var(--back);color:#fff;font-weight:700}
+.dock button.on{background:var(--arrow);border-color:var(--arrow);color:#fff}
+.dock .sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px;max-width:460px}
+.dock .sl input{flex:1;min-width:0;accent-color:var(--arrow)}
+.dock .sl output{font-family:var(--f-mono);color:var(--ink);min-width:44px;text-align:right}
+.toast{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-weight:700;border-radius:10px;padding:8px 16px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:86%;text-align:center}
+.toast.show{opacity:1}
+
+.rail{background:var(--paper);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.kicker{font-family:var(--f-mono);font-weight:600;font-size:12px;letter-spacing:.18em;color:var(--arrow);text-transform:uppercase}
+h1{margin:2px 0 0;font-family:var(--f-disp);font-weight:900;font-size:29px;line-height:1.3;text-wrap:balance}
+.lede{margin:8px 0 0;font-size:14.5px;color:#3a4460}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-size:15px;font-weight:700;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;font-size:14px;color:#2f3954}
+.card b{color:var(--ink)}
+.card .q{font-family:var(--f-disp);font-size:16px;color:var(--ink);display:block;margin-bottom:4px}
+.eq{font-family:var(--f-mono);text-align:center;font-size:17px;margin:6px 0;color:var(--ink)}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:grid;grid-template-columns:48px 1fr;gap:10px;font-size:13.5px;color:#2f3954}
+.tl time{font-family:var(--f-mono);font-weight:600;color:var(--arrow)}
+.note{margin:0;font-size:12.5px;color:var(--dim)}
+
+@media (max-width:920px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:84vh;min-height:600px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .read{max-width:92%}
+  .read .big{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div class="tabs" id="tabs">
+      <button data-t="rev" aria-pressed="true">時光倒轉<small>讓氣體跑回去</small></button>
+      <button data-t="film" aria-pressed="false">正播還是倒播？<small>猜猜看</small></button>
+      <button data-t="odds" aria-pressed="false">等它自己回去<small>要等多久</small></button>
+    </div>
+    <div class="view" id="view">
+      <canvas id="cv" aria-label="氣體粒子模擬"></canvas>
+      <div class="read" id="read"></div>
+      <div class="toast" id="toast"></div>
+      <div class="dock" id="dock"></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">Loschmidt's Paradox</div>
+      <h1>洛施密特悖論：時間能倒著走嗎？</h1>
+      <p class="lede">打翻的牛奶不會自己跑回杯子裡，香水的味道散開後也不會自己聚回瓶子。可是，描述每一顆粒子運動的物理定律，倒著走也完全成立。那麼「時間只能往前」到底是從哪裡來的？</p>
+    </div>
+
+    <section>
+      <h2>問題在哪裡</h2>
+      <div class="card"><span class="q">1876 年，洛施密特的質疑</span>波茲曼證明了「熵（混亂度）只會增加」。他的同事洛施密特反問：牛頓運動定律倒著用也成立，假如把每一顆氣體粒子的速度<b>全部反過來</b>，它們就會沿著原路走回去，散開的氣體會重新聚在一起，熵就減少了。那「熵只會增加」怎麼可能是真的？</div>
+    </section>
+
+    <section>
+      <h2>波茲曼的回答</h2>
+      <div class="card"><span class="q">不是不可能，只是機率太小</span>氣體「均勻散開」的排列方式，比「全部擠在一邊」的方式多出天文數字倍。粒子亂跑的時候，幾乎一定會跑進數量多的那一類狀態裡。據說波茲曼曾回答洛施密特：「那你就去把它們倒轉看看啊！」
+        <div class="eq">S = k log W</div>
+        W 是同一種樣子可以有幾種排列方式。這個公式就刻在波茲曼的墓碑上。</div>
+    </section>
+
+    <section>
+      <h2>為什麼現實中倒轉不了</h2>
+      <div class="card"><span class="q">蝴蝶效應</span>就算你真的能把速度反過來，只要有一顆粒子差了百萬分之一，誤差就會在一次次碰撞中越滾越大，氣體再也回不去。你可以在「時光倒轉」裡親自試試看。</div>
+      <div class="card"><span class="q">時間的箭頭從哪裡來？</span>今天大多數物理學家認為，答案在宇宙的開端：宇宙誕生時處在熵非常低、非常有秩序的狀態，之後的一切都是在「慢慢變亂」。我們記得過去、不記得未來，也是因為這個方向。</div>
+    </section>
+
+    <section>
+      <h2>真的有人讓時間倒轉過</h2>
+      <div class="card"><b>自旋回波（1950 年）</b>：物理學家哈恩讓原子核的磁性方向先散開，再用一個脈衝把它們「反轉」，結果它們真的重新聚在一起，送出一個「回聲」訊號。醫院的磁振造影（MRI）就用到這個原理。</div>
+      <div class="card"><b>甘油攪拌實驗</b>：在很黏的甘油裡滴幾滴墨水，慢慢攪拌幾圈，墨水看起來混在一起了；再倒著攪拌同樣的圈數，墨水又會回到原本的樣子。因為甘油太黏，流動不會亂掉，蝴蝶效應來不及發生。</div>
+    </section>
+
+    <section>
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><time>1872</time><span>波茲曼提出 H 定理，用粒子運動解釋「熵會增加」。</span></li>
+        <li><time>1876</time><span>洛施密特提出「可逆性悖論」，也就是本頁的主題。</span></li>
+        <li><time>1877</time><span>波茲曼改用統計來解釋：熵增加只是「機率壓倒性地大」。</span></li>
+        <li><time>1890</time><span>龐加萊證明：封閉系統等得夠久，總會回到接近原本的狀態（回歸定理）。</span></li>
+        <li><time>1950</time><span>哈恩發現自旋回波，在實驗室裡實現了「倒轉」。</span></li>
+      </ul>
+    </section>
+    <p class="note">模擬使用「位元可逆」的整數運算（Levesque–Verlet 方法），讓倒轉在電腦裡可以分毫不差。真實世界的粒子不可能被這麼精準地控制。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, tab = 'rev';
+let toastT; function toast(m, ms = 3600){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => e.classList.remove('show'), ms); }
+
+// ============ bit-reversible gas (Störmer–Verlet on integers) ============
+// x[n+1] = 2x[n] − x[n−1] + F(x[n]), with F rounded to an integer: swapping the last two frames runs time backwards exactly.
+function makeGas(N, BW, BH, R){
+  return {N, BW, BH, R, K:.16, x:new Float64Array(N), y:new Float64Array(N), px:new Float64Array(N), py:new Float64Array(N), ax:new Float64Array(N), ay:new Float64Array(N), wall:false, t:0, dir:1};
+}
+function seedGas(g, region, speed, rng){
+  const {N, R} = g; const [x0, y0, x1, y1] = region;
+  const cols = Math.max(1, Math.floor((x1 - x0)/(2.4*R))), rows = Math.max(1, Math.ceil(N/cols));
+  const dx = (x1 - x0)/cols, dy = (y1 - y0)/rows;
+  for (let i = 0; i < N; i++){
+    const c = i % cols, r = Math.floor(i/cols);
+    const x = Math.round(x0 + (c + .5)*dx + (rng() - .5)*dx*.3), y = Math.round(y0 + (r + .5)*dy + (rng() - .5)*dy*.3);
+    const a = rng()*Math.PI*2, v = speed*(.5 + rng());
+    g.x[i] = x; g.y[i] = y; g.px[i] = x - Math.round(Math.cos(a)*v); g.py[i] = y - Math.round(Math.sin(a)*v);
+  }
+  g.t = 0; g.dir = 1;
+}
+function forces(g){
+  const {N, R, K, BW, BH, x, y, ax, ay} = g, D = 2*R, D2 = D*D;
+  ax.fill(0); ay.fill(0);
+  for (let i = 0; i < N; i++){
+    const xi = x[i], yi = y[i];
+    for (let j = i + 1; j < N; j++){
+      const dx = x[j] - xi; if (dx >= D || dx <= -D) continue;
+      const dy = y[j] - yi; if (dy >= D || dy <= -D) continue;
+      const d2 = dx*dx + dy*dy; if (d2 >= D2 || d2 === 0) continue;
+      const d = Math.sqrt(d2), o = K*(D - d)/d;
+      const fx = Math.round(o*dx), fy = Math.round(o*dy);
+      ax[i] -= fx; ay[i] -= fy; ax[j] += fx; ay[j] += fy;
+    }
+    if (xi < R) ax[i] += Math.round(K*(R - xi)); else if (xi > BW - R) ax[i] -= Math.round(K*(xi - BW + R));
+    if (yi < R) ay[i] += Math.round(K*(R - yi)); else if (yi > BH - R) ay[i] -= Math.round(K*(yi - BH + R));
+    if (g.wall && xi > BW/2 - R) ax[i] -= Math.round(K*(xi - BW/2 + R));
+  }
+}
+function stepGas(g){
+  forces(g);
+  const {N, x, y, px, py, ax, ay} = g;
+  for (let i = 0; i < N; i++){
+    const nx = 2*x[i] - px[i] + ax[i], ny = 2*y[i] - py[i] + ay[i];
+    px[i] = x[i]; py[i] = y[i]; x[i] = nx; y[i] = ny;
+  }
+  g.t += g.dir;
+}
+function reverseGas(g){ // swap the last two frames
+  for (let i = 0; i < g.N; i++){ const a = g.x[i], b = g.y[i]; g.x[i] = g.px[i]; g.y[i] = g.py[i]; g.px[i] = a; g.py[i] = b; }
+  g.t -= g.dir;      // the current frame is now the previous one
+  g.dir = -g.dir;
+}
+// entropy of the left/right split: log of how many ways to choose which particles sit on the left
+const LF = [0]; for (let i = 1; i <= 2000; i++) LF[i] = LF[i - 1] + Math.log(i);
+function leftCount(g){ let n = 0; for (let i = 0; i < g.N; i++) if (g.x[i] < g.BW/2) n++; return n; }
+function entropyPct(g){ const nl = leftCount(g), N = g.N, h = Math.floor(N/2); return (LF[N] - LF[nl] - LF[N - nl])/(LF[N] - LF[h] - LF[N - h])*100; }
+function mulberry(a){ return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0)/4294967296; }; }
+
+// ============ TAB 1: reverse time ============
+const BW = 1000000, BH = 520000, RAD = 11000, NG = 140;
+const A = {g:makeGas(NG, BW, BH, RAD), state:'ready', nudge:false, nudged:-1, hist:[], revAt:0, speed:3};
+function resetRev(){
+  seedGas(A.g, [RAD*1.6, RAD*1.6, BW/2 - RAD*1.6, BH - RAD*1.6], 2600, mulberry(7));
+  A.g.wall = true; A.state = 'ready'; A.hist = []; A.nudged = -1; A.revAt = 0; syncRevDock();
+}
+function setupRev(){
+  $('#dock').innerHTML = `<button id="bOpen" class="pri">① 抽掉隔板</button>
+    <button id="bRev" class="rev">② 時光倒轉（速度全部反過來）</button>
+    <button id="bNudge">倒轉時輕碰一顆粒子：關</button>
+    <button id="bReset">重來</button>
+    <div class="sl"><span>速度</span><input id="sp" type="range" min="1" max="8" value="${A.speed}"><output id="spo">${A.speed}×</output></div>`;
+  $('#bOpen').onclick = () => { if (A.state !== 'ready') return; A.g.wall = false; A.state = 'run'; toast('隔板抽掉了，氣體開始往右邊散開'); syncRevDock(); };
+  $('#bRev').onclick = () => {
+    if (A.state !== 'run' || A.g.t < 150) return;
+    reverseGas(A.g); A.revAt = A.g.t; A.state = 'back';
+    if (A.nudge){ A.nudged = 37; A.g.x[37] += 1; A.g.px[37] += 1; toast('把一顆粒子移動了 1 單位：只有盒子寬度的百萬分之一'); }
+    else toast('每顆粒子的速度都反過來了，看看會發生什麼事');
+    syncRevDock();
+  };
+  $('#bNudge').onclick = () => { A.nudge = !A.nudge; syncRevDock(); };
+  $('#bReset').onclick = resetRev;
+  $('#sp').oninput = e => { A.speed = +e.target.value; $('#spo').textContent = A.speed + '×'; };
+  syncRevDock();
+}
+function syncRevDock(){
+  const o = $('#bOpen'), r = $('#bRev'), n = $('#bNudge'); if (!o) return;
+  o.disabled = A.state !== 'ready'; r.disabled = !(A.state === 'run');
+  n.textContent = '倒轉時輕碰一顆粒子：' + (A.nudge ? '開' : '關'); n.classList.toggle('on', A.nudge);
+}
+function updateRev(){
+  const g = A.g;
+  if (A.state === 'run' || A.state === 'back'){
+    for (let s = 0; s < A.speed*2; s++){
+      stepGas(g);
+      if (g.t % 6 === 0) A.hist.push([A.hist.length, entropyPct(g), A.state === 'back']);
+      if (A.state === 'back' && g.t <= 0){
+        A.state = 'done'; const nl = leftCount(g);
+        if (nl === g.N){ g.wall = true; toast(A.nudged >= 0 ? '這次運氣好，誤差還沒長大就回到原點了' : '全部回到左邊了！時間真的倒轉了', 5000); }
+        else toast(`回不去了！只有 ${nl} 顆回到左邊。一點點誤差，經過碰撞被放大成大混亂`, 6000);
+        syncRevDock(); break;
+      }
+    }
+    if (A.hist.length > 1600) A.hist.splice(0, 400);
+  }
+  const nl = leftCount(g), S = entropyPct(g);
+  const label = {ready:'隔板還在：140 顆氣體粒子都在左邊', run:'氣體自己散開了，熵（混亂度）上升', back:'時光倒流中……每顆粒子都沿著原路往回走', done:nl === g.N ? '回到原點：全部又擠回左邊了！' : '倒轉失敗：氣體沒能回去'}[A.state];
+  $('#read').innerHTML = `<div class="big">${label}</div>
+    <div class="line">左邊 <b>${nl}</b> 顆 · 右邊 <b>${g.N - nl}</b> 顆 · 混亂度（熵） <b>${Math.round(S)}%</b></div>
+    <div class="sub">時間：第 ${Math.abs(g.t)} 步${A.state === 'back' ? `（倒數回到 0）` : ''}</div>`;
+}
+function drawBox(g, bx, by, bw, bh, opts = {}){
+  const s = bw/g.BW;
+  ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = '#1f2a44'; ctx.lineWidth = 2.5; ctx.strokeRect(bx, by, bw, bh);
+  ctx.strokeStyle = 'rgba(31,42,68,.18)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx + bw/2, by); ctx.lineTo(bx + bw/2, by + bh); ctx.stroke(); ctx.setLineDash([]);
+  if (g.wall){ ctx.fillStyle = '#1f2a44'; ctx.fillRect(bx + bw/2 - 3, by, 6, bh); }
+  const r = Math.max(2.2, g.R*s);
+  for (let i = 0; i < g.N; i++){
+    const x = bx + g.x[i]*s, y = by + g.y[i]*s;
+    ctx.fillStyle = i === opts.mark ? '#e2513d' : `hsl(${205 + (i*37) % 60},62%,${opts.dim ? 62 : 48}%)`;
+    ctx.beginPath(); ctx.arc(x, y, i === opts.mark ? r*1.25 : r, 0, Math.PI*2); ctx.fill();
+  }
+}
+function drawRev(){
+  const dockH = $("#dock").offsetHeight || 60, top = $("#read").offsetHeight + 24, availH = H - dockH - top - 16;
+  const chartH = Math.min(150, availH*.32), boxH = availH - chartH - 26;
+  let bw = Math.min(W - 40, boxH*BW/BH), bh = bw*BH/BW; const bx = (W - bw)/2, by = top;
+  drawBox(A.g, bx, by, bw, bh, {mark:A.nudged});
+  ctx.fillStyle = '#5f6880'; ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillText('左邊', bx + 6, by + 16); ctx.fillText('右邊', bx + bw - 32, by + 16);
+  // entropy chart
+  const cy = by + bh + 26, cx0 = bx, cw = bw;
+  ctx.fillStyle = '#1f2a44'; ctx.font = '700 13px "Noto Sans TC", sans-serif'; ctx.fillText('混亂度（熵）隨時間的變化', cx0, cy - 6);
+  ctx.strokeStyle = '#d9e3ef'; ctx.lineWidth = 1; for (let k = 0; k <= 4; k++){ const y = cy + chartH*k/4; ctx.beginPath(); ctx.moveTo(cx0, y); ctx.lineTo(cx0 + cw, y); ctx.stroke(); }
+  ctx.strokeStyle = '#1f2a44'; ctx.strokeRect(cx0, cy, cw, chartH);
+  ctx.fillStyle = '#5f6880'; ctx.font = '11px "IBM Plex Mono", monospace'; ctx.fillText('100%', cx0 + 4, cy + 12); ctx.fillText('0%', cx0 + 4, cy + chartH - 4);
+  const hs = A.hist, n = Math.max(200, hs.length);
+  for (let k = 1; k < hs.length; k++){
+    const [, s0, b0] = hs[k - 1], [, s1] = hs[k];
+    ctx.strokeStyle = b0 ? '#2b7bd6' : '#e2513d'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx0 + (k - 1)/n*cw, cy + chartH*(1 - s0/100)); ctx.lineTo(cx0 + k/n*cw, cy + chartH*(1 - s1/100)); ctx.stroke();
+  }
+  ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#e2513d'; ctx.fillText('— 正常往前', cx0 + cw - 160, cy + 14); ctx.fillStyle = '#2b7bd6'; ctx.fillText('— 時光倒轉', cx0 + cw - 80, cy + 14);
+}
+
+// ============ TAB 2: forward or backward? ============
+const F2 = {round:0, score:0, total:6, clip:null, frame:0, playing:false, answered:false, dir:1, N:2};
+const ROUNDS = [2, 60, 3, 140, 1, 90];
+function newClip(){
+  const N = ROUNDS[F2.round % ROUNDS.length], g = makeGas(N, 800000, 460000, N > 40 ? 13000 : 22000);
+  const rng = mulberry(1000 + F2.round*17 + Math.floor(Math.random()*1000));
+  if (N <= 3) seedGas(g, [60000, 60000, 740000, 400000], 5200, rng);
+  else seedGas(g, [g.R*1.5, g.R*1.5, 210000, 240000], 3800, rng);
+  const frames = [];
+  for (let f = 0; f < 330; f++){ frames.push([Float32Array.from(g.x), Float32Array.from(g.y)]); for (let s = 0; s < 3; s++) stepGas(g); }
+  F2.clip = {g, frames}; F2.N = N; F2.dir = Math.random() < .5 ? 1 : -1; F2.frame = 0; F2.playing = true; F2.answered = false;
+  syncFilm();
+}
+function setupFilm(){
+  $('#dock').innerHTML = `<button data-a="1">正著播</button><button data-a="-1">倒著播</button><button data-a="0">分不出來</button>
+    <button id="fReplay">重播</button><button id="fNext" class="pri" hidden>下一段 →</button>`;
+  document.querySelectorAll('[data-a]').forEach(b => b.onclick = () => answerFilm(+b.dataset.a));
+  $('#fReplay').onclick = () => { F2.frame = 0; F2.playing = true; };
+  $('#fNext').onclick = () => { F2.round++; if (F2.round >= F2.total){ F2.round = 0; F2.score = 0; } newClip(); };
+  if (!F2.clip) newClip(); else syncFilm();
+}
+function syncFilm(){ const n = $('#fNext'); if (!n) return; n.hidden = !F2.answered; document.querySelectorAll('[data-a]').forEach(b => b.disabled = F2.answered); n.textContent = F2.round + 1 >= F2.total ? '再玩一輪' : '下一段 →'; }
+function answerFilm(a){
+  if (F2.answered) return; F2.answered = true;
+  const few = F2.N <= 3, right = few ? a === 0 : a === F2.dir;
+  if (right) F2.score++;
+  const truth = F2.dir > 0 ? '正著播' : '倒著播';
+  toast(few ? (right ? `答對！只有 ${F2.N} 顆粒子時，正播倒播看起來一樣合理。（這段其實是${truth}）` : `其實分不出來！只有 ${F2.N} 顆粒子，倒過來播也完全合理。（這段是${truth}）`)
+            : (right ? `答對！這段是${truth}。很多粒子自己聚在一起，看起來就是「倒帶」。` : `這段是${truth}。${F2.dir < 0 ? '粒子自己聚到角落，現實中幾乎不可能發生。' : '粒子從角落散開，這是正常的方向。'}`), 6000);
+  syncFilm();
+}
+function updateFilm(){
+  if (F2.playing && F2.clip){ F2.frame++; if (F2.frame >= F2.clip.frames.length - 1){ F2.frame = F2.clip.frames.length - 1; F2.playing = false; } }
+  $('#read').innerHTML = `<div class="big">這段影片是正著播，還是倒著播？</div>
+    <div class="line">第 ${F2.round + 1} / ${F2.total} 段 · 答對 <b>${F2.score}</b> 段 · 粒子數：<b>${F2.N}</b></div>
+    <div class="sub">看完再作答。粒子很少的時候，答案可能是「分不出來」。</div>`;
+}
+function drawFilm(){
+  const c = F2.clip; if (!c) return;
+  const dockH = $("#dock").offsetHeight || 60, top = $("#read").offsetHeight + 28, avail = H - dockH - top - 30;
+  const bw = Math.min(W - 40, avail*c.g.BW/c.g.BH), bh = bw*c.g.BH/c.g.BW, bx = (W - bw)/2, by = top;
+  const idx = F2.dir > 0 ? F2.frame : c.frames.length - 1 - F2.frame, [fx, fy] = c.frames[idx];
+  ctx.fillStyle = '#1b1f2a'; ctx.fillRect(bx - 10, by - 10, bw + 20, bh + 20);
+  ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, bw, bh);
+  const s = bw/c.g.BW, r = Math.max(2.5, c.g.R*s);
+  for (let i = 0; i < c.g.N; i++){ ctx.fillStyle = `hsl(${205 + (i*37) % 60},62%,48%)`; ctx.beginPath(); ctx.arc(bx + fx[i]*s, by + fy[i]*s, r, 0, Math.PI*2); ctx.fill(); }
+  // film strip perforations
+  ctx.fillStyle = '#fff'; for (let x = bx; x < bx + bw; x += 22){ ctx.fillRect(x + 4, by - 8, 10, 5); ctx.fillRect(x + 4, by + bh + 3, 10, 5); }
+  // progress
+  ctx.fillStyle = '#d8d1c0'; ctx.fillRect(bx, by + bh + 16, bw, 4); ctx.fillStyle = '#e2513d'; ctx.fillRect(bx, by + bh + 16, bw*F2.frame/(c.frames.length - 1), 4);
+  if (F2.answered){ ctx.fillStyle = 'rgba(31,42,68,.85)'; ctx.font = '700 14px "Noto Sans TC", sans-serif'; ctx.fillText(F2.dir > 0 ? '▶ 正著播' : '◀ 倒著播', bx + 10, by + 22); }
+}
+
+// ============ TAB 3: waiting for it to happen by chance ============
+const O = {N:10, tries:0, hits:0, pos:[], t:0};
+const SPECIAL = {cup:2.5e22, mole:6.02e23};
+function setupOdds(){
+  $('#dock').innerHTML = `<div class="sl"><span>粒子數</span><input id="oN" type="range" min="1" max="30" value="${Math.min(30, O.N)}"><output id="oNo"></output></div>
+    <button data-s="100">100 顆</button><button data-s="cup">一口氣的空氣分子</button><button id="oReset">重新計數</button>`;
+  $('#oN').oninput = e => { O.N = +e.target.value; O.tries = 0; O.hits = 0; };
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { O.N = SPECIAL[b.dataset.s] || +b.dataset.s; O.tries = 0; O.hits = 0; });
+  $('#oReset').onclick = () => { O.tries = 0; O.hits = 0; };
+}
+const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹⁻';
+const sup = e => String(e).split('').map(c => SUP['0123456789-'.indexOf(c)]).join('');
+function sci(log10){ const e = Math.floor(log10), m = Math.pow(10, log10 - e); return `${m.toFixed(1)}×10${sup(e)}`; }   // takes log10 of the number
+function fmtProb(N){
+  const l = -N*Math.log10(2);
+  if (l > -6) return `1/${Math.round(Math.pow(2, N)).toLocaleString()}`;
+  if (l > -1e6) return `大約 10${sup(Math.round(l))}`;
+  return `大約 10 的「負 ${sci(Math.log10(-l))}」次方`;
+}
+function fmtWait(N, rate){
+  const ls = N*Math.log10(2) - Math.log10(rate); // log10 seconds
+  if (ls < -1) return '不到 0.1 秒';
+  if (ls < 1.78) return `${Math.pow(10, ls).toFixed(ls < 0 ? 1 : 0)} 秒`;
+  if (ls < 3.56) return `${(Math.pow(10, ls)/60).toFixed(0)} 分鐘`;
+  if (ls < 4.94) return `${(Math.pow(10, ls)/3600).toFixed(0)} 小時`;
+  if (ls < 7.5) return `${(Math.pow(10, ls)/86400).toFixed(0)} 天`;
+  const ly = ls - 7.499;
+  if (ly < 9) return `${Math.round(Math.pow(10, ly)).toLocaleString()} 年`;
+  const lu = ly - Math.log10(1.38e10);
+  if (lu < 0) return `${(Math.pow(10, ly)/1e8).toFixed(0)} 億年`;
+  if (lu < 15) return `宇宙年齡的 ${Math.pow(10, lu) < 1e4 ? Math.round(Math.pow(10, lu)).toLocaleString() : sci(lu)} 倍`;
+  return lu < 1e6 ? `宇宙年齡的 10${sup(Math.round(lu))} 倍` : `宇宙年齡的「10 的 ${sci(Math.log10(lu))} 次方」倍`;
+}
+function updateOdds(dt){
+  O.t += dt;
+  const live = O.N <= 30;
+  if (live && O.t > 1/12){ O.t = 0; O.pos = []; let all = true;
+    for (let i = 0; i < O.N; i++){ const left = Math.random() < .5; if (!left) all = false; O.pos.push([left ? Math.random()*.46 + .02 : Math.random()*.46 + .52, Math.random()*.9 + .05]); }
+    O.tries++; if (all){ O.hits++; O.flash = 1; } }
+  const Nlabel = O.N >= 1e20 ? `約 ${sci(Math.log10(O.N))}` : O.N.toLocaleString();
+  $('#read').innerHTML = `<div class="big">全部 ${Nlabel} 顆剛好都跑到左邊的機率</div>
+    <div class="line">機率：<b>${fmtProb(O.N)}</b></div>
+    <div class="line">如果每秒隨機重排 12 次（像畫面這樣）：平均要等 <b>${fmtWait(O.N, 12)}</b></div>
+    <div class="line">如果每秒重排 1 億次：平均要等 <b>${fmtWait(O.N, 1e8)}</b></div>
+    ${live ? `<div class="sub">畫面實驗：已重排 ${O.tries.toLocaleString()} 次，全部在左邊 ${O.hits} 次</div>` : '<div class="sub">粒子太多了，畫面畫不出來</div>'}`;
+}
+function drawOdds(){
+  const dockH = $("#dock").offsetHeight || 60, top = $("#read").offsetHeight + 24, avail = H - dockH - top - 20;
+  const bw = Math.min(W - 40, avail*2), bh = Math.min(avail, bw/2), bx = (W - bw)/2, by = top;
+  ctx.fillStyle = O.flash > 0 ? `rgba(46,157,106,${.25*O.flash})` : '#fff'; ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = '#1f2a44'; ctx.lineWidth = 2.5; ctx.strokeRect(bx, by, bw, bh);
+  ctx.strokeStyle = 'rgba(31,42,68,.25)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx + bw/2, by); ctx.lineTo(bx + bw/2, by + bh); ctx.stroke(); ctx.setLineDash([]);
+  if (O.N <= 30){ O.pos.forEach(([u, v], i) => { ctx.fillStyle = `hsl(${205 + (i*37) % 60},62%,48%)`; ctx.beginPath(); ctx.arc(bx + u*bw, by + v*bh, Math.max(4, Math.min(12, bw/60)), 0, Math.PI*2); ctx.fill(); }); }
+  else { ctx.fillStyle = 'rgba(43,123,214,.18)'; ctx.fillRect(bx + 2, by + 2, bw - 4, bh - 4); ctx.fillStyle = '#1f2a44'; ctx.font = '700 15px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('均勻散開的氣體（粒子多到畫不出來）', bx + bw/2, by + bh/2); ctx.textAlign = 'start'; }
+  if (O.flash > 0){ ctx.fillStyle = '#2e9d6a'; ctx.font = '700 16px "Noto Sans TC", sans-serif'; ctx.fillText('全部在左邊！', bx + 10, by + 24); O.flash = Math.max(0, O.flash - .02); }
+}
+
+// ============ shell ============
+function setTab(t){
+  tab = t; document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === t));
+  if (t === 'rev') setupRev(); else if (t === 'film') setupFilm(); else setupOdds();
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => setTab(b.dataset.t));
+function paper(){
+  ctx.fillStyle = '#fffdf7'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#e4ebf3'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 22){ ctx.beginPath(); ctx.moveTo(x + .5, 0); ctx.lineTo(x + .5, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 22){ ctx.beginPath(); ctx.moveTo(0, y + .5); ctx.lineTo(W, y + .5); ctx.stroke(); }
+}
+const view = $('#view');
+function resize(){ const r = view.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); }
+new ResizeObserver(resize).observe(view); resize();
+resetRev(); setTab('rev');
+let last = performance.now(), rT = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); paper();
+  if (tab === 'rev'){ updateRev(); drawRev(); }
+  else if (tab === 'film'){ updateFilm(); drawFilm(); }
+  else { updateOdds(dt); drawOdds(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

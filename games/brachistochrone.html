@@ -1,0 +1,589 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>最速降線大賽</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: workshop blueprint — canvas panes with tabs left, explainer rail right; stacks on phones. Single light look. */
+:root{
+  --paper:#eef1f4;
+  --sheet:#fbfcfd;
+  --rule:#d3d9e1;
+  --ink:#1c2430;
+  --dim:#66707e;
+  --t0:#5b7fa6;  /* line */
+  --t1:#e08a2c;  /* arc */
+  --t2:#d6453d;  /* cycloid */
+  --t3:#3b9a62;  /* drop */
+  --t4:#8a55c7;  /* user */
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--t2);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#e1e6ec;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--t2)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px;background-image:linear-gradient(rgba(91,127,166,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(91,127,166,.07) 1px,transparent 1px);background-size:28px 28px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(251,252,253,.93);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:calc(100% - 24px)}
+.ro b{font-family:var(--f-num);color:var(--t2)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.board{position:absolute;right:12px;top:10px;background:rgba(251,252,253,.95);border:1px solid var(--rule);border-radius:10px;padding:6px 8px;font-size:13px;min-width:190px}
+.board .hd{font-size:11.5px;color:var(--dim);padding:0 4px 2px}
+.board button{display:grid;grid-template-columns:16px 1fr auto;gap:6px;align-items:center;width:100%;background:none;border:0;border-radius:7px;padding:3px 4px;text-align:left}
+.board button:hover{background:#eef1f4}
+.board button.off{opacity:.38}
+.board i{width:14px;height:5px;border-radius:3px;display:block}
+.board .tm{font-family:var(--f-num);font-weight:700;font-size:13px}
+.board .rk{color:var(--t2);font-weight:700}
+.board .guess{color:#d4a017}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.dock{background:#f4f6f8;border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--t2);box-shadow:inset 0 0 0 1px var(--t2);color:var(--t2);font-weight:700}
+.btn.draw{border-color:var(--t4);color:var(--t4);font-weight:700}
+.btn.draw.on{background:var(--t4);color:#fff}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--t2);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.6em;text-align:right}
+.seg{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff}
+.seg button{background:transparent;border:0;padding:7px 14px;font-size:14px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+
+.rail{background:#f7f9fb;border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--t2)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:58vh;min-height:360px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .board{top:auto;bottom:10px;right:10px;min-width:170px;font-size:12px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="race" aria-pressed="true">滑道大賽<small>哪條最快？</small></button>
+      <button data-tab="iso" aria-pressed="false">神奇的碗<small>同時到達</small></button>
+      <button data-tab="why" aria-pressed="false">為什麼是擺線<small>光也知道答案</small></button>
+    </nav>
+    <div class="view">
+      <!-- race -->
+      <div class="pane" id="p-race">
+        <div class="cv"><canvas id="cr"></canvas><div class="ro" id="roR"></div><div class="board" id="board"></div><div class="toast" id="toastR"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn pri" id="go">▶ 開始比賽</button>
+            <button class="btn" id="reset">↺ 回到起點</button>
+            <button class="btn draw" id="drawBtn">✏️ 畫我的滑道</button>
+            <button class="btn" id="wheel">🛞 擺線怎麼畫出來？</button>
+          </div>
+          <div class="row">
+            <label class="sl">慢動作<input id="slow" type="range" min="10" max="100" value="40"><b id="slowV"></b></label>
+            <span style="font-size:13px;color:var(--dim)">拖曳終點 <b style="color:var(--t2)">B</b> 可以改變位置</span>
+          </div>
+        </div>
+      </div>
+      <!-- isochrone -->
+      <div class="pane" id="p-iso" hidden>
+        <div class="cv"><canvas id="ci"></canvas><div class="ro" id="roI"></div><div class="toast" id="toastI"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">碗的形狀</span>
+            <div class="seg" id="bowlSeg"><button data-b="cyc" aria-pressed="true">擺線碗</button><button data-b="circ" aria-pressed="false">圓形碗</button></div>
+            <button class="btn pri" id="isoGo">▶ 同時放手</button>
+            <button class="btn" id="isoReset">↺ 放回去</button>
+            <button class="btn" id="isoClear">清掉所有球</button>
+          </div>
+          <div class="row"><span style="font-size:13px;color:var(--dim)">點碗的任何地方可以加一顆球（最多 6 顆）。</span></div>
+        </div>
+      </div>
+      <!-- why -->
+      <div class="pane" id="p-why" hidden>
+        <div class="cv"><canvas id="cw"></canvas><div class="ro" id="roW"></div><div class="toast" id="toastW"></div></div>
+        <div class="dock">
+          <div class="row">
+            <div class="seg" id="whySeg"><button data-w="guard" aria-pressed="true">① 救生員問題</button><button data-w="layers" aria-pressed="false">② 一層一層的玻璃</button></div>
+          </div>
+          <div class="row" id="guardRow">
+            <button class="btn" id="gBest">💡 告訴我最快的點</button>
+            <span style="font-size:13px;color:var(--dim)">拖曳海岸線上的黃點，找出最快的路線</span>
+          </div>
+          <div class="row" id="layerRow" hidden>
+            <label class="sl">玻璃層數<input id="nLay" type="range" min="2" max="80" value="4"><b id="nLayV"></b></label>
+            <button class="btn" id="lAnim">▶ 層數慢慢變多</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>最速降線問題</h1>
+    <p class="lede">從 A 滑到 B，走哪一條路最快？答案不是直線！</p>
+
+    <div class="card">
+      <h2>1696 年的挑戰書</h2>
+      <p>瑞士數學家<b>約翰・白努利</b>在期刊上向全歐洲出題：一顆球只靠重力，沒有摩擦，從 A 滑到比較低的 B，什麼形狀的滑道最快？</p>
+      <p>名字來自希臘文：<b>brachistos</b>（最短）＋ <b>chronos</b>（時間）。</p>
+    </div>
+
+    <div class="card">
+      <h2>直線不是最快嗎？</h2>
+      <p>直線的<b>路程</b>最短，但一開始坡度太緩，球加速得很慢。</p>
+      <p>先陡陡地衝下去，<b>趁早把速度提起來</b>，雖然路比較長，反而更早到。但衝太深又白白多走路，所以要剛剛好：這條剛剛好的曲線叫做<b>擺線</b>。</p>
+      <div class="fx">掉下的高度 h → 速度 v = √(2gh)</div>
+      <p>速度只跟「掉了多深」有關，跟走哪條路無關（沒有摩擦時）。</p>
+    </div>
+
+    <div class="card">
+      <h2>擺線是什麼？</h2>
+      <p>腳踏車輪胎上黏一個小點，輪子向前滾，小點在空中畫出的軌跡就是擺線。把它上下顛倒，就是最快的滑道。按「🛞 擺線怎麼畫出來？」看看。</p>
+      <p>當 B 離得很遠、又不太低時，最快的路線甚至會<b>先掉到比 B 還低</b>，再爬上來！</p>
+    </div>
+
+    <div class="card">
+      <h2>附贈的魔法：等時降線</h2>
+      <p>在擺線形狀的碗裡，不管從多高的地方放手，球到達碗底的時間<b>都一樣</b>。</p>
+      <p>荷蘭科學家<b>惠更斯</b>在 1673 年發表這個性質，並想用它做出更準的擺鐘。</p>
+      <div class="fx">到底時間 = π√(r/g)　（r 是滾輪半徑）</div>
+    </div>
+
+    <div class="card">
+      <h2>白努利的妙招：把球當成光</h2>
+      <p>光會走「最省時間」的路（費馬原理），所以穿過不同材質時會轉彎（折射），就像救生員會先在沙灘多跑一段再下水。</p>
+      <p>白努利想像：球越往下越快，就像光穿過一層層「越來越快」的玻璃。光的路線一路彎過去，剛好就是擺線！</p>
+      <div class="fx">sin θ ÷ v = 固定的數（司乃耳定律）</div>
+    </div>
+
+    <div class="card">
+      <h2>解出答案的人</h2>
+      <p>期限內交出正確答案的有：約翰的哥哥<b>雅各・白努利</b>、<b>萊布尼茲</b>、<b>羅必達</b>，還有一份匿名答案。</p>
+      <p>約翰一看就知道那是<b>牛頓</b>寫的，留下名言：「從爪子就認得出獅子。」</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>1638</b><span>伽利略認為圓弧比直線快（對），但以為圓弧最快（錯）</span></li>
+        <li><b>1673</b><span>惠更斯發表擺線的等時性，用於擺鐘</span></li>
+        <li><b>1696</b><span>約翰・白努利公開徵求最速降線的解答</span></li>
+        <li><b>1697</b><span>多位數學家的解答一起發表，答案是擺線</span></li>
+        <li><b>1744</b><span>歐拉發展「變分法」，專門解這類「找最佳曲線」的問題</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const g=9.8;
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=2600){const t=$(id);t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+let TAB='race';
+
+/* ---------- shared: time along a polyline (y down, start from rest) ---------- */
+function trackTimes(P){
+  const cum=[0],v=[0];let ok=true,stuck=-1;
+  for(let i=1;i<P.length;i++){
+    const dx=P[i][0]-P[i-1][0],dy=P[i][1]-P[i-1][1],L=Math.hypot(dx,dy);
+    if(L<1e-9){cum.push(cum[i-1]);v.push(v[i-1]);continue;}
+    const a=g*dy/L,v0=v[i-1],v1s=v0*v0+2*a*L;
+    if(v1s<0||(v0<1e-9&&a<=1e-9)){ok=false;stuck=i-1;break;}
+    const v1=Math.sqrt(v1s),dt=Math.abs(a)>1e-9?(v1-v0)/a:L/v0;
+    cum.push(cum[i-1]+dt);v.push(v1);
+  }
+  return{cum,v,ok,stuck,T:ok?cum[cum.length-1]:Infinity};
+}
+function posAt(P,tt,t){ // position along track at time t
+  const c=tt.cum;if(t<=0)return P[0];
+  if(t>=c[c.length-1])return P[c.length-1];
+  let lo=0,hi=c.length-1;while(hi-lo>1){const m=(lo+hi)>>1;c[m]<=t?lo=m:hi=m;}
+  const dx=P[hi][0]-P[lo][0],dy=P[hi][1]-P[lo][1],L=Math.hypot(dx,dy)||1,a=g*dy/L,tau=t-c[lo];
+  const s=Math.min(L,tt.v[lo]*tau+a*tau*tau/2);return[P[lo][0]+dx*s/L,P[lo][1]+dy*s/L];
+}
+
+/* ---------- curves A=(0,0) to B=(X,Y) ---------- */
+function cycloidTheta(X,Y){ // solve (θ - sinθ)/(1 - cosθ) = X/Y
+  const k=X/Y;let lo=1e-6,hi=2*Math.PI-1e-6;
+  for(let i=0;i<80;i++){const m=(lo+hi)/2,f=(m-Math.sin(m))/(1-Math.cos(m));f<k?lo=m:hi=m;}
+  return (lo+hi)/2;
+}
+function makeCycloid(X,Y,N=500){const th=cycloidTheta(X,Y),r=Y/(1-Math.cos(th)),P=[];
+  for(let i=0;i<=N;i++){const t=th*Math.pow(i/N,1.5);P.push([r*(t-Math.sin(t)),r*(1-Math.cos(t))]);}
+  return{P,r,th};}
+function makeLine(X,Y,N=200){const P=[];for(let i=0;i<=N;i++)P.push([X*i/N,Y*i/N]);return P;}
+function makeArc(X,Y,N=400){ // circle centred on y=0 through A (vertical tangent at A) and B
+  const c=(X*X+Y*Y)/(2*X),a0=Math.PI,a1=Math.atan2(Y,X-c),P=[];
+  // go from angle π (point A) clockwise-in-screen to B (y down => use +sin)
+  let end=a1;if(end<0)end+=2*Math.PI;
+  for(let i=0;i<=N;i++){const t=i/N,ang=a0+(end-a0)*Math.pow(t,1.3);P.push([c+c*Math.cos(ang),c*Math.sin(ang)]);}
+  P[0]=[0,0];P[N]=[X,Y];return P;
+}
+function makeDrop(X,Y){const P=[];for(let i=0;i<=60;i++)P.push([0,Y*i/60]);for(let i=1;i<=60;i++)P.push([X*i/60,Y]);return P;}
+
+/* ======================= 1. RACE ======================= */
+const cr=$('#cr'),rx=cr.getContext('2d');
+const TR=[
+  {id:'line',name:'直線（最短）',col:'#5b7fa6',on:true},
+  {id:'arc',name:'圓弧（伽利略）',col:'#e08a2c',on:true},
+  {id:'cyc',name:'擺線',col:'#d6453d',on:true},
+  {id:'drop',name:'先垂直掉再平走',col:'#3b9a62',on:true},
+  {id:'user',name:'我畫的滑道',col:'#8a55c7',on:true}
+];
+const RC={B:[4,2],t:0,run:false,done:false,guess:null,user:null,drawing:false,drawPts:null,wheel:null,slow:0.4,order:[]};
+function bestUser(){try{return +localStorage.getItem('brach-best')||0}catch(e){return 0}}
+function rebuild(){
+  const [X,Y]=RC.B;
+  const cy=makeCycloid(X,Y);RC.cyc=cy;
+  const set={line:makeLine(X,Y),arc:makeArc(X,Y),cyc:cy.P,drop:makeDrop(X,Y),user:RC.user};
+  for(const t of TR){t.P=set[t.id];t.tt=t.P?trackTimes(t.P):null;}
+  RC.t=0;RC.run=false;RC.done=false;RC.order=[];
+  boardHTML();
+}
+function view(gm){ // world -> screen mapping
+  const top=96,left=24,right=gm.w<640?24:224,bot=24;
+  const wx0=-0.35,wx1=6.6,wy0=-0.45,wy1=3.4;
+  const s=Math.min((gm.w-left-right)/(wx1-wx0),(gm.h-top-bot)/(wy1-wy0));
+  const ox=left+((gm.w-left-right)-(wx1-wx0)*s)/2-wx0*s,oy=top-wy0*s;
+  return{s,ox,oy,X:p=>ox+p[0]*s,Y:p=>oy+p[1]*s,inv:(x,y)=>[(x-ox)/s,(y-oy)/s]};
+}
+function boardHTML(){
+  const b=$('#board');
+  const anyT=TR.filter(t=>t.on&&t.tt&&t.tt.ok);
+  const rank=RC.order;
+  b.innerHTML=`<div class="hd">${RC.done?'比賽結果':'點一條滑道＝猜它第一名'}</div>`+TR.map(t=>{
+    const has=!!t.P,ri=rank.indexOf(t.id);
+    let tm='';
+    if(!has)tm='<span style="color:var(--dim);font-weight:400">還沒畫</span>';
+    else if(!t.tt.ok)tm='<span style="color:var(--t2)">卡住了</span>';
+    else if(ri>=0)tm=`<span class="tm">${t.tt.T.toFixed(3)} 秒</span>`;
+    else if(RC.run)tm='<span style="color:var(--dim);font-weight:400">…</span>';
+    const mark=(RC.guess===t.id?'<span class="guess">★</span> ':'')+(ri>=0?`<span class="rk">#${ri+1}</span> `:'');
+    return `<button data-id="${t.id}" class="${t.on&&has?'':'off'}"><i style="background:${t.col}"></i><span>${mark}${t.name}</span>${tm}</button>`;
+  }).join('')+(bestUser()?`<div class="hd" style="padding-top:4px">我畫的最佳紀錄：${bestUser().toFixed(3)} 秒</div>`:'');
+  b.querySelectorAll('button').forEach(el=>el.onclick=()=>{
+    const t=TR.find(x=>x.id===el.dataset.id);if(!t.P){toast('#toastR','先按「✏️ 畫我的滑道」畫一條！');return;}
+    if(RC.run)return;
+    if(RC.guess===t.id){t.on=!t.on;if(!t.on)RC.guess=null;}else{t.on=true;RC.guess=t.id;}
+    boardHTML();
+  });
+}
+function drawRace(now){
+  const gm=fit(cr),d=gm.d,V=view(gm);rx.setTransform(1,0,0,1,0,0);rx.clearRect(0,0,gm.W,gm.H);rx.setTransform(d,0,0,d,0,0);
+  // ground level of B
+  rx.strokeStyle='rgba(28,36,48,.18)';rx.setLineDash([4,5]);rx.lineWidth=1;
+  rx.beginPath();rx.moveTo(V.X([-0.3,0]),V.Y([0,0]));rx.lineTo(V.X([6.5,0]),V.Y([0,0]));rx.stroke();
+  rx.beginPath();rx.moveTo(V.X([-0.3,RC.B[1]]),V.Y(RC.B));rx.lineTo(V.X([6.5,RC.B[1]]),V.Y(RC.B));rx.stroke();rx.setLineDash([]);
+  rx.fillStyle='#66707e';rx.font='11.5px "Noto Sans TC",sans-serif';rx.fillText(`高度差 ${RC.B[1].toFixed(2)} 公尺・水平距離 ${RC.B[0].toFixed(2)} 公尺`,V.X([0.15,0]),V.Y([0,-0.12]));
+  // tracks
+  for(const t of TR){if(!t.P||!t.on)continue;
+    rx.strokeStyle=t.col;rx.lineWidth=t.id==='cyc'?4:3.2;rx.lineJoin='round';rx.globalAlpha=0.9;
+    rx.beginPath();t.P.forEach((p,i)=>i?rx.lineTo(V.X(p),V.Y(p)):rx.moveTo(V.X(p),V.Y(p)));rx.stroke();rx.globalAlpha=1;}
+  // drawing in progress
+  if(RC.drawing&&RC.drawPts){rx.strokeStyle='#8a55c7';rx.lineWidth=3;rx.setLineDash([6,4]);rx.beginPath();RC.drawPts.forEach((p,i)=>i?rx.lineTo(V.X(p),V.Y(p)):rx.moveTo(V.X(p),V.Y(p)));rx.stroke();rx.setLineDash([]);}
+  // rolling wheel demo
+  if(RC.wheel){const w=RC.wheel,cy=RC.cyc,r=cy.r,th=Math.min(cy.th,(now-w.t0)/1000*1.6);
+    const cx=r*th,ccy=r; // wheel centre (y down: wheel rolls along the line y=0, under it)
+    rx.strokeStyle='rgba(28,36,48,.5)';rx.lineWidth=1.5;rx.beginPath();rx.arc(V.X([cx,0]),V.Y([0,ccy]),r*V.s,0,7);rx.stroke();
+    const p=[r*(th-Math.sin(th)),r*(1-Math.cos(th))];
+    rx.beginPath();rx.moveTo(V.X([cx,0]),V.Y([0,ccy]));rx.lineTo(V.X(p),V.Y(p));rx.stroke();
+    rx.strokeStyle='#d6453d';rx.lineWidth=4;rx.beginPath();for(let i=0;i<=80;i++){const t=th*i/80;const q=[r*(t-Math.sin(t)),r*(1-Math.cos(t))];i?rx.lineTo(V.X(q),V.Y(q)):rx.moveTo(V.X(q),V.Y(q));}rx.stroke();
+    rx.fillStyle='#d6453d';rx.beginPath();rx.arc(V.X(p),V.Y(p),6,0,7);rx.fill();
+    rx.strokeStyle='rgba(28,36,48,.6)';rx.lineWidth=2;rx.beginPath();rx.moveTo(V.X([-0.3,0]),V.Y([0,0]));rx.lineTo(V.X([6.5,0]),V.Y([0,0]));rx.stroke();
+    if(th>=cy.th&&now-w.t0>1000*cy.th/1.6+1800)RC.wheel=null;
+  }
+  // balls
+  for(const t of TR){if(!t.P||!t.on||!t.tt)continue;
+    let p;if(t.tt.ok)p=posAt(t.P,t.tt,RC.t);else{p=t.P[Math.max(0,t.tt.stuck)];}
+    rx.fillStyle=t.col;rx.strokeStyle='#fff';rx.lineWidth=2;rx.beginPath();rx.arc(V.X(p),V.Y(p),8,0,7);rx.fill();rx.stroke();}
+  // A, B
+  const lab=(p,txt,c)=>{rx.fillStyle=c;rx.beginPath();rx.arc(V.X(p),V.Y(p),11,0,7);rx.fill();rx.fillStyle='#fff';rx.font='700 13px Lexend,sans-serif';rx.textAlign='center';rx.textBaseline='middle';rx.fillText(txt,V.X(p),V.Y(p)+1);rx.textAlign='left';rx.textBaseline='alphabetic';};
+  lab([0,0],'A','#1c2430');lab(RC.B,'B','#d6453d');
+  if(!RC.run&&RC.t===0&&!RC.drawing){rx.fillStyle='#d6453d';rx.font='11.5px "Noto Sans TC",sans-serif';rx.textAlign='center';rx.fillText('拖我',V.X(RC.B),V.Y(RC.B)+26);rx.textAlign='left';}
+  const cy=RC.cyc,deep=cy.th>Math.PI;
+  $('#roR').innerHTML=RC.drawing?`<div class="big">從 A 開始畫，一路畫到 B</div><div>放開手指時，會自動接到 B。路線不能比 A 還高，不然球爬不上去！</div>`:
+    `<div class="big">沒有摩擦，球從 A 靜止放手，誰先到 B？</div><div>時間 <b>${RC.t.toFixed(3)}</b> 秒${deep?'　<span style="color:#d6453d">（這次擺線會先掉到比 B 還低！）</span>':''}</div>`;
+}
+let lastNow=performance.now();
+function raceTick(now){
+  const dt=Math.min(0.05,(now-lastNow)/1000);
+  if(RC.run){
+    RC.t+=dt*RC.slow;
+    let changed=false;
+    for(const t of TR){if(!t.P||!t.on||!t.tt||!t.tt.ok)continue;if(RC.t>=t.tt.T&&!RC.order.includes(t.id)){RC.order.push(t.id);changed=true;}}
+    const active=TR.filter(t=>t.P&&t.on&&t.tt&&t.tt.ok);
+    if(RC.order.length>=active.length){RC.run=false;RC.done=true;finishRace();}
+    if(changed)boardHTML();
+  }
+  drawRace(now);
+}
+function finishRace(){
+  boardHTML();
+  const first=TR.find(t=>t.id===RC.order[0]);
+  let msg=`第一名：${first.name}！`;
+  if(RC.guess)msg+=RC.guess===RC.order[0]?' 你猜對了 ★':' 你猜的是 '+TR.find(t=>t.id===RC.guess).name+'，再想想為什麼？';
+  const u=TR[4],c=TR[2];
+  if(u.P&&u.on&&u.tt.ok&&c.on){const pct=(u.tt.T/c.tt.T-1)*100;
+    msg+=pct<0.05?'　你的滑道幾乎就是擺線！':`　你的滑道比擺線慢 ${pct.toFixed(1)}%`;}
+  toast('#toastR',msg,4200);
+}
+$('#go').onclick=()=>{if(RC.drawing)return;RC.t=0;RC.order=[];RC.done=false;RC.run=true;RC.wheel=null;boardHTML();};
+$('#reset').onclick=()=>{RC.t=0;RC.run=false;RC.done=false;RC.order=[];boardHTML();};
+$('#wheel').onclick=()=>{RC.run=false;RC.t=0;RC.order=[];RC.wheel={t0:performance.now()};boardHTML();};
+$('#slow').oninput=()=>{RC.slow=+$('#slow').value/100;$('#slowV').textContent='×'+RC.slow.toFixed(2);};
+$('#drawBtn').onclick=()=>{RC.drawing=!RC.drawing;RC.drawPts=null;RC.run=false;RC.t=0;RC.order=[];$('#drawBtn').classList.toggle('on',RC.drawing);$('#drawBtn').textContent=RC.drawing?'✖ 取消畫圖':'✏️ 畫我的滑道';boardHTML();};
+function smooth(P){let Q=P;for(let k=0;k<2;k++){const R=[Q[0]];for(let i=0;i<Q.length-1;i++){const a=Q[i],b=Q[i+1];R.push([.75*a[0]+.25*b[0],.75*a[1]+.25*b[1]],[.25*a[0]+.75*b[0],.25*a[1]+.75*b[1]]);}R.push(Q[Q.length-1]);Q=R;}return Q;}
+{
+  let drag=null;
+  cr.addEventListener('pointerdown',e=>{const r=cr.getBoundingClientRect(),gm={w:r.width,h:r.height},V=view(gm),x=e.clientX-r.left,y=e.clientY-r.top;
+    if(RC.drawing){RC.drawPts=[[0,0],V.inv(x,y)];drag='draw';cr.setPointerCapture(e.pointerId);return;}
+    if(Math.hypot(V.X(RC.B)-x,V.Y(RC.B)-y)<22){drag='B';cr.setPointerCapture(e.pointerId);}});
+  cr.addEventListener('pointermove',e=>{if(!drag)return;const r=cr.getBoundingClientRect(),V=view({w:r.width,h:r.height}),p=V.inv(e.clientX-r.left,e.clientY-r.top);
+    if(drag==='B'){let X=Math.max(1,Math.min(6.2,p[0])),Y=Math.max(0.5,Math.min(3,p[1]));if(X/Y>9)Y=X/9;RC.B=[X,Y];RC.user=null;rebuild();}
+    else{const last=RC.drawPts[RC.drawPts.length-1];if(Math.hypot(p[0]-last[0],p[1]-last[1])>0.05)RC.drawPts.push([Math.max(-0.3,p[0]),Math.min(3.4,p[1])]);}});
+  const up=()=>{if(drag==='draw'&&RC.drawPts&&RC.drawPts.length>3){
+      const P=RC.drawPts.slice();const last=P[P.length-1];if(Math.hypot(last[0]-RC.B[0],last[1]-RC.B[1])>0.02)P.push(RC.B.slice());
+      RC.user=smooth(P);RC.user[RC.user.length-1]=RC.B.slice();RC.user[0]=[0,0];
+      RC.drawing=false;$('#drawBtn').classList.remove('on');$('#drawBtn').textContent='✏️ 畫我的滑道';TR[4].on=true;rebuild();
+      const tt=TR[4].tt;
+      if(!tt.ok)toast('#toastR','這條滑道有地方比 A 還高（或一開始是平的），球會卡住！再畫一次。',3600);
+      else{const pct=(tt.T/TR[2].tt.T-1)*100;toast('#toastR',`你的滑道：${tt.T.toFixed(3)} 秒（擺線 ${TR[2].tt.T.toFixed(3)} 秒）。按「開始比賽」！`,3600);
+        try{const b=bestUser();if(Math.abs(RC.B[0]-4)<1e-9&&Math.abs(RC.B[1]-2)<1e-9&&(!b||tt.T<b))localStorage.setItem('brach-best',tt.T);}catch(e){}boardHTML();}
+    }else if(drag==='draw'){RC.drawPts=null;}
+    drag=null;};
+  cr.addEventListener('pointerup',up);cr.addEventListener('pointercancel',up);
+}
+
+/* ======================= 2. ISOCHRONE ======================= */
+const ci=$('#ci'),ix=ci.getContext('2d');
+const ISO={bowl:'cyc',r:1,balls:[],t:0,run:false,arr:[]};
+const BC=['#d6453d','#e08a2c','#3b9a62','#5b7fa6','#8a55c7','#c2417f'];
+// y measured upward from the bottom of the bowl
+function cycXY(u){const r=ISO.r;return[r*(u+Math.sin(u)),r*(1-Math.cos(u))];}  // u in [-π,π]
+const RC4=4; // circle radius = 4r : same small-swing timing as the cycloid
+function circXY(a){const R=RC4*ISO.r;return[R*Math.sin(a),R*(1-Math.cos(a))];}
+const CMAX=Math.acos(1-2/RC4); // circle reaches height 2r
+function isoReset(){ISO.t=0;ISO.run=false;ISO.arr=[];for(const b of ISO.balls){b.s=b.s0;b.v=0;b.a=b.a0;b.w=0;b.arr=null;b.prev=Math.sign(b.s0||b.a0);}}
+function addBallAtHeight(h,sideSign){ // h in (0,2r]
+  const r=ISO.r;const hh=Math.min(1.98*r,Math.max(0.05*r,h));
+  const u=Math.acos(1-hh/r)*sideSign,s0=4*r*Math.sin(u/2);
+  const a0=Math.acos(1-hh/(RC4*r))*sideSign;
+  ISO.balls.push({s0,a0,h:hh,col:BC[ISO.balls.length%BC.length]});isoReset();
+}
+function defaultBalls(){ISO.balls=[];[1.9,1.2,0.6,0.2].forEach((h,i)=>addBallAtHeight(h,i%2?1:-1));}
+function isoView(gm){const top=96,bot=24,wW=2*Math.PI*ISO.r+0.8,wH=2*ISO.r+0.4;
+  const s=Math.min((gm.w-40)/wW,(gm.h-top-bot)/wH),ox=gm.w/2,oy=top+(gm.h-top-bot+wH*s)/2-0.2*s;
+  return{s,X:p=>ox+p[0]*s,Y:p=>oy-p[1]*s,inv:(x,y)=>[(x-ox)/s,(oy-y)/s]};}
+function ballPos(b){if(ISO.bowl==='cyc'){const u=2*Math.asin(Math.max(-1,Math.min(1,b.s/(4*ISO.r))));return cycXY(u);}return circXY(b.a);}
+function isoStep(dt){
+  const r=ISO.r,w=Math.sqrt(g/(4*r));
+  ISO.t+=dt;
+  for(const b of ISO.balls){
+    if(ISO.bowl==='cyc'){b.s=b.s0*Math.cos(w*ISO.t);}
+    else{ // pendulum RK4 on angle
+      const R=RC4*r,f=(a)=>-g/R*Math.sin(a);let n=8,h=dt/n;
+      for(let k=0;k<n;k++){const a=b.a,v=b.w;const k1a=v,k1v=f(a),k2a=v+k1v*h/2,k2v=f(a+k1a*h/2),k3a=v+k2v*h/2,k3v=f(a+k2a*h/2),k4a=v+k3v*h,k4v=f(a+k3a*h);
+        b.a+=h/6*(k1a+2*k2a+2*k3a+k4a);b.w+=h/6*(k1v+2*k2v+2*k3v+k4v);}
+    }
+    const cur=ISO.bowl==='cyc'?b.s:b.a,sg=Math.sign(cur);
+    if(b.arr==null&&sg!==0&&sg!==b.prev){ // crossed the bottom: interpolate time
+      b.arr=ISO.t;ISO.arr.push(b);
+    }
+    if(sg!==0)b.prev=sg;
+  }
+}
+function drawIso(){
+  const gm=fit(ci),d=gm.d,V=isoView(gm);ix.setTransform(1,0,0,1,0,0);ix.clearRect(0,0,gm.W,gm.H);ix.setTransform(d,0,0,d,0,0);
+  // bowl
+  ix.lineWidth=5;ix.strokeStyle='#1c2430';ix.beginPath();
+  if(ISO.bowl==='cyc'){for(let i=0;i<=200;i++){const u=-Math.PI+2*Math.PI*i/200,p=cycXY(u);i?ix.lineTo(V.X(p),V.Y(p)):ix.moveTo(V.X(p),V.Y(p));}}
+  else{for(let i=0;i<=200;i++){const a=-CMAX+2*CMAX*i/200,p=circXY(a);i?ix.lineTo(V.X(p),V.Y(p)):ix.moveTo(V.X(p),V.Y(p));}}
+  ix.stroke();
+  // ghost of the other bowl
+  ix.lineWidth=1.5;ix.strokeStyle='rgba(28,36,48,.18)';ix.setLineDash([5,5]);ix.beginPath();
+  if(ISO.bowl!=='cyc'){for(let i=0;i<=200;i++){const u=-Math.PI+2*Math.PI*i/200,p=cycXY(u);i?ix.lineTo(V.X(p),V.Y(p)):ix.moveTo(V.X(p),V.Y(p));}}
+  else{for(let i=0;i<=200;i++){const a=-CMAX+2*CMAX*i/200,p=circXY(a);i?ix.lineTo(V.X(p),V.Y(p)):ix.moveTo(V.X(p),V.Y(p));}}
+  ix.stroke();ix.setLineDash([]);
+  // bottom marker
+  ix.strokeStyle='rgba(214,69,61,.5)';ix.lineWidth=1.5;ix.beginPath();ix.moveTo(V.X([0,0]),V.Y([0,0])+10);ix.lineTo(V.X([0,0]),V.Y([0,2.05*ISO.r]));ix.stroke();
+  ix.fillStyle='#d6453d';ix.font='12px "Noto Sans TC",sans-serif';ix.textAlign='center';ix.fillText('碗底',V.X([0,0]),V.Y([0,0])+24);
+  // balls
+  for(const b of ISO.balls){const p=ballPos(b);ix.fillStyle=b.col;ix.strokeStyle='#fff';ix.lineWidth=2;ix.globalAlpha=0.88;ix.beginPath();ix.arc(V.X(p),V.Y(p)-11,11,0,7);ix.fill();ix.stroke();ix.globalAlpha=1;}
+  ix.textAlign='left';
+  const T=Math.PI*Math.sqrt(ISO.r/g);
+  const arrs=ISO.arr.map(b=>`<span style="color:${b.col}">●</span> ${b.arr.toFixed(3)}`).join('　');
+  let verdict='';
+  if(ISO.arr.length===ISO.balls.length&&ISO.balls.length>1){const ts=ISO.arr.map(b=>b.arr),sp=Math.max(...ts)-Math.min(...ts);
+    verdict=sp<0.003?'<div style="color:#3b9a62;font-weight:700">全部同時到達碗底！</div>':`<div style="color:#d6453d;font-weight:700">最快和最慢差了 ${sp.toFixed(3)} 秒：不同時！</div>`;}
+  $('#roI').innerHTML=`<div class="big">${ISO.bowl==='cyc'?'擺線碗：從不同高度同時放手':'圓形碗：從不同高度同時放手'}</div>`+
+    `<div>時間 <b>${ISO.t.toFixed(3)}</b> 秒${ISO.bowl==='cyc'?`（理論到底時間 ${T.toFixed(3)} 秒）`:''}</div>`+
+    (arrs?`<div>到達碗底：${arrs} 秒</div>`:'')+verdict;
+}
+let isoSlow=0.5;
+function isoTick(now,dt){if(ISO.run){const n=4;for(let i=0;i<n;i++)isoStep(dt*isoSlow/n);} drawIso();}
+$('#isoGo').onclick=()=>{isoReset();ISO.run=true;};
+$('#isoReset').onclick=()=>isoReset();
+$('#isoClear').onclick=()=>{ISO.balls=[];isoReset();};
+document.querySelectorAll('#bowlSeg button').forEach(b=>b.onclick=()=>{ISO.bowl=b.dataset.b;document.querySelectorAll('#bowlSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));isoReset();});
+ci.addEventListener('click',e=>{
+  if(ISO.balls.length>=6){toast('#toastI','最多 6 顆球，先按「清掉所有球」。');return;}
+  const r=ci.getBoundingClientRect(),V=isoView({w:r.width,h:r.height}),p=V.inv(e.clientX-r.left,e.clientY-r.top);
+  addBallAtHeight(p[1],p[0]<0?-1:1);toast('#toastI',`在高度 ${(Math.min(1.98,Math.max(.05,p[1]))*100).toFixed(0)} 公分放了一顆球`);
+});
+
+/* ======================= 3. WHY ======================= */
+const cw=$('#cw'),wx=cw.getContext('2d');
+const WH={mode:'guard',px:0.55,showBest:false,nLay:4,anim:false};
+const VS=6,VW=2; // m/s on sand, in water
+function guardGeom(gm){const top=104,bot=24,h=gm.h-top-bot,w=Math.min(gm.w-40,h*1.6),x0=(gm.w-w)/2,shoreY=top+h*0.45;
+  return{x0,w,top,h,shoreY,L:[x0+w*0.08,top+h*0.14],S:[x0+w*0.92,top+h*0.95]};}
+const PX=40/1; // meters across the whole width
+function guardTime(G,px){ // px fraction across, distances in metres
+  const m=PX/G.w,P=[G.x0+px*G.w,G.shoreY];
+  const d1=Math.hypot(P[0]-G.L[0],P[1]-G.L[1])*m,d2=Math.hypot(G.S[0]-P[0],G.S[1]-P[1])*m;
+  return{t:d1/VS+d2/VW,d1,d2,P};}
+function bestPx(G){let lo=0,hi=1;for(let i=0;i<80;i++){const a=lo+(hi-lo)/3,b=hi-(hi-lo)/3;guardTime(G,a).t<guardTime(G,b).t?hi=b:lo=a;}return(lo+hi)/2;}
+function drawGuard(gm){
+  const G=guardGeom(gm);
+  wx.fillStyle='#f3e3b8';wx.fillRect(G.x0,G.top,G.w,G.shoreY-G.top);
+  const gr=wx.createLinearGradient(0,G.shoreY,0,G.top+G.h);gr.addColorStop(0,'#8ec9e8');gr.addColorStop(1,'#3f8fc2');wx.fillStyle=gr;wx.fillRect(G.x0,G.shoreY,G.w,G.top+G.h-G.shoreY);
+  wx.fillStyle='#8a6d2b';wx.font='13px "Noto Sans TC",sans-serif';wx.fillText(`沙灘：跑步 ${VS} 公尺/秒`,G.x0+8,G.shoreY-8);
+  wx.fillStyle='#fff';wx.fillText(`海水：游泳 ${VW} 公尺/秒`,G.x0+8,G.shoreY+20);
+  const bp=bestPx(G),cur=guardTime(G,WH.px),best=guardTime(G,bp);
+  // straight line (for comparison)
+  wx.strokeStyle='rgba(28,36,48,.25)';wx.setLineDash([4,5]);wx.lineWidth=1.5;wx.beginPath();wx.moveTo(...G.L);wx.lineTo(...G.S);wx.stroke();wx.setLineDash([]);
+  if(WH.showBest){wx.strokeStyle='rgba(59,154,98,.9)';wx.lineWidth=3;wx.setLineDash([8,5]);wx.beginPath();wx.moveTo(...G.L);wx.lineTo(...best.P);wx.lineTo(...G.S);wx.stroke();wx.setLineDash([]);}
+  wx.strokeStyle='#d6453d';wx.lineWidth=3.5;wx.beginPath();wx.moveTo(...G.L);wx.lineTo(...cur.P);wx.lineTo(...G.S);wx.stroke();
+  // normal and angles
+  wx.strokeStyle='rgba(28,36,48,.35)';wx.lineWidth=1;wx.beginPath();wx.moveTo(cur.P[0],cur.P[1]-60);wx.lineTo(cur.P[0],cur.P[1]+60);wx.stroke();
+  const s1=Math.abs(cur.P[0]-G.L[0])/Math.hypot(cur.P[0]-G.L[0],cur.P[1]-G.L[1]),s2=Math.abs(G.S[0]-cur.P[0])/Math.hypot(G.S[0]-cur.P[0],G.S[1]-cur.P[1]);
+  // people
+  wx.font='24px serif';wx.textAlign='center';wx.textBaseline='middle';wx.fillText('🏃',G.L[0],G.L[1]);wx.fillText('🙋',G.S[0],G.S[1]);
+  wx.fillStyle='#e0a526';wx.strokeStyle='#1c2430';wx.lineWidth=2;wx.beginPath();wx.arc(cur.P[0],cur.P[1],9,0,7);wx.fill();wx.stroke();
+  wx.textAlign='left';wx.textBaseline='alphabetic';
+  // time graph
+  const gx0=G.x0+G.w*0.52,gy0=G.top+8,gw=G.w*0.46,gh=Math.min(90,G.h*0.28);
+  wx.fillStyle='rgba(255,255,255,.85)';wx.fillRect(gx0,gy0,gw,gh);wx.strokeStyle='#d3d9e1';wx.strokeRect(gx0,gy0,gw,gh);
+  let tmin=1e9,tmax=0;const ts=[];for(let i=0;i<=100;i++){const t=guardTime(G,i/100).t;ts.push(t);tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);}
+  wx.strokeStyle='#5b7fa6';wx.lineWidth=2;wx.beginPath();ts.forEach((t,i)=>{const x=gx0+6+(gw-12)*i/100,y=gy0+gh-8-(gh-24)*(t-tmin)/(tmax-tmin);i?wx.lineTo(x,y):wx.moveTo(x,y);});wx.stroke();
+  const mx=gx0+6+(gw-12)*WH.px,my=gy0+gh-8-(gh-24)*(cur.t-tmin)/(tmax-tmin);wx.fillStyle='#d6453d';wx.beginPath();wx.arc(mx,my,4.5,0,7);wx.fill();
+  wx.fillStyle='#66707e';wx.font='11px "Noto Sans TC",sans-serif';wx.fillText('總時間（下水點左 → 右）',gx0+6,gy0+13);
+  const diff=cur.t-best.t;
+  $('#roW').innerHTML=`<div class="big">救生員要多快才能救到人？</div><div>總時間 <b>${cur.t.toFixed(2)}</b> 秒　（跑 ${cur.d1.toFixed(1)} 公尺＋游 ${cur.d2.toFixed(1)} 公尺）</div>`+
+    (diff<0.02?`<div style="color:#3b9a62;font-weight:700">最快！此時 sin(跑的角度)÷${VS} = ${(s1/VS).toFixed(3)}，sin(游的角度)÷${VW} = ${(s2/VW).toFixed(3)}，兩邊一樣！</div>`:
+    `<div>比最快的路線慢了 <b>${diff.toFixed(2)}</b> 秒。走直線（虛線）不是最快的！</div>`);
+}
+// ---- layers (Bernoulli) ----
+function layerRay(N,X,Y,depth,k){ // returns polyline (y down); ray starts at A going down
+  const h=depth/N,P=[[0,0]];let x=0,y=0,layer=0,dir=1;
+  for(let step=0;step<4000;step++){
+    const vm=Math.sqrt(2*g*(layer+0.5)*h),s=k*vm;
+    if(s>=1){dir=-dir;layer+=dir;if(layer<0)break;continue;} // total reflection: turn back
+    const tan=s/Math.sqrt(1-s*s),nx=x+h*tan;
+    if(nx>=X){const f=(X-x)/(nx-x);P.push([X,y+dir*h*f]);return{P,yEnd:y+dir*h*f};}
+    x=nx;y+=dir*h;P.push([x,y]);
+    layer+=dir;if(layer<0||layer>=N)break;
+  }
+  return{P,yEnd:dir>0?1e9:-1e9};
+}
+const rayCache=new Map();
+function solveRay(N,X,Y,depth){ // find k so the ray passes through B (scan, then refine)
+  const key=[N,X,Y,depth].join();if(rayCache.has(key))return rayCache.get(key);
+  const hi=1/Math.sqrt(2*g*0.5*depth/N),err=k=>Math.abs(layerRay(N,X,Y,depth,k).yEnd-Y);
+  let bk=hi/2,be=1e18;const M=2000;
+  for(let i=1;i<M;i++){const k=hi*i/M,e=err(k);if(e<be){be=e;bk=k;}}
+  let lo=Math.max(1e-6,bk-hi/M),up=Math.min(hi,bk+hi/M);
+  for(let i=0;i<60;i++){const a=lo+(up-lo)/3,b=up-(up-lo)/3;err(a)<err(b)?up=b:lo=a;}
+  const r=layerRay(N,X,Y,depth,(lo+up)/2);rayCache.set(key,r);return r;
+}
+function drawLayers(gm){
+  const X=3,Y=2,cy=makeCycloid(X,Y),D=Y*1.12,N=WH.nLay;
+  const top=96,bot=24,s=Math.min((gm.w-60)/(X+0.6),(gm.h-top-bot)/(D+0.3)),ox=(gm.w-X*s)/2,oy=top+10;
+  const XX=p=>ox+p[0]*s,YY=p=>oy+p[1]*s;
+  for(let i=0;i<N;i++){const v=Math.sqrt(2*g*(i+0.5)*D/N),f=v/Math.sqrt(2*g*D);
+    wx.fillStyle=`rgba(${Math.round(150-110*f)},${Math.round(190-60*f)},${Math.round(230-20*f)},${0.18+0.5*f})`;
+    wx.fillRect(XX([-0.3,0]),YY([0,i*D/N]),(X+0.6)*s,D/N*s+0.5);}
+  if(N<=12){wx.fillStyle='rgba(28,36,48,.55)';wx.font='11px "Noto Sans TC",sans-serif';for(let i=0;i<N;i++){const v=Math.sqrt(2*g*(i+0.5)*D/N);wx.fillText(`速度 ${v.toFixed(1)}`,XX([X+0.02,0])+4,YY([0,(i+0.6)*D/N]));}}
+  // cycloid
+  wx.strokeStyle='#d6453d';wx.lineWidth=3;wx.setLineDash([8,6]);wx.beginPath();cy.P.forEach((p,i)=>i?wx.lineTo(XX(p),YY(p)):wx.moveTo(XX(p),YY(p)));wx.stroke();wx.setLineDash([]);
+  // ray
+  const ray=solveRay(N,X,Y,D);
+  wx.strokeStyle='#e0a526';wx.lineWidth=3.2;wx.shadowColor='rgba(224,165,38,.6)';wx.shadowBlur=8;wx.beginPath();ray.P.forEach((p,i)=>i?wx.lineTo(XX(p),YY(p)):wx.moveTo(XX(p),YY(p)));wx.stroke();wx.shadowBlur=0;
+  const lab=(p,t,c)=>{wx.fillStyle=c;wx.beginPath();wx.arc(XX(p),YY(p),10,0,7);wx.fill();wx.fillStyle='#fff';wx.font='700 12px Lexend,sans-serif';wx.textAlign='center';wx.textBaseline='middle';wx.fillText(t,XX(p),YY(p)+1);wx.textAlign='left';wx.textBaseline='alphabetic';};
+  lab([0,0],'A','#1c2430');lab([X,Y],'B','#d6453d');
+  // max deviation
+  let dev=0;for(const p of ray.P){let best=1e9;for(let j=0;j<cy.P.length;j+=2){const q=cy.P[j];best=Math.min(best,Math.hypot(p[0]-q[0],p[1]-q[1]));}dev=Math.max(dev,best);}
+  $('#roW').innerHTML=`<div class="big">光穿過 <b>${N}</b> 層「越往下越快」的玻璃</div><div><span style="color:#e0a526">━ 光的路線</span>　<span style="color:#d6453d">┅ 擺線</span>　最大差距 <b>${(dev*100).toFixed(1)}</b> 公分</div><div>每過一層都遵守 sin θ ÷ v 不變；層數越多，光線越像擺線。</div>`;
+}
+function drawWhy(){
+  const gm=fit(cw),d=gm.d;wx.setTransform(1,0,0,1,0,0);wx.clearRect(0,0,gm.W,gm.H);wx.setTransform(d,0,0,d,0,0);
+  WH.mode==='guard'?drawGuard(gm):drawLayers(gm);
+}
+let layAnimT=0;
+function whyTick(now){
+  if(WH.anim&&now-layAnimT>160){layAnimT=now;WH.nLay++;if(WH.nLay>=80){WH.nLay=80;WH.anim=false;$('#lAnim').textContent='▶ 層數慢慢變多';}$('#nLay').value=WH.nLay;$('#nLayV').textContent=WH.nLay+' 層';}
+  drawWhy();
+}
+document.querySelectorAll('#whySeg button').forEach(b=>b.onclick=()=>{WH.mode=b.dataset.w;document.querySelectorAll('#whySeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#guardRow').hidden=WH.mode!=='guard';$('#layerRow').hidden=WH.mode==='guard';});
+$('#gBest').onclick=()=>{WH.showBest=!WH.showBest;$('#gBest').textContent=WH.showBest?'🙈 藏起答案':'💡 告訴我最快的點';};
+$('#nLay').oninput=()=>{WH.nLay=+$('#nLay').value;$('#nLayV').textContent=WH.nLay+' 層';WH.anim=false;$('#lAnim').textContent='▶ 層數慢慢變多';};
+$('#lAnim').onclick=()=>{WH.anim=!WH.anim;if(WH.anim&&WH.nLay>=80)WH.nLay=2;$('#lAnim').textContent=WH.anim?'⏸ 停':'▶ 層數慢慢變多';};
+{let drag=false;
+ const setP=e=>{const r=cw.getBoundingClientRect(),G=guardGeom({w:r.width,h:r.height});WH.px=Math.max(0.01,Math.min(0.99,(e.clientX-r.left-G.x0)/G.w));};
+ cw.addEventListener('pointerdown',e=>{if(WH.mode!=='guard')return;drag=true;cw.setPointerCapture(e.pointerId);setP(e);});
+ cw.addEventListener('pointermove',e=>{if(drag)setP(e);});
+ cw.addEventListener('pointerup',()=>drag=false);cw.addEventListener('pointercancel',()=>drag=false);}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['race','iso','why'])$('#p-'+t).hidden=t!==TAB;});
+function frame(now){
+  const dt=Math.min(0.05,(now-lastNow)/1000);
+  if(TAB==='race')raceTick(now);else if(TAB==='iso')isoTick(now,dt);else whyTick(now);
+  lastNow=now;requestAnimationFrame(frame);
+}
+$('#slow').oninput();$('#nLay').oninput();
+rebuild();defaultBalls();
+
+requestAnimationFrame(frame);
+})();
+</script>

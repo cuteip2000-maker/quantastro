@@ -1,0 +1,606 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>台中火木相會</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;900&family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+<style>
+/* Layout: full-height split — live sky canvas with time controls left, observing guide right; stacks on phones */
+:root{
+  --night:#060914;
+  --deck:#0c1120;
+  --deck2:#121a2e;
+  --rule:#1f2945;
+  --ink:#eaeef8;
+  --dim:#909cbb;
+  --jup:#f2dfae;
+  --mars:#ff8659;
+  --good:#8fe0b4;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"DM Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--jup);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 370px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--night)}
+#sky{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:24px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:22px}
+.kicker{font-size:12px;letter-spacing:.2em;color:var(--dim)}
+h1{font-family:var(--f-disp);font-weight:900;font-size:32px;line-height:1.15;margin:4px 0 0;letter-spacing:.06em}
+h1 .m{color:var(--mars)} h1 .j{color:var(--jup)}
+.lede{color:var(--dim);margin:8px 0 0;font-size:13.5px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-family:var(--f-disp);font-weight:600;font-size:16px;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+.event{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ev{background:var(--deck2);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;min-width:0}
+.ev span{display:block;font-size:12px;color:var(--dim)}
+.ev b{display:block;font-family:var(--f-disp);font-size:22px;font-weight:900;line-height:1.25}
+.ev small{font-size:12px;color:var(--dim)}
+.ev.wide{grid-column:1/-1}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:6px 4px;border-bottom:1px solid var(--rule);text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--dim);font-size:12px}
+td.mono{font-family:var(--f-mono);font-size:12.5px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+
+ol.guide{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:#cdd4e6}
+ol.guide b{color:var(--ink)}
+.p{margin:0;font-size:13.5px;color:#cdd4e6}
+.foot{font-size:12px;color:var(--dim);margin:0}
+
+/* stage overlays */
+.clock{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));pointer-events:none;text-shadow:0 1px 6px #000}
+.clock .d{font-family:var(--f-disp);font-weight:900;font-size:30px;line-height:1.1}
+.clock .s{font-size:13px;color:var(--dim)}
+.views{position:absolute;top:max(14px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:rgba(12,17,32,.8);backdrop-filter:blur(4px)}
+.views button{background:transparent;border:0;padding:7px 12px;font-size:13px;color:var(--dim)}
+.views button+button{border-left:1px solid var(--rule)}
+.views button[aria-pressed="true"]{color:#1a1406;background:var(--jup);font-weight:700}
+.panel{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:8px;
+  padding-block:30px max(14px,env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:linear-gradient(transparent,rgba(4,6,12,.88) 40%)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btns button{background:rgba(18,26,46,.9);border:1px solid var(--rule);border-radius:8px;padding:6px 12px;font-size:13px}
+.btns button:hover{border-color:#34436e}
+.btns button.on{background:var(--jup);border-color:var(--jup);color:#1a1406;font-weight:700}
+.rng{display:grid;grid-template-columns:40px 1fr 120px;align-items:center;gap:10px;font-size:12.5px;color:var(--dim)}
+.rng input{width:100%;min-width:0;accent-color:var(--jup)}
+.rng output{font-family:var(--f-mono);color:var(--ink);text-align:right;font-size:12.5px}
+.chk{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--dim)}
+.chk label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.chk input{accent-color:var(--jup)}
+
+@media (max-width:880px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:78vh;min-height:520px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .clock .d{font-size:24px}
+  .views{top:auto;bottom:auto;top:calc(max(14px,env(safe-area-inset-top,0px)) + 58px);left:max(16px,env(safe-area-inset-left,0px));right:auto}
+  .rng{grid-template-columns:34px 1fr 100px}
+}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="sky" aria-label="台中夜空模擬"></canvas>
+    <div class="clock"><div class="d" id="cDate">—</div><div class="s" id="cSub">—</div></div>
+    <div class="views" id="views">
+      <button data-v="eye" aria-pressed="true">肉眼</button>
+      <button data-v="bino" aria-pressed="false">雙筒 8°</button>
+      <button data-v="scope" aria-pressed="false">望遠鏡</button>
+    </div>
+    <div class="panel">
+      <div class="btns">
+        <button id="pDays">▶ 逐日播放（每天 05:00）</button>
+        <button id="pNight">▶ 整夜縮時</button>
+        <button id="jBest">跳到最佳觀看時刻</button>
+      </div>
+      <div class="rng"><span>日期</span><input type="range" id="rDate" min="0" max="44" step="1"><output id="oDate"></output></div>
+      <div class="rng"><span>時刻</span><input type="range" id="rTime" min="0" max="780" step="5"><output id="oTime"></output></div>
+      <div class="chk">
+        <label><input type="checkbox" id="kTrail" checked> 每日位置軌跡</label>
+        <label><input type="checkbox" id="kLines" checked> 星座連線</label>
+        <label><input type="checkbox" id="kCity" checked> 市區光害</label>
+      </div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="kicker">台中市中區 · 24.14°N 120.68°E</div>
+      <h1><span class="m">火星</span>合<span class="j">木星</span></h1>
+      <p class="lede">2026 年 11 月，火星和木星在獅子座裡靠到只差一度多，是這兩年來兩顆行星最近的一次相會。畫面上的天空是依天文曆即時算出的台中視角。</p>
+    </div>
+
+    <section>
+      <h2>這次相會</h2>
+      <div class="event">
+        <div class="ev wide"><span>最接近時刻（台灣時間）</span><b id="eWhen">計算中…</b><small id="eWhenSub"></small></div>
+        <div class="ev"><span>最小角距</span><b id="eSep">—</b><small id="eSepSub"></small></div>
+        <div class="ev"><span>所在星座</span><b>獅子座</b><small id="eReg"></small></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>此刻讀數</h2>
+      <table>
+        <thead><tr><th></th><th>方位</th><th>高度</th><th>亮度</th><th>距地球</th></tr></thead>
+        <tbody>
+          <tr><td><i class="sw" style="background:var(--jup)"></i>木星</td><td id="jAz">—</td><td class="mono" id="jAlt">—</td><td class="mono" id="jMag">—</td><td class="mono" id="jDist">—</td></tr>
+          <tr><td><i class="sw" style="background:var(--mars)"></i>火星</td><td id="mAz">—</td><td class="mono" id="mAlt">—</td><td class="mono" id="mMag">—</td><td class="mono" id="mDist">—</td></tr>
+        </tbody>
+      </table>
+      <p class="foot" id="nowSep"></p>
+    </section>
+
+    <section>
+      <h2>怎麼看</h2>
+      <ol class="guide" id="guide"></ol>
+    </section>
+
+    <section>
+      <h2>為什麼會「靠近」</h2>
+      <p class="p">兩顆行星其實沒有靠近。火星離我們約 <span id="mLm">11</span> 光分，木星約 <span id="jLm">44</span> 光分，只是剛好落在同一個視線方向。火星在星空中往東移動得比木星快，於是從木星後方追上、再超車。打開「每日位置軌跡」，就能看到兩條路徑交錯。</p>
+    </section>
+
+    <p class="foot">位置以 astronomy-engine 天文曆即時計算（誤差約 1 角分），已扣除光行時間與光行差，未計大氣折射。天氣與建築遮蔽請自行留意。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const AE = window.Astronomy;
+const $ = s => document.querySelector(s);
+const cv = $('#sky'), ctx = cv.getContext('2d');
+const OBS = new AE.Observer(24.14, 120.68, 80);
+const H8 = 8*3600e3, DAY = 86400e3;
+const D0 = Date.UTC(2026, 9, 31, 16, 0);         // 2026-11-01 00:00 Taiwan time
+const WEEK = '日一二三四五六';
+const DIRS = ['北','北北東','東北','東北東','東','東南東','東南','南南東','南','南南西','西南','西南西','西','西北西','西北','北北西'];
+const dirName = az => DIRS[Math.round(((az % 360) + 360) % 360/22.5) % 16];
+
+// ---- bright stars (J2000: RA hours, Dec deg, mag, name) ----
+const STARS = {
+  Sirius:[6.752,-16.716,-1.46,'天狼星'], Canopus:[6.399,-52.696,-0.74,'老人星'], Arcturus:[14.261,19.182,-0.05,'大角星'],
+  Vega:[18.616,38.784,0.03,'織女星'], Capella:[5.278,45.998,0.08,'五車二'], Rigel:[5.242,-8.202,0.13,'參宿七'],
+  Procyon:[7.655,5.225,0.34,'南河三'], Betelgeuse:[5.919,7.407,0.5,'參宿四'], Altair:[19.846,8.868,0.77,'牛郎星'],
+  Aldebaran:[4.599,16.509,0.85,'畢宿五'], Spica:[13.420,-11.161,0.97,'角宿一'], Antares:[16.490,-26.432,1.0,'心宿二'],
+  Pollux:[7.755,28.026,1.14,'北河三'], Fomalhaut:[22.961,-29.622,1.16,'北落師門'], Deneb:[20.690,45.280,1.25,'天津四'],
+  Regulus:[10.140,11.967,1.35,'軒轅十四'], Castor:[7.577,31.888,1.58,'北河二'], Adhara:[6.977,-28.972,1.5,''],
+  Bellatrix:[5.419,6.350,1.64,''], Elnath:[5.438,28.608,1.65,''], Alnilam:[5.604,-1.202,1.69,''], Alnitak:[5.679,-1.943,1.74,''],
+  Mintaka:[5.533,-0.299,2.23,''], Saiph:[5.796,-9.670,2.07,''], Meissa:[5.585,9.934,3.33,''],
+  Alioth:[12.900,55.960,1.77,''], Dubhe:[11.062,61.751,1.79,''], Alkaid:[13.792,49.313,1.86,''], Mizar:[13.399,54.925,2.23,''],
+  Merak:[11.031,56.382,2.37,''], Phecda:[11.897,53.695,2.44,''], Megrez:[12.257,57.033,3.31,''], Polaris:[2.530,89.264,1.98,'北極星'],
+  Alphard:[9.460,-8.659,1.98,'星宿一'], Denebola:[11.818,14.572,2.13,'五帝座一'], Algieba:[10.333,19.842,2.08,'軒轅十二'],
+  Zosma:[11.235,20.524,2.56,''], Chertan:[11.237,15.430,3.33,''], EtaLeo:[10.122,16.763,3.48,''], Adhafera:[10.278,23.417,3.44,''],
+  Rasalas:[9.879,26.007,3.88,''], EpsLeo:[9.764,23.774,2.98,''],
+  Acubens:[8.975,11.858,4.25,''], Altarf:[8.275,9.186,3.52,''], AsellusA:[8.745,18.154,3.94,''], AsellusB:[8.721,21.469,4.66,''], IotaCnc:[8.778,28.760,4.02,''],
+  ZetaHya:[8.923,5.946,3.11,''], EpsHya:[8.780,6.419,3.38,''], DeltaHya:[8.628,5.704,4.16,''], SigmaHya:[8.646,3.341,4.44,''], EtaHya:[8.720,3.398,4.30,''],
+  Alhena:[6.629,16.399,1.93,''], Tejat:[6.383,22.514,2.87,''], Mebsuta:[6.732,25.131,2.98,''], Propus:[6.248,22.507,3.31,''],
+  Wasat:[7.335,21.982,3.53,''], Mekbuda:[7.068,20.570,3.79,''], Alzirr:[6.755,12.896,3.35,''],
+  Mirzam:[6.378,-17.956,1.98,''], Wezen:[7.140,-26.393,1.83,''], Aludra:[7.402,-29.303,2.45,''], Gomeisa:[7.453,8.289,2.89,''],
+  Izar:[14.750,27.074,2.35,''], Muphrid:[13.911,18.398,2.68,''], Seginus:[14.535,38.308,3.03,''], Nekkar:[15.032,40.391,3.49,''], DeltaBoo:[15.258,33.315,3.46,''],
+  Menkalinan:[5.992,44.947,1.9,''], ThetaAur:[5.995,37.213,2.62,''], Hassaleh:[4.950,33.166,2.69,''],
+  Porrima:[12.694,-1.449,2.74,''], Vindemiatrix:[13.036,10.959,2.85,''], Zavijava:[11.845,1.765,3.6,''], Zaniah:[12.332,-0.667,3.89,''],
+  Auva:[12.927,3.397,3.38,''], Heze:[13.578,-0.596,3.37,''], ThetaVir:[13.165,-5.539,4.38,''],
+  Gienah:[12.263,-17.542,2.59,''], Algorab:[12.498,-16.515,2.95,''], Kraz:[12.573,-23.397,2.65,''], Minkar:[12.168,-22.620,3.0,''],
+  Alcyone:[3.791,24.105,2.87,'昴宿星團'], Hamal:[2.120,23.462,2.0,''], Mirfak:[3.405,49.861,1.79,''], Algol:[3.136,40.956,2.1,''],
+  CorCaroli:[12.934,38.318,2.9,''], Achernar:[1.629,-57.237,0.46,'']
+};
+const LINES = [
+  ['獅子座',[['Regulus','EtaLeo'],['EtaLeo','Algieba'],['Algieba','Adhafera'],['Adhafera','Rasalas'],['Rasalas','EpsLeo'],['Algieba','Zosma'],['Zosma','Denebola'],['Denebola','Chertan'],['Chertan','Regulus'],['Chertan','Zosma']]],
+  ['巨蟹座',[['Altarf','AsellusA'],['AsellusA','Acubens'],['AsellusA','AsellusB'],['AsellusB','IotaCnc']]],
+  ['長蛇座',[['SigmaHya','DeltaHya'],['DeltaHya','EpsHya'],['EpsHya','ZetaHya'],['ZetaHya','EtaHya'],['EtaHya','SigmaHya'],['ZetaHya','Alphard']]],
+  ['雙子座',[['Castor','Pollux'],['Castor','Mebsuta'],['Mebsuta','Tejat'],['Tejat','Propus'],['Pollux','Wasat'],['Wasat','Mekbuda'],['Mekbuda','Alhena'],['Wasat','Alzirr']]],
+  ['獵戶座',[['Meissa','Betelgeuse'],['Meissa','Bellatrix'],['Betelgeuse','Alnitak'],['Bellatrix','Mintaka'],['Mintaka','Alnilam'],['Alnilam','Alnitak'],['Alnitak','Saiph'],['Mintaka','Rigel']]],
+  ['大犬座',[['Mirzam','Sirius'],['Sirius','Wezen'],['Wezen','Adhara'],['Wezen','Aludra']]],
+  ['小犬座',[['Procyon','Gomeisa']]],
+  ['北斗七星',[['Dubhe','Merak'],['Merak','Phecda'],['Phecda','Megrez'],['Megrez','Dubhe'],['Megrez','Alioth'],['Alioth','Mizar'],['Mizar','Alkaid']]],
+  ['牧夫座',[['Arcturus','Izar'],['Izar','DeltaBoo'],['DeltaBoo','Nekkar'],['Nekkar','Seginus'],['Seginus','Arcturus'],['Arcturus','Muphrid']]],
+  ['御夫座',[['Capella','Menkalinan'],['Menkalinan','ThetaAur'],['ThetaAur','Elnath'],['Elnath','Hassaleh'],['Hassaleh','Capella']]],
+  ['室女座',[['Zavijava','Zaniah'],['Zaniah','Porrima'],['Porrima','Auva'],['Auva','Vindemiatrix'],['Porrima','ThetaVir'],['ThetaVir','Spica'],['Spica','Heze'],['Heze','Auva']]],
+  ['烏鴉座',[['Gienah','Algorab'],['Algorab','Kraz'],['Kraz','Minkar'],['Minkar','Gienah']]]
+];
+const sVec = Object.fromEntries(Object.entries(STARS).map(([k, [ra, dec, mag, name]]) => {
+  const r = ra*15*Math.PI/180, d = dec*Math.PI/180;
+  return [k, {v:new AE.Vector(Math.cos(d)*Math.cos(r), Math.cos(d)*Math.sin(r), Math.sin(d), null), mag, name}];
+}));
+const M44 = (() => { const r = 8.667*15*Math.PI/180, d = 19.67*Math.PI/180; return new AE.Vector(Math.cos(d)*Math.cos(r), Math.cos(d)*Math.sin(r), Math.sin(d), null); })();
+
+// skyline (degrees above horizon by azimuth), deterministic
+const skyline = (() => { let s = 7; const rnd = () => (s = (s*16807) % 2147483647)/2147483647; const a = [];
+  let h = 1; for (let az = 0; az < 360; az += 1.5){ if (rnd() < .35) h = .4 + rnd()*rnd()*5.5; a.push(h); } return a; })();
+const skyH = az => skyline[Math.floor((((az % 360) + 360) % 360)/1.5) % skyline.length];
+
+// ---- state ----
+let tMs = Date.UTC(2026, 10, 15, 21, 0);  // 2026-11-16 05:00 Taiwan
+let mode = 'eye';
+const cam = {az:120, alt:52, fov:105};
+let play = null, showTrail = true, showLines = true, city = true;
+let W = 0, H = 0, DPR = 1, bestMs = null, bestSep = null, bestView = null;
+
+// ---- ephemeris helpers ----
+let ROT = null;
+function hor(v){ // EQJ vector -> {alt, az, x,y,z unit (N,W,Z)}
+  const h = AE.RotateVector(ROT, v); const r = Math.hypot(h.x, h.y, h.z);
+  const x = h.x/r, y = h.y/r, z = h.z/r;
+  return {x, y, z, alt:Math.asin(z)*180/Math.PI, az:((Math.atan2(-y, x)*180/Math.PI) + 360) % 360};
+}
+const bodyVec = (b, t) => AE.Equator(b, t, OBS, false, true);
+const trailCache = {Mars:[], Jupiter:[]};
+for (let d = 0; d <= 44; d++){
+  const t = AE.MakeTime(new Date(D0 + d*DAY + 5*3600e3));
+  for (const b of ['Mars','Jupiter']) trailCache[b].push({v:bodyVec(b, t).vec, d});
+}
+
+// ---- projection ----
+let F_ = null, R_ = null, U_ = null, S = 1;
+const vAA = (az, alt) => { const a = az*Math.PI/180, e = alt*Math.PI/180; return [Math.cos(e)*Math.cos(a), -Math.cos(e)*Math.sin(a), Math.sin(e)]; };
+function setCam(){
+  F_ = vAA(cam.az, cam.alt); R_ = vAA(cam.az + 90, 0);
+  U_ = [R_[1]*F_[2] - R_[2]*F_[1], R_[2]*F_[0] - R_[0]*F_[2], R_[0]*F_[1] - R_[1]*F_[0]];
+  // fov spans the longer screen side; never let the screen reach past the front hemisphere
+  S = Math.max((Math.max(W, H)/2)/(2*Math.tan(cam.fov*Math.PI/360)), Math.hypot(W, H)/2/1.8);
+}
+const OUT = [0, 0, 0];
+function proj(x, y, z){
+  const xc = x*R_[0] + y*R_[1] + z*R_[2], yc = x*U_[0] + y*U_[1] + z*U_[2], zc = x*F_[0] + y*F_[1] + z*F_[2];
+  const k = 2/(1 + Math.max(zc, -0.95));
+  OUT[0] = W/2 + xc*k*S; OUT[1] = H/2 - yc*k*S; OUT[2] = zc; return OUT;
+}
+const projAA = (az, alt) => { const v = vAA(az, alt); return proj(v[0], v[1], v[2]); };
+
+// ---- sky colour ----
+const lerp = (a, b, f) => a + (b - a)*f;
+const mix = (c1, c2, f) => c1.map((c, i) => Math.round(lerp(c, c2[i], f)));
+const SKY = [[-18, [3,5,13], [9,15,32]], [-12, [5,10,28], [18,34,70]], [-6, [12,28,66], [70,80,120]], [0, [40,84,150], [214,150,110]], [6, [58,112,190], [160,195,232]]];
+function skyCols(sa){
+  if (sa <= SKY[0][0]) return [SKY[0][1], SKY[0][2]];
+  for (let i = 1; i < SKY.length; i++) if (sa <= SKY[i][0]){
+    const f = (sa - SKY[i-1][0])/(SKY[i][0] - SKY[i-1][0]); return [mix(SKY[i-1][1], SKY[i][1], f), mix(SKY[i-1][2], SKY[i][2], f)];
+  }
+  return [SKY[4][1], SKY[4][2]];
+}
+const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+// ---- render ----
+function render(){
+  const date = new Date(tMs), t = AE.MakeTime(date);
+  ROT = AE.Rotation_EQJ_HOR(t, OBS);
+  const sun = hor(bodyVec('Sun', t).vec), moonEq = bodyVec('Moon', t), moon = hor(moonEq.vec);
+  const jEq = bodyVec('Jupiter', t), mEq = bodyVec('Mars', t), jup = hor(jEq.vec), mars = hor(mEq.vec);
+
+  if (mode === 'bino'){ const mid = midAA(jup, mars); cam.az = mid[0]; cam.alt = mid[1]; cam.fov = 8; }
+  if (mode === 'scope'){ cam.az = jup.az; cam.alt = jup.alt; cam.fov = 0.32; }
+  setCam();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  // sky gradient
+  const [top, low] = skyCols(sun.alt);
+  const hy = projAA(cam.az, 0)[1], ty = projAA(cam.az, Math.min(89, cam.alt + cam.fov/2))[1];
+  const g = ctx.createLinearGradient(0, Math.min(hy, H*4), 0, Math.max(-H, Math.min(ty, hy - 10)));
+  g.addColorStop(0, rgb(low)); g.addColorStop(1, rgb(top));
+  ctx.fillStyle = mode === 'eye' ? g : rgb(mix(top, low, .25)); ctx.fillRect(0, 0, W, H);
+  // dawn glow toward the sun
+  if (sun.alt > -16 && sun.alt < 4 && mode === 'eye'){
+    proj(sun.x, sun.y, sun.z);
+    if (OUT[2] > -0.6){
+      const sx = OUT[0], sy = projAA(sun.az, 0)[1], f = (sun.alt + 16)/20;
+      const rg = ctx.createRadialGradient(sx, sy, 0, sx, sy, W*0.9);
+      rg.addColorStop(0, `rgba(255,170,110,${.45*f})`); rg.addColorStop(1, 'rgba(255,170,110,0)');
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // stars
+  const limBase = city ? 3.9 : 5.0;
+  const lim = sun.alt < -18 ? limBase : sun.alt > -2 ? -1.2 : lerp(limBase, -1.2, (sun.alt + 18)/16);
+  const zoomBoost = mode === 'eye' ? 1 : mode === 'bino' ? 1.6 : 2;
+  const starPos = {};
+  for (const [k, s] of Object.entries(sVec)){
+    const h = hor(s.v); proj(h.x, h.y, h.z);
+    if (OUT[2] < 0.05) continue;
+    starPos[k] = [OUT[0], OUT[1], h.alt];
+    const a = Math.max(0, Math.min(1, (lim + (mode === 'eye' ? 0 : 2.5) - s.mag)/1.2));
+    if (a <= 0 || h.alt < -1) continue;
+    const r = Math.max(.6, (2.6 - .42*s.mag))*zoomBoost;
+    ctx.fillStyle = `rgba(235,240,255,${a})`; ctx.beginPath(); ctx.arc(OUT[0], OUT[1], r, 0, Math.PI*2); ctx.fill();
+    if (s.name && mode === 'eye' && s.mag < 1.6 || k === 'Regulus'){
+      ctx.fillStyle = `rgba(190,200,225,${a*.85})`; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText(s.name, OUT[0] + 6, OUT[1] - 5);
+    }
+  }
+  // Praesepe
+  { const h = hor(M44); proj(h.x, h.y, h.z); if (OUT[2] > .05 && h.alt > 0){ const a = Math.max(0, Math.min(.5, (lim + 1 - 3.7)/2)); if (a > 0){
+    const rr = Math.max(4, 0.8*Math.PI/180*S); const rg = ctx.createRadialGradient(OUT[0], OUT[1], 0, OUT[0], OUT[1], rr);
+    rg.addColorStop(0, `rgba(220,228,255,${a})`); rg.addColorStop(1, 'rgba(220,228,255,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(OUT[0], OUT[1], rr, 0, Math.PI*2); ctx.fill();
+    if (mode !== 'scope'){ ctx.fillStyle = `rgba(190,200,225,${a*1.4})`; ctx.font = '11px "Noto Sans TC", sans-serif'; ctx.fillText('鬼星團 M44', OUT[0] + rr*.6, OUT[1] + rr*.6 + 8); } } } }
+
+  // constellation lines
+  if (showLines && mode !== 'scope'){
+    const la = Math.max(0, Math.min(.35, (lim + 1)/10));
+    ctx.strokeStyle = `rgba(140,165,220,${la})`; ctx.lineWidth = 1; ctx.font = '12px "Noto Serif TC", serif';
+    for (const [name, segs] of LINES){
+      let sx = 0, sy = 0, n = 0; ctx.beginPath();
+      for (const [a, b] of segs){ const p = starPos[a], q = starPos[b]; if (!p || !q) continue;
+        const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy); if (L < 12 || L > W*1.2) continue;
+        const gap = Math.min(7, L/3);
+        ctx.moveTo(p[0] + dx/L*gap, p[1] + dy/L*gap); ctx.lineTo(q[0] - dx/L*gap, q[1] - dy/L*gap); sx += p[0]; sy += p[1]; n++; }
+      ctx.stroke();
+      if (n && mode === 'eye'){ ctx.fillStyle = `rgba(160,180,225,${la*1.6})`; ctx.fillText(name, sx/n - 18, sy/n + 22); }
+    }
+  }
+
+  // daily trails
+  if (showTrail && mode !== 'scope'){
+    const curDay = Math.round((tMs + H8 - (D0 + H8))/DAY - 5/24);
+    for (const b of ['Jupiter','Mars']){
+      const col = b === 'Mars' ? '255,134,89' : '242,223,174';
+      let prev = null;
+      ctx.strokeStyle = `rgba(${col},.35)`; ctx.lineWidth = 1; ctx.beginPath();
+      trailCache[b].forEach(({v}) => { const h = hor(v); proj(h.x, h.y, h.z); if (OUT[2] < .05){ prev = null; return; }
+        prev ? ctx.lineTo(OUT[0], OUT[1]) : ctx.moveTo(OUT[0], OUT[1]); prev = 1; });
+      ctx.stroke();
+      trailCache[b].forEach(({v, d}) => { const h = hor(v); proj(h.x, h.y, h.z); if (OUT[2] < .05) return;
+        ctx.fillStyle = `rgba(${col},${d === curDay ? .0 : .55})`; ctx.beginPath(); ctx.arc(OUT[0], OUT[1], d % 5 === 0 ? 2.4 : 1.4, 0, Math.PI*2); ctx.fill();
+        if (d % 5 === 0 && b === 'Mars' && mode === 'bino'){ ctx.fillStyle = 'rgba(255,170,140,.75)'; ctx.font = '11px "DM Mono", monospace'; ctx.fillText(dLabel(d), OUT[0] + 5, OUT[1] - 5); }
+        if (d % 5 === 0 && b === 'Jupiter' && mode === 'bino'){ ctx.fillStyle = 'rgba(242,223,174,.7)'; ctx.font = '11px "DM Mono", monospace'; ctx.textAlign = 'right'; ctx.fillText(dLabel(d), OUT[0] - 7, OUT[1] + 4); ctx.textAlign = 'start'; }
+      });
+    }
+  }
+
+  // moon
+  if (mode === 'eye' || mode === 'bino') drawMoon(moon, sun, t);
+
+  // planets
+  if (mode === 'scope') drawScope(jEq, jup, t);
+  else {
+    drawPlanet(mars, '#ff8659', 0.7, '火星', mEq.dist, 3390, -1);
+    drawPlanet(jup, '#f6e6bd', -2.1, '木星', jEq.dist, 69911, 1);
+  }
+
+  // ground & skyline
+  if (mode === 'eye') drawGround(sun.alt);
+  else if (jup.alt < 0){ ctx.fillStyle = 'rgba(5,7,12,.7)'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#c9d2ea'; ctx.font = '15px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('行星還在地平線下', W/2, H/2); ctx.textAlign = 'start'; }
+
+  // field-of-view ring for optics
+  if (mode !== 'eye'){
+    const R = Math.min(W, H)*0.46;
+    ctx.save(); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(W/2, H/2, R, 0, Math.PI*2, true); ctx.fill('evenodd'); ctx.restore();
+    ctx.strokeStyle = 'rgba(160,170,200,.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(W/2, H/2, R, 0, Math.PI*2); ctx.stroke();
+  }
+
+  updateText(date, jup, mars, jEq, mEq, sun);
+}
+function dLabel(d){ const x = new Date(D0 + H8 + d*DAY); return `${x.getUTCMonth() + 1}/${x.getUTCDate()}`; }
+function midAA(a, b){ const x = a.x + b.x, y = a.y + b.y, z = a.z + b.z, r = Math.hypot(x, y, z);
+  return [((Math.atan2(-y/r, x/r)*180/Math.PI) + 360) % 360, Math.asin(z/r)*180/Math.PI]; }
+
+function drawPlanet(h, col, mag, name, distAU, radiusKm, side){
+  proj(h.x, h.y, h.z); if (OUT[2] < .05) return;
+  const x = OUT[0], y = OUT[1];
+  const angR = Math.atan(radiusKm/(distAU*1.495978707e8));
+  const r = Math.max(angR*S*2, mode === 'eye' ? 3.4 - mag*.55 : 4.5 - mag*.6);
+  const gl = ctx.createRadialGradient(x, y, 0, x, y, r*5);
+  gl.addColorStop(0, col + 'aa'); gl.addColorStop(1, col + '00');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r*5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  ctx.font = '600 14px "Noto Sans TC", sans-serif'; ctx.fillStyle = col;
+  ctx.textAlign = side > 0 ? 'left' : 'right';
+  ctx.fillText(name, x + side*(r + 12), y + (side > 0 ? 16 : -8));
+  ctx.textAlign = 'start';
+}
+function drawMoon(m, sun, t){
+  proj(m.x, m.y, m.z); if (OUT[2] < .05 || m.alt < -1) return;
+  const x = OUT[0], y = OUT[1];
+  const r = Math.max(5, 0.26*Math.PI/180*S);
+  proj(sun.x, sun.y, sun.z); const ang = Math.atan2(OUT[1] - y, OUT[0] - x);
+  const k = Math.cos(AE.Illumination('Moon', t).phase_angle*Math.PI/180);
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = '#2a2d36'; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#efe9d6'; ctx.beginPath(); ctx.arc(0, 0, r, -Math.PI/2, Math.PI/2); ctx.fill();
+  ctx.fillStyle = k > 0 ? '#efe9d6' : '#2a2d36'; ctx.beginPath(); ctx.ellipse(0, 0, r*Math.abs(k), r, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(220,220,210,.8)'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('月亮', x + r + 5, y + 4);
+}
+const MOONS = [['io','埃歐'],['europa','歐羅巴'],['ganymede','甘尼米德'],['callisto','卡利斯多']];
+function drawScope(jEq, jup, t){
+  const jm = AE.JupiterMoons(t), base = jEq.vec;
+  proj(jup.x, jup.y, jup.z); const cx = OUT[0], cy = OUT[1];
+  const angR = Math.atan(71492/(jEq.dist*1.495978707e8)), r = angR*2*S;
+  const pts = MOONS.map(([k, name]) => { const s = jm[k];
+    const v = new AE.Vector(base.x + s.x, base.y + s.y, base.z + s.z, null); const h = hor(v); proj(h.x, h.y, h.z);
+    const behind = Math.hypot(base.x + s.x, base.y + s.y, base.z + s.z) > Math.hypot(base.x, base.y, base.z);
+    return {name, x:OUT[0], y:OUT[1], behind}; });
+  let far = pts[0], fd = 0; pts.forEach(p => { const d = Math.hypot(p.x - cx, p.y - cy); if (d > fd){ fd = d; far = p; } });
+  const tilt = Math.atan2(far.y - cy, far.x - cx);
+  const hidden = p => p.behind && Math.hypot(p.x - cx, p.y - cy) < r;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt);
+  ctx.beginPath(); ctx.ellipse(0, 0, r, r*0.935, 0, 0, Math.PI*2); ctx.clip();
+  ctx.fillStyle = '#efe0bd'; ctx.fillRect(-r, -r, 2*r, 2*r);
+  [[-0.42, .16, '#b48a62'], [0.2, .17, '#a7795a'], [-0.7, .07, '#c9ad8c'], [0.55, .06, '#c4a487']].forEach(([yy, hh, c]) => { ctx.fillStyle = c; ctx.fillRect(-r, yy*r, 2*r, hh*r); });
+  const lg = ctx.createRadialGradient(0, 0, r*.5, 0, 0, r*1.05); lg.addColorStop(0, 'rgba(0,0,0,0)'); lg.addColorStop(1, 'rgba(0,0,0,.45)'); ctx.fillStyle = lg; ctx.fillRect(-r, -r, 2*r, 2*r);
+  ctx.restore();
+  ctx.font = '12px "Noto Sans TC", sans-serif';
+  pts.forEach((p, i) => { if (hidden(p)) return;
+    ctx.fillStyle = '#fbf3df'; ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(220,226,240,.85)'; ctx.fillText(p.name, p.x - 14, p.y + (i % 2 ? 20 : -10)); });
+  ctx.fillStyle = 'rgba(220,226,240,.6)'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('約 100 倍望遠鏡視野 · 木星與四顆伽利略衛星（火星在視野外約 1°）', W/2, H/2 + Math.min(W, H)*0.46 - 14);
+  const hid = pts.filter(hidden).map(p => p.name);
+  if (hid.length) ctx.fillText(`${hid.join('、')}此刻在木星後方`, W/2, H/2 - Math.min(W, H)*0.46 + 22);
+  ctx.textAlign = 'start';
+}
+function drawGround(sunAlt){
+  const pts = [];
+  for (let d = -178; d <= 178; d += 1.5){
+    const az = cam.az + d, a = skyH(az);
+    projAA(az, a); if (OUT[2] > -0.1) pts.push([OUT[0], OUT[1]]);
+  }
+  if (!pts.length) return;
+  const lum = Math.max(0, Math.min(1, (sunAlt + 12)/14));
+  ctx.fillStyle = rgb(mix([4,6,11], [32,38,52], lum));
+  ctx.beginPath(); ctx.moveTo(pts[0][0], H + 10); pts.forEach(p => ctx.lineTo(p[0], p[1])); ctx.lineTo(pts[pts.length - 1][0], H + 10); ctx.closePath(); ctx.fill();
+  // lit windows
+  if (lum < .7){ ctx.fillStyle = `rgba(255,214,150,${.5*(1 - lum)})`;
+    for (let d = -90; d <= 90; d += 0.75){ const az = cam.az + d, h = skyH(az); if (h < 1.2) continue;
+      const seed = Math.abs(Math.sin(az*12.9898)*43758.5453) % 1; if (seed > .35) continue;
+      projAA(az, h*seed*2.2); if (OUT[2] > 0) ctx.fillRect(OUT[0], OUT[1], 2, 2); } }
+  // compass
+  ctx.font = '600 13px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  for (let az = 0; az < 360; az += 45){ projAA(az, -1.5); if (OUT[2] > 0.1 && OUT[0] > 0 && OUT[0] < W){
+    ctx.fillStyle = 'rgba(200,210,235,.75)'; ctx.fillText(DIRS[az/22.5], OUT[0], Math.min(H - 110, OUT[1] + 18)); } }
+  ctx.textAlign = 'start';
+}
+
+// ---- text panels ----
+function fmtLocal(ms, withDay = true){
+  const x = new Date(ms + H8);
+  const hh = String(x.getUTCHours()).padStart(2, '0'), mm = String(x.getUTCMinutes()).padStart(2, '0');
+  return (withDay ? `${x.getUTCMonth() + 1}/${x.getUTCDate()}（${WEEK[x.getUTCDay()]}）` : '') + `${hh}:${mm}`;
+}
+let lastTxt = 0;
+function updateText(date, jup, mars, jEq, mEq, sun){
+  $('#cDate').textContent = fmtLocal(tMs);
+  const twi = sun.alt > 0 ? '白天' : sun.alt > -6 ? '民用曙暮光' : sun.alt > -12 ? '航海曙暮光' : sun.alt > -18 ? '天文曙暮光' : '夜晚';
+  $('#cSub').textContent = `台中 · 太陽高度 ${sun.alt.toFixed(0)}°（${twi}）`;
+  const now = performance.now(); if (now - lastTxt < 100 && play) return; lastTxt = now;
+  const set = (p, h, mag, dist) => {
+    $('#' + p + 'Az').textContent = `${dirName(h.az)} ${h.az.toFixed(0)}°`;
+    $('#' + p + 'Alt').textContent = h.alt < 0 ? '地平下' : h.alt.toFixed(1) + '°';
+    $('#' + p + 'Mag').textContent = (mag > 0 ? '+' : '') + mag.toFixed(1);
+    $('#' + p + 'Dist').textContent = (dist*8.3167).toFixed(1) + ' 光分';
+  };
+  const t = AE.MakeTime(date);
+  set('j', jup, AE.Illumination('Jupiter', t).mag, jEq.dist);
+  set('m', mars, AE.Illumination('Mars', t).mag, mEq.dist);
+  const sep = AE.AngleBetween(jEq.vec, mEq.vec);
+  $('#nowSep').textContent = `此刻兩者相距 ${sep.toFixed(2)}°，約 ${(sep/0.52).toFixed(1)} 個滿月寬。`;
+  $('#mLm').textContent = (mEq.dist*8.3167).toFixed(0); $('#jLm').textContent = (jEq.dist*8.3167).toFixed(0);
+  $('#oDate').textContent = fmtLocal(tMs).replace(/\d\d:\d\d$/, '').trim();
+  $('#oTime').textContent = fmtLocal(tMs, false);
+}
+
+// ---- event search & guide ----
+function computeEvent(){
+  let best = [0, 99];
+  for (let ms = Date.UTC(2026, 10, 1); ms < Date.UTC(2026, 11, 1); ms += 3*3600e3){ const t = AE.MakeTime(new Date(ms)); const s = AE.AngleBetween(bodyVec('Mars', t).vec, bodyVec('Jupiter', t).vec); if (s < best[1]) best = [ms, s]; }
+  for (let ms = best[0] - 4*3600e3; ms < best[0] + 4*3600e3; ms += 5*60e3){ const t = AE.MakeTime(new Date(ms)); const s = AE.AngleBetween(bodyVec('Mars', t).vec, bodyVec('Jupiter', t).vec); if (s < best[1]) best = [ms, s]; }
+  bestMs = best[0]; bestSep = best[1];
+  const tb = AE.MakeTime(new Date(bestMs));
+  const sunAt = hor0('Sun', tb);
+  $('#eWhen').textContent = `2026/${fmtLocal(bestMs)}`;
+  $('#eWhenSub').textContent = sunAt.alt > 0 ? '當下是白天看不到。前後兩天清晨看起來幾乎一樣近。' : '';
+  $('#eSep').textContent = bestSep.toFixed(2) + '°';
+  $('#eSepSub').textContent = `約 ${(bestSep/0.52).toFixed(1)} 個滿月寬`;
+  const jv = bodyVec('Jupiter', tb).vec, reg = sVec.Regulus.v;
+  $('#eReg').textContent = `距軒轅十四約 ${AE.AngleBetween(jv, reg).toFixed(1)}°`;
+
+  // best viewing: the morning closest to the event, 40 min before the sun reaches -12°
+  const dayStart = Math.floor((bestMs + H8)/DAY)*DAY - H8;            // local midnight of event day
+  const tw = AE.SearchAltitude('Sun', OBS, +1, AE.MakeTime(new Date(dayStart)), 1, -12).date.getTime();
+  const rise = AE.SearchRiseSet('Jupiter', OBS, +1, AE.MakeTime(new Date(dayStart - 8*3600e3)), 1).date.getTime();
+  const sunrise = AE.SearchRiseSet('Sun', OBS, +1, AE.MakeTime(new Date(dayStart)), 1).date.getTime();
+  bestView = Math.round((tw - 30*60e3)/(5*60e3))*5*60e3;
+  const t5 = AE.MakeTime(new Date(bestView));
+  const hj = hor0('Jupiter', t5), hm = hor0('Mars', t5);
+  const moonUp = hor0('Moon', t5).alt > 0;
+  const above = hm.alt > hj.alt ? '上方' : '下方';
+  $('#guide').innerHTML = `
+    <li><b>什麼時候：</b>11/15–11/17 清晨最好。兩顆行星約在前一晚 ${fmtLocal(rise, false)} 從東方升起，到天亮前 ${fmtLocal(bestView, false)} 左右最高、天色仍暗（日出 ${fmtLocal(sunrise, false)}）。</li>
+    <li><b>往哪看：</b>${dirName(hj.az)}方的高空，仰角約 ${hj.alt.toFixed(0)}°，差不多要抬頭往上看。${moonUp ? '' : '這時月亮已經下山，不會干擾。'}</li>
+    <li><b>怎麼分辨：</b>最亮、偏白的那顆是木星（−2.1 等）；它${above}一點點、帶橘紅色的是火星（+0.7 等）。附近那顆白色亮星是獅子座的軒轅十四。</li>
+    <li><b>用什麼看：</b>肉眼就看得到，在台中市區也沒問題。雙筒望遠鏡能把兩顆行星框在同一個視野；小型望遠鏡可以看到木星的四顆伽利略衛星（切到「望遠鏡」視角看排列）。</li>`;
+}
+const hor0 = (b, t) => { const R = AE.Rotation_EQJ_HOR(t, OBS); const save = ROT; ROT = R; const h = hor(bodyVec(b, t).vec); ROT = save; return h; };
+
+// ---- controls ----
+function syncSliders(){
+  const local = tMs + H8;
+  const dayIdx = Math.floor((local - (D0 + H8))/DAY + (7 <= new Date(local).getUTCHours() && new Date(local).getUTCHours() < 18 ? 0 : 0));
+  // morning date: times from 18:00 belong to next morning
+  const hr = new Date(local).getUTCHours();
+  const morningIdx = hr >= 18 ? dayIdx + 1 : dayIdx;
+  $('#rDate').value = Math.max(0, Math.min(44, morningIdx));
+  const mins = (hr >= 18 ? hr - 18 : hr + 6)*60 + new Date(local).getUTCMinutes();
+  $('#rTime').value = Math.max(0, Math.min(780, mins));
+}
+function fromSliders(){
+  const d = +$('#rDate').value, m = +$('#rTime').value;
+  tMs = D0 + d*DAY - 6*3600e3 + m*60e3;    // morning d at 00:00 minus 6h = 18:00 previous evening
+}
+$('#rDate').addEventListener('input', () => { stopPlay(); fromSliders(); });
+$('#rTime').addEventListener('input', () => { stopPlay(); fromSliders(); });
+function stopPlay(){ play = null; $('#pDays').classList.remove('on'); $('#pNight').classList.remove('on'); $('#pDays').textContent = '▶ 逐日播放（每天 05:00）'; $('#pNight').textContent = '▶ 整夜縮時'; }
+$('#pDays').onclick = () => {
+  if (play === 'days'){ stopPlay(); return; } stopPlay(); play = 'days';
+  $('#pDays').classList.add('on'); $('#pDays').textContent = '❚❚ 逐日播放中';
+  $('#rTime').value = 660; if (+$('#rDate').value >= 44) $('#rDate').value = 0; fromSliders(); acc = 0;
+};
+$('#pNight').onclick = () => {
+  if (play === 'night'){ stopPlay(); return; } stopPlay(); play = 'night';
+  $('#pNight').classList.add('on'); $('#pNight').textContent = '❚❚ 整夜縮時中';
+  if (+$('#rTime').value >= 760) $('#rTime').value = 300; fromSliders(); nightM = +$('#rTime').value;
+};
+let nightM = 0;
+$('#jBest').onclick = () => { stopPlay(); if (bestView){ tMs = bestView; syncSliders(); setMode('eye'); aimAtPlanets(); } };
+$('#kTrail').onchange = e => showTrail = e.target.checked;
+$('#kLines').onchange = e => showLines = e.target.checked;
+$('#kCity').onchange = e => city = e.target.checked;
+function setMode(m){
+  mode = m; document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === m));
+  if (m === 'eye'){ cam.fov = 105; aimAtPlanets(); }
+}
+document.querySelectorAll('#views button').forEach(b => b.onclick = () => setMode(b.dataset.v));
+function aimAtPlanets(){
+  const t = AE.MakeTime(new Date(tMs)); const j = hor0('Jupiter', t);
+  if (j.alt > 5){ cam.az = j.az; cam.alt = Math.max(28, Math.min(60, j.alt - 18)); } else { cam.az = 100; cam.alt = 28; }
+}
+
+// drag to look around / wheel to zoom (naked-eye mode)
+let drag = null;
+cv.addEventListener('pointerdown', e => { if (mode !== 'eye') return; cv.setPointerCapture(e.pointerId); drag = {x:e.clientX, y:e.clientY, az:cam.az, alt:cam.alt}; });
+cv.addEventListener('pointermove', e => { if (!drag) return; const k = cam.fov/W;
+  cam.az = (drag.az - (e.clientX - drag.x)*k + 360) % 360; cam.alt = Math.max(5, Math.min(80, drag.alt + (e.clientY - drag.y)*k)); });
+cv.addEventListener('pointerup', () => drag = null); cv.addEventListener('pointercancel', () => drag = null);
+cv.addEventListener('wheel', e => { if (mode !== 'eye') return; e.preventDefault(); cam.fov = Math.max(20, Math.min(130, cam.fov*Math.exp(e.deltaY*0.001))); }, {passive:false});
+
+// ---- loop ----
+const stage = $('#stage');
+function resize(){ const r = stage.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); }
+new ResizeObserver(resize).observe(stage); resize();
+
+computeEvent();
+syncSliders(); aimAtPlanets();
+let last = performance.now(), acc = 0;
+function frame(now){
+  const dt = Math.min(.1, (now - last)/1000); last = now;
+  if (play === 'days'){
+    acc += dt; if (acc > 0.32){ acc = 0; const d = +$('#rDate').value; if (d >= 44) stopPlay(); else { $('#rDate').value = d + 1; fromSliders(); } }
+  } else if (play === 'night'){
+    nightM += dt*90; if (nightM >= 780){ nightM = 780; stopPlay(); }
+    $('#rTime').value = nightM; tMs = D0 + (+$('#rDate').value)*DAY - 6*3600e3 + nightM*60e3;
+  }
+  if (W) render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

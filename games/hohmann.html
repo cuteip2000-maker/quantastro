@@ -1,0 +1,426 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>霍曼轉移軌道</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: flight dynamics console — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#080a14;
+  --panel:#111526;
+  --panel2:#191f36;
+  --rule:#2a3253;
+  --ink:#e9ecf6;
+  --dim:#959db8;
+  --earth:#4ea8ff;
+  --mars:#ff7b4a;
+  --ship:#ffd166;
+  --ok:#53d18b;
+  --bad:#ff5d5d;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ship);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--ship)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:radial-gradient(ellipse at 50% 50%,#121834 0,#080a14 70%)}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(8,10,20,.84);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(370px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--ship)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.side{position:absolute;right:12px;top:10px;background:rgba(8,10,20,.84);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:12.5px;line-height:1.6;pointer-events:none;min-width:180px}
+.side b{font-family:var(--f-num);float:right;margin-left:10px}
+.gauge{height:8px;border-radius:4px;background:#232a47;position:relative;margin:4px 0 2px}
+.gauge i{position:absolute;top:-3px;width:3px;height:14px;border-radius:2px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ship);color:#1d1500;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.over{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 32px));background:rgba(25,31,54,.97);border:1px solid var(--rule);border-radius:16px;padding:16px 18px;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.over h3{font-family:var(--f-disp);font-size:21px;margin:0 0 6px}
+.over p{margin:0 0 10px;font-size:14px}
+.over .stars{font-size:28px;letter-spacing:4px;color:var(--ship)}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.pri{background:var(--ship);border-color:var(--ship);color:#1d1500;font-weight:700}
+.btn.go{background:#1f6b45;border-color:var(--ok);font-weight:700}
+.btn.stop{background:#6b1f2a;border-color:var(--bad);font-weight:700}
+.btn.sel{border-color:var(--ship);color:var(--ship);box-shadow:inset 0 0 0 1px var(--ship)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 200px}
+.sl input{flex:1;accent-color:var(--ship);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:3.6em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--ship);width:16px;height:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.cmp{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 10px;font-size:12.5px;color:var(--dim)}
+.cmp b{display:block;font-family:var(--f-num);color:var(--ink);font-size:17px}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.tl{list-style:none;margin:0;padding:0;font-size:13.5px}
+.tl li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;padding:5px 0;border-top:1px dashed var(--rule)}
+.tl li:first-child{border-top:0}
+.tl b{font-family:var(--f-num);color:var(--ship)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:60vh;min-height:400px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .side{top:auto;bottom:10px;font-size:11.5px;min-width:150px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="mars" aria-pressed="true">飛向火星<small>抓準發射窗口</small></button>
+      <button data-tab="pilot" aria-pressed="false">我是太空駕駛<small>兩次點火換軌道</small></button>
+      <button data-tab="calc" aria-pressed="false">行星航線表<small>去哪裡要多久</small></button>
+    </nav>
+    <div class="view">
+      <!-- Mars -->
+      <div class="pane" id="p-mars">
+        <div class="cv"><canvas id="cM"></canvas><div class="ro" id="roM"></div><div class="side" id="sideM"></div><div class="toast" id="tM"></div><div class="over" id="overM" hidden></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn" id="mPlay">▶ 時間前進</button>
+            <span class="lab">速度</span><span class="row" id="mSpd"></span>
+            <button class="btn pri" id="launch">🚀 發射！</button>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="hint">顯示提示（太空船到達時火星會在哪）</label>
+            <button class="btn" id="mToday">回到起點</button>
+          </div>
+        </div>
+      </div>
+      <!-- Pilot -->
+      <div class="pane" id="p-pilot" hidden>
+        <div class="cv"><canvas id="cP"></canvas><div class="ro" id="roP"></div><div class="side" id="sideP"></div><div class="toast" id="tP"></div><div class="over" id="overP" hidden></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">任務</span><span class="row" id="lvBtns"></span></div>
+          <div class="row">
+            <button class="btn go" id="pro">⏩ 往前噴（加速）</button>
+            <button class="btn stop" id="retro">⏪ 往後噴（減速）</button>
+            <label class="sl">每次噴多少<input id="imp" type="range" min="1" max="20" value="6"><b id="impV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">時間</span><span class="row" id="pSpd"></span>
+            <label class="chk"><input type="checkbox" id="ghost">顯示最省燃料的路線</label>
+            <button class="btn" id="pReset">↺ 重新開始任務</button>
+          </div>
+        </div>
+      </div>
+      <!-- Calculator -->
+      <div class="pane" id="p-calc" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">從地球到</span><span class="row" id="plBtns"></span></div>
+          <div class="cards" id="calcCards"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>霍曼轉移軌道</h1>
+    <p class="lede">從一個圓形軌道換到另一個圓形軌道，最省燃料的走法：只要點火兩次，沿著半個橢圓滑過去。</p>
+
+    <div class="card">
+      <h2>只要點火兩次</h2>
+      <p>1925 年，德國工程師<b>霍曼</b>在書中算出：太空船在內圈軌道<b>往前噴</b>加速，軌道就被拉成一個橢圓，最遠點剛好碰到外圈軌道。</p>
+      <p>滑行半圈到達最遠點時，<b>再往前噴一次</b>，把橢圓「撐圓」，就停在新軌道上了。中間完全不用開引擎！</p>
+    </div>
+
+    <div class="card">
+      <h2>奇怪的太空規則</h2>
+      <p>• 在這一邊<b>加速</b>，會讓<b>另一邊</b>的軌道升高。</p>
+      <p>• 軌道越高，繞一圈的速度反而越<b>慢</b>。想追上前面的太空站？有時候要先<b>減速</b>，掉到內圈「抄捷徑」！</p>
+      <div class="fx">克卜勒第三定律：週期² ∝ 軌道半徑³</div>
+    </div>
+
+    <div class="card">
+      <h2>發射窗口：火星要先跑到前面</h2>
+      <p>飛到火星大約要 <b>8 個半月</b>（約 259 天）。這段時間火星也在往前跑，所以出發時火星必須在地球前方約 <b>44°</b>，太空船到的時候兩者才會剛好碰面。</p>
+      <p>（遊戲把行星軌道當成正圓，算出來的日期是近似值；真實任務還要考慮軌道是橢圓、而且不在同一個平面上。）</p>
+      <p>這樣的位置大約每 <b>26 個月</b>才出現一次，叫做「發射窗口」。2020 年 7 月，美國的毅力號、中國的天問一號、阿聯的希望號，幾乎同時出發，就是因為窗口打開了。</p>
+    </div>
+
+    <div class="card">
+      <h2>速度怎麼算？</h2>
+      <p>繞太陽的地球每秒跑約 <b>29.8 公里</b>。要去火星，只要再多加速約每秒 <b>2.9 公里</b>（不算離開地球本身需要的速度）。</p>
+      <div class="fx">轉移軌道的半長軸 ＝（內圈半徑 ＋ 外圈半徑）÷ 2</div>
+    </div>
+
+    <div class="card">
+      <h2>不只去火星</h2>
+      <p>• 通訊衛星先進入「地球同步轉移軌道」，再在高點點火變圓，就是霍曼轉移。</p>
+      <p>• 去更遠的木星、土星，霍曼轉移要好幾年，所以真實任務常加上「重力彈弓」，借行星的引力加速。</p>
+    </div>
+
+    <div class="card">
+      <h2>時間軸</h2>
+      <ul class="tl">
+        <li><b>1609</b><span>克卜勒發表行星沿橢圓軌道運行的定律</span></li>
+        <li><b>1925</b><span>霍曼出版《天體的可達性》，提出這條省燃料的路線</span></li>
+        <li><b>1964</b><span>水手 4 號飛往火星，隔年第一次近距離拍到火星</span></li>
+        <li><b>2020</b><span>三個國家趁同一個窗口出發前往火星</span></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3000){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const D2R=Math.PI/180,TAU=2*Math.PI;
+const wrap360=x=>((x%360)+360)%360,wrap180=x=>{x=wrap360(x);return x>180?x-360:x;};
+function kepler(M,e){let E=M;for(let i=0;i<30;i++)E-=(E-e*Math.sin(E)-M)/(1-e*Math.cos(E));return E;}
+let TAB='mars';
+const stars=Array.from({length:220},()=>[Math.random(),Math.random(),Math.random()*1.2+0.2]);
+function drawStars(a,w,h){a.fillStyle='#cfd6ff';for(const s of stars){a.globalAlpha=0.25+0.5*s[2]/1.4;a.fillRect(s[0]*w,s[1]*h,s[2],s[2]);}a.globalAlpha=1;}
+
+/* ======================= 1. EARTH → MARS ======================= */
+const AM=1.5237,YEAR=365.25,TM=YEAR*Math.pow(AM,1.5); // Mars period (days)
+const AT=(1+AM)/2,ET=(AM-1)/(AM+1),TT=YEAR*Math.pow(AT,1.5)/2; // transfer: half period (days)
+const IDEAL=180-360*TT/TM;
+const J2000=Date.UTC(2000,0,1,12);
+const todayD=()=>(Date.now()-J2000)/86400000;
+const lamE=d=>wrap360(100.46+360/YEAR*d),lamM=d=>wrap360(355.45+360/TM*d);
+const MS={d:todayD()-200,run:false,spd:10,ship:null,result:null};
+const fmtDate=d=>{const t=new Date(J2000+d*86400000);return `${t.getUTCFullYear()} 年 ${t.getUTCMonth()+1} 月 ${t.getUTCDate()} 日`;};
+function shipPos(s,d){ // heliocentric position (AU) along the transfer half-ellipse
+  const t=d-s.d0,n=TAU/(2*TT),M=Math.min(Math.PI,n*t),E=kepler(M,ET);
+  const nu=2*Math.atan2(Math.sqrt(1+ET)*Math.sin(E/2),Math.sqrt(1-ET)*Math.cos(E/2));
+  const r=AT*(1-ET*Math.cos(E)),ang=s.l0*D2R+nu;return[r*Math.cos(ang),r*Math.sin(ang)];
+}
+function nextWindow(d){ // days until phase = IDEAL
+  const rel=360/YEAR-360/TM; // deg/day Earth gains on Mars
+  const ph=wrap360(lamM(d)-lamE(d));let dd=(ph-IDEAL)/rel;if(dd<0)dd+=360/rel;return dd;
+}
+function drawMars(){
+  const cv=$('#cM'),gm=fit(cv),a=cv.getContext('2d'),dp=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(dp,0,0,dp,0,0);
+  const w=gm.w,h=gm.h;drawStars(a,w,h);
+  const top=100,cx=w/2,cy=top+(h-top-14)/2,S=Math.min(w*0.42,(h-top-14)/2*0.92)/AM;
+  const P=(r,deg)=>[cx+r*Math.cos(deg*D2R)*S,cy-r*Math.sin(deg*D2R)*S];
+  a.strokeStyle='rgba(78,168,255,.35)';a.lineWidth=1.5;a.beginPath();a.arc(cx,cy,S,0,TAU);a.stroke();
+  a.strokeStyle='rgba(255,123,74,.35)';a.beginPath();a.arc(cx,cy,AM*S,0,TAU);a.stroke();
+  // sun
+  const g=a.createRadialGradient(cx,cy,2,cx,cy,22);g.addColorStop(0,'#fff6c8');g.addColorStop(0.4,'#ffcc4d');g.addColorStop(1,'rgba(255,160,40,0)');a.fillStyle=g;a.beginPath();a.arc(cx,cy,22,0,TAU);a.fill();
+  const d=MS.d,le=lamE(d),lm=lamM(d);
+  // phase wedge
+  if(!MS.ship){a.fillStyle='rgba(255,209,102,.08)';a.beginPath();a.moveTo(cx,cy);a.arc(cx,cy,AM*S*0.45,-le*D2R,-lm*D2R,true);a.closePath();a.fill();}
+  // transfer orbit preview / ship
+  const s=MS.ship;
+  const l0=s?s.l0:le;
+  a.strokeStyle='rgba(255,209,102,.6)';a.setLineDash([6,5]);a.lineWidth=1.6;a.beginPath();
+  for(let i=0;i<=90;i++){const nu=Math.PI*i/90,r=AT*(1-ET*ET)/(1+ET*Math.cos(nu)),p=P(r,l0+nu/D2R);i?a.lineTo(p[0],p[1]):a.moveTo(p[0],p[1]);}a.stroke();a.setLineDash([]);
+  const arr=P(AM,l0+180);a.strokeStyle='#ffd166';a.lineWidth=1.5;a.beginPath();a.arc(arr[0],arr[1],9,0,TAU);a.stroke();
+  a.fillStyle='#ffd166';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillText('抵達點',arr[0],arr[1]-14);
+  if($('#hint').checked){const tArr=s?s.d0+TT:d+TT,mp=P(AM,lamM(tArr));a.strokeStyle='rgba(255,123,74,.9)';a.setLineDash([3,3]);a.beginPath();a.arc(mp[0],mp[1],8,0,TAU);a.stroke();a.setLineDash([]);
+    a.fillStyle='#ff9d77';a.fillText('火星到時候在這',mp[0],mp[1]+22);}
+  // planets
+  const ep=P(1,le),mp=P(AM,lm);
+  a.fillStyle='#4ea8ff';a.beginPath();a.arc(ep[0],ep[1],7,0,TAU);a.fill();a.fillStyle='#cfe6ff';a.fillText('地球',ep[0],ep[1]+20);
+  a.fillStyle='#ff7b4a';a.beginPath();a.arc(mp[0],mp[1],6,0,TAU);a.fill();a.fillStyle='#ffc2a8';a.fillText('火星',mp[0],mp[1]+19);
+  if(s){const sp=shipPos(s,d),q=[cx+sp[0]*S,cy-sp[1]*S];a.fillStyle='#ffd166';a.beginPath();a.arc(q[0],q[1],4.5,0,TAU);a.fill();
+    a.strokeStyle='rgba(255,209,102,.4)';a.beginPath();a.arc(q[0],q[1],9,0,TAU);a.stroke();}
+  a.textAlign='left';
+  // readouts
+  const ph=wrap180(lm-le),diff=ph-IDEAL,nw=nextWindow(d);
+  $('#roM').innerHTML=`<div class="big">${fmtDate(d)}</div>`+(s?`<div>太空船飛行第 <b>${Math.floor(d-s.d0)}</b> 天（全程約 ${Math.round(TT)} 天）</div>`:
+    `<div>火星現在領先地球 <b>${ph.toFixed(1)}°</b>，理想是 <b>${IDEAL.toFixed(1)}°</b></div><div style="color:var(--dim)">按「時間前進」等到角度剛好，再按「🚀 發射！」</div>`);
+  const gpos=v=>Math.max(0,Math.min(100,(v+180)/360*100));
+  $('#sideM').innerHTML=`<div>火星領先角度<b>${ph.toFixed(1)}°</b></div><div class="gauge"><i style="left:${gpos(IDEAL)}%;background:#53d18b"></i><i style="left:${gpos(ph)}%;background:#ffd166"></i></div><div style="color:var(--dim);font-size:11.5px">綠＝最佳　黃＝現在</div><div>差距<b style="color:${Math.abs(diff)<3?'#53d18b':'#ffd166'}">${diff>0?'+':''}${diff.toFixed(1)}°</b></div><div>下一個窗口<b>${nw<2?'就是現在！':Math.round(nw)+' 天後'}</b></div>`;
+}
+function marsTick(dt){
+  if(MS.run){MS.d+=dt*MS.spd;
+    const s=MS.ship;if(s&&MS.d>=s.d0+TT){MS.d=s.d0+TT;MS.run=false;syncM();arrive();}}
+  drawMars();
+}
+function arrive(){
+  const s=MS.ship,miss=wrap180(lamM(s.d0+TT)-(s.l0+180));const km=Math.abs(miss)*D2R*AM*1.496e8;
+  const grade=Math.abs(miss)<1.5?['完美抵達！','⭐⭐⭐']:Math.abs(miss)<5?['到達火星附近','⭐⭐']:Math.abs(miss)<12?['差了一大段…','⭐']:['火星不在那裡！','—'];
+  const o=$('#overM');o.hidden=false;
+  o.innerHTML=`<h3>${grade[0]}</h3><div class="stars">${grade[1]}</div><p>出發：${fmtDate(s.d0)}<br>抵達：${fmtDate(s.d0+TT)}</p><p>太空船抵達時，火星${miss>0?'已經跑到前面':'還在後面'} <b>${Math.abs(miss).toFixed(1)}°</b>（約 ${(km/1e6).toFixed(0)} 百萬公里）。${Math.abs(miss)<1.5?'':(miss>0?'下次晚一點發射！':'下次早一點發射！')}</p><button class="btn pri" id="mAgain">再試一次</button>`;
+  $('#mAgain').onclick=()=>{MS.ship=null;o.hidden=true;MS.d=s.d0-30;};
+}
+function syncM(){$('#mPlay').textContent=MS.run?'⏸ 暫停':'▶ 時間前進';$('#launch').disabled=!!MS.ship;}
+$('#mPlay').onclick=()=>{MS.run=!MS.run;syncM();};
+$('#launch').onclick=()=>{if(MS.ship)return;MS.ship={d0:MS.d,l0:lamE(MS.d)};MS.run=true;if(MS.spd<10)MS.spd=10;buildMSpd();syncM();toast('#tM','點火！太空船加速，沿著橢圓滑向火星軌道…');};
+$('#mToday').onclick=()=>{MS.d=todayD()-200;MS.ship=null;MS.run=false;$('#overM').hidden=true;syncM();};
+function buildMSpd(){const r=$('#mSpd');r.innerHTML='';for(const v of [2,10,40]){const b=document.createElement('button');b.className='btn'+(v===MS.spd?' sel':'');b.textContent=`1 秒＝${v} 天`;b.onclick=()=>{MS.spd=v;buildMSpd();};r.appendChild(b);}}
+
+/* ======================= 2. PILOT ======================= */
+const LV=[
+  {n:'① 升到 2 倍高',r0:1,r1:2},
+  {n:'② 升到 4 倍高',r0:1,r1:4},
+  {n:'③ 降回低軌道',r0:2.2,r1:1},
+  {n:'④ 追上太空站',r0:1,r1:1.8,dock:true}
+];
+const PL={lv:0,x:0,y:0,vx:0,vy:0,t:0,used:0,spd:1,state:'fly',st:null,burns:0,trail:[]};
+function hohmannDv(r1,r2){const at=(r1+r2)/2;return Math.abs(Math.sqrt(1/r1)*(Math.sqrt(r2/at)-1))+Math.abs(Math.sqrt(1/r2)*(1-Math.sqrt(r1/at)));}
+function pReset(){const L=LV[PL.lv];PL.x=L.r0;PL.y=0;PL.vx=0;PL.vy=Math.sqrt(1/L.r0);PL.t=0;PL.used=0;PL.state='fly';PL.burns=0;PL.trail=[];
+  PL.ideal=hohmannDv(L.r0,L.r1);PL.fuel=PL.ideal*1.9+0.06;
+  if(L.dock){ // station starts 150° ahead: the player has to wait for the right moment
+    PL.st={ang:150*D2R,r:L.r1};}else PL.st=null;
+  $('#overP').hidden=true;buildLv();}
+function elems(){const r=Math.hypot(PL.x,PL.y),v2=PL.vx**2+PL.vy**2,eps=v2/2-1/r;const rv=PL.x*PL.vx+PL.y*PL.vy;
+  const ex=(v2-1/r)*PL.x-rv*PL.vx,ey=(v2-1/r)*PL.y-rv*PL.vy,e=Math.hypot(ex,ey);
+  if(eps>=0)return{esc:true,e,r};const a=-1/(2*eps);return{a,e,ex,ey,rp:a*(1-e),ra:a*(1+e),r,T:TAU*Math.pow(a,1.5)};}
+function burn(sign){
+  if(PL.state!=='fly')return;const dv=+$('#imp').value*0.01;
+  if(PL.used+dv>PL.fuel+1e-9){toast('#tP','燃料不夠了！');return;}
+  const v=Math.hypot(PL.vx,PL.vy);PL.vx+=sign*dv*PL.vx/v;PL.vy+=sign*dv*PL.vy/v;PL.used+=dv;PL.burns++;
+  PL.flame={t:performance.now(),sign};
+}
+function pStep(dt){
+  // velocity Verlet
+  const acc=(x,y)=>{const r3=Math.pow(x*x+y*y,1.5);return[-x/r3,-y/r3];};
+  let [ax,ay]=acc(PL.x,PL.y);PL.vx+=ax*dt/2;PL.vy+=ay*dt/2;PL.x+=PL.vx*dt;PL.y+=PL.vy*dt;[ax,ay]=acc(PL.x,PL.y);PL.vx+=ax*dt/2;PL.vy+=ay*dt/2;PL.t+=dt;
+  if(PL.st)PL.st.ang+=dt*Math.pow(PL.st.r,-1.5);
+}
+function pCheck(){
+  const L=LV[PL.lv],E=elems();
+  if(E.r<0.32){finishP(false,'💥 撞到行星了！減速太多，軌道最低點掉進行星裡。');return;}
+  if(E.esc||E.r>14){finishP(false,'🚀 飛走了！加速太多，逃離了行星的引力。');return;}
+  if(L.dock){const sx=PL.st.r*Math.cos(PL.st.ang),sy=PL.st.r*Math.sin(PL.st.ang),svx=-Math.sin(PL.st.ang)*Math.pow(PL.st.r,-0.5),svy=Math.cos(PL.st.ang)*Math.pow(PL.st.r,-0.5);
+    const dist=Math.hypot(PL.x-sx,PL.y-sy),rel=Math.hypot(PL.vx-svx,PL.vy-svy);PL.dist=dist;PL.rel=rel;
+    if(dist<0.08&&rel<0.08){finishP(true);return;}}
+  else if(Math.abs(E.rp-L.r1)/L.r1<0.03&&Math.abs(E.ra-L.r1)/L.r1<0.03){finishP(true);return;}
+  if(PL.used>=PL.fuel-1e-9&&PL.state==='fly'&&!PL.warned){PL.warned=true;toast('#tP','燃料用完了！只能滑行了…',2500);}
+}
+function finishP(ok,msg){PL.state=ok?'win':'lose';const o=$('#overP');o.hidden=false;
+  if(ok){const ratio=PL.used/PL.ideal,stars=ratio<=1.06?'⭐⭐⭐':ratio<=1.3?'⭐⭐':'⭐';
+    o.innerHTML=`<h3>任務成功！</h3><div class="stars">${stars}</div><p>你用了 <b>${(PL.used*100).toFixed(0)}</b> 單位燃料，點火 ${PL.burns} 次。<br>最省的霍曼轉移只要 <b>${(PL.ideal*100).toFixed(0)}</b> 單位、點火 2 次。</p><button class="btn pri" id="pNext">${PL.lv<LV.length-1?'下一個任務 →':'再玩一次'}</button>`;
+    $('#pNext').onclick=()=>{PL.lv=(PL.lv+1)%LV.length;pReset();};}
+  else{o.innerHTML=`<h3>任務失敗</h3><p>${msg}</p><button class="btn pri" id="pRe">再試一次</button>`;$('#pRe').onclick=pReset;}}
+function drawPilot(now){
+  const cv=$('#cP'),gm=fit(cv),a=cv.getContext('2d'),dp=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(dp,0,0,dp,0,0);
+  const w=gm.w,h=gm.h;drawStars(a,w,h);
+  const L=LV[PL.lv],E=elems();
+  const top=96,view=Math.max(L.r0,L.r1)*1.18,cx=w/2,cy=top+(h-top-14)/2,S=Math.min(w*0.45,(h-top-14)/2)/view;
+  const P=(x,y)=>[cx+x*S,cy-y*S];
+  // target ring
+  a.strokeStyle='rgba(83,209,139,.55)';a.lineWidth=6;a.beginPath();a.arc(cx,cy,L.r1*S,0,TAU);a.stroke();
+  a.fillStyle='#53d18b';a.font='12px "Noto Sans TC",sans-serif';a.fillText(L.dock?'太空站的軌道':'目標軌道',cx-L.r1*S*0.71-40,cy+L.r1*S*0.71+16);
+  // ghost hohmann
+  if($('#ghost').checked&&!L.dock||($('#ghost').checked&&L.dock)){const at=(L.r0+L.r1)/2,e=Math.abs(L.r1-L.r0)/(L.r0+L.r1);
+    a.strokeStyle='rgba(255,209,102,.35)';a.setLineDash([5,5]);a.lineWidth=1.5;a.beginPath();
+    const dir=L.r1>L.r0?0:Math.PI; // periapsis on +x when going up
+    for(let i=0;i<=120;i++){const nu=TAU*i/120,r=at*(1-e*e)/(1+e*Math.cos(nu)),ang=nu+dir,p=P(r*Math.cos(ang),r*Math.sin(ang));i?a.lineTo(p[0],p[1]):a.moveTo(p[0],p[1]);}a.stroke();a.setLineDash([]);}
+  // planet
+  const g=a.createRadialGradient(cx-8,cy-8,3,cx,cy,0.3*S);g.addColorStop(0,'#7cc4ff');g.addColorStop(1,'#1d4f9c');a.fillStyle=g;a.beginPath();a.arc(cx,cy,0.3*S,0,TAU);a.fill();
+  // predicted orbit
+  if(!E.esc){const ang0=Math.atan2(E.ey,E.ex);a.strokeStyle='rgba(255,209,102,.85)';a.lineWidth=1.8;a.beginPath();
+    for(let i=0;i<=200;i++){const nu=TAU*i/200,r=E.a*(1-E.e*E.e)/(1+E.e*Math.cos(nu));if(r>view*1.6)continue;const p=P(r*Math.cos(nu+ang0),r*Math.sin(nu+ang0));i?a.lineTo(p[0],p[1]):a.moveTo(p[0],p[1]);}a.stroke();
+    if(E.e>0.01){const pp=P(E.rp*Math.cos(ang0),E.rp*Math.sin(ang0)),ap=P(-E.ra*Math.cos(ang0),-E.ra*Math.sin(ang0));
+      a.fillStyle='#ffd166';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='center';
+      a.beginPath();a.arc(pp[0],pp[1],3.5,0,TAU);a.fill();a.fillText('最低點',pp[0],pp[1]-8);
+      if(E.ra<view*1.5){a.beginPath();a.arc(ap[0],ap[1],3.5,0,TAU);a.fill();a.fillText('最高點',ap[0],ap[1]-8);}a.textAlign='left';}}
+  // trail
+  a.strokeStyle='rgba(255,255,255,.25)';a.lineWidth=1;a.beginPath();PL.trail.forEach((q,i)=>{const p=P(q[0],q[1]);i?a.lineTo(p[0],p[1]):a.moveTo(p[0],p[1]);});a.stroke();
+  // station
+  if(PL.st){const sp=P(PL.st.r*Math.cos(PL.st.ang),PL.st.r*Math.sin(PL.st.ang));a.fillStyle='#53d18b';a.fillRect(sp[0]-9,sp[1]-3,18,6);a.fillRect(sp[0]-2,sp[1]-7,4,14);a.fillStyle='#bff5d6';a.font='11px "Noto Sans TC",sans-serif';a.fillText('太空站',sp[0]+10,sp[1]-6);}
+  // ship
+  const sp=P(PL.x,PL.y),v=Math.hypot(PL.vx,PL.vy),ux=PL.vx/v,uy=PL.vy/v;
+  a.save();a.translate(sp[0],sp[1]);a.rotate(Math.atan2(-uy,ux));
+  if(PL.flame&&now-PL.flame.t<350){a.fillStyle=PL.flame.sign>0?'#ff9a3c':'#7fd3ff';a.beginPath();const fx=PL.flame.sign>0?-8:8;a.moveTo(fx,0);a.lineTo(fx-PL.flame.sign*16,-5);a.lineTo(fx-PL.flame.sign*16,5);a.closePath();a.fill();}
+  a.fillStyle='#ffd166';a.beginPath();a.moveTo(9,0);a.lineTo(-7,-5);a.lineTo(-4,0);a.lineTo(-7,5);a.closePath();a.fill();a.restore();
+  // HUD
+  const fuelLeft=Math.max(0,PL.fuel-PL.used);
+  $('#roP').innerHTML=`<div class="big">${L.n}</div><div>${L.dock?'和太空站會合：距離和速度差都要很小。':`把軌道變成半徑 <b>${L.r1}</b> 的圓（綠色圈）。`}</div><div style="color:var(--dim)">黃線＝現在的軌道預測。提示：在最低點或最高點點火最有效。</div>`;
+  $('#sideP').innerHTML=`<div>目前高度<b>${E.r.toFixed(2)}</b></div>`+(E.esc?'<div>軌道<b>逃逸！</b></div>':`<div>最低點<b>${E.rp.toFixed(2)}</b></div><div>最高點<b>${E.ra.toFixed(2)}</b></div>`)+
+    `<div>已用燃料<b>${(PL.used*100).toFixed(0)}</b></div><div>剩下燃料<b style="color:${fuelLeft<PL.ideal*0.3?'#ff5d5d':'#53d18b'}">${(fuelLeft*100).toFixed(0)}</b></div><div>最省需要<b>${(PL.ideal*100).toFixed(0)}</b></div>`+
+    (L.dock&&PL.dist!=null?`<div>離太空站<b>${PL.dist.toFixed(2)}</b></div><div>速度差<b>${PL.rel.toFixed(2)}</b></div>`:'');
+}
+function pilotTick(dt,now){
+  if(PL.state==='fly'){const n=Math.ceil(PL.spd*dt/0.004);const h=PL.spd*dt/n;for(let i=0;i<n;i++)pStep(h);
+    PL.trail.push([PL.x,PL.y]);if(PL.trail.length>600)PL.trail.shift();pCheck();}
+  drawPilot(now);
+}
+$('#pro').onclick=()=>burn(1);$('#retro').onclick=()=>burn(-1);
+$('#imp').oninput=()=>$('#impV').textContent=$('#imp').value;
+$('#pReset').onclick=pReset;
+function buildLv(){const r=$('#lvBtns');r.innerHTML='';LV.forEach((L,i)=>{const b=document.createElement('button');b.className='btn'+(i===PL.lv?' sel':'');b.textContent=L.n;b.onclick=()=>{PL.lv=i;pReset();};r.appendChild(b);});}
+function buildPSpd(){const r=$('#pSpd');r.innerHTML='';for(const v of [0,1,3,8]){const b=document.createElement('button');b.className='btn'+(v===PL.spd?' sel':'');b.textContent=v?'×'+v:'⏸';b.onclick=()=>{PL.spd=v;buildPSpd();};r.appendChild(b);}}
+window.addEventListener('keydown',e=>{if(TAB!=='pilot')return;if(e.key==='ArrowUp'||e.key==='w'){burn(1);e.preventDefault();}if(e.key==='ArrowDown'||e.key==='s'){burn(-1);e.preventDefault();}});
+
+/* ======================= 3. CALCULATOR ======================= */
+const PLAN=[{n:'水星',a:0.387,c:'#b9b2a8'},{n:'金星',a:0.723,c:'#f1cf7a'},{n:'火星',a:1.524,c:'#ff7b4a'},{n:'木星',a:5.203,c:'#e2b07a'},{n:'土星',a:9.537,c:'#f0d896'},{n:'天王星',a:19.19,c:'#8fe0e8'},{n:'海王星',a:30.07,c:'#6f8cff'}];
+const CS={i:2,t0:performance.now()};
+function calc(p){const a2=p.a,at=(1+a2)/2,tt=YEAR*Math.pow(at,1.5)/2,T2=YEAR*Math.pow(a2,1.5);
+  const vE=29.78,dv1=Math.abs(vE*(Math.sqrt(2*a2/(1+a2))-1)),v2=vE/Math.sqrt(a2),dv2=Math.abs(v2*(1-Math.sqrt(2/(1+a2))));
+  const syn=1/Math.abs(1/YEAR-1/T2),phase=wrap180(180-360*tt/T2);return{tt,dv1,dv2,syn,phase,T2,at};}
+function fmtDays(d){return d<730?Math.round(d)+' 天（約 '+(d/30.44).toFixed(1)+' 個月）':(d/YEAR).toFixed(1)+' 年';}
+function buildPl(){const r=$('#plBtns');r.innerHTML='';PLAN.forEach((p,i)=>{const b=document.createElement('button');b.className='btn'+(i===CS.i?' sel':'');b.textContent=p.n;b.onclick=()=>{CS.i=i;CS.t0=performance.now();buildPl();};r.appendChild(b);});
+  const p=PLAN[CS.i],c=calc(p);
+  $('#calcCards').innerHTML=`<div class="cmp">單程飛行時間<b>${fmtDays(c.tt)}</b></div><div class="cmp">出發時${p.n}要${c.phase>=0?'領先':'落後'}<b>${Math.abs(c.phase).toFixed(0)}°</b></div><div class="cmp">多久有一次窗口<b>${fmtDays(c.syn)}</b></div><div class="cmp">出發要多${p.a>1?'加':'減'}速<b>${c.dv1.toFixed(1)} 公里/秒</b></div><div class="cmp">到達時再${p.a>1?'加':'減'}速<b>${c.dv2.toFixed(1)} 公里/秒</b></div>`;}
+function drawCalc(now){
+  const cv=$('#cC'),gm=fit(cv),a=cv.getContext('2d'),dp=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(dp,0,0,dp,0,0);
+  const w=gm.w,h=gm.h;drawStars(a,w,h);
+  const p=PLAN[CS.i],c=calc(p),top=90,cx=w/2,cy=top+(h-top-12)/2,Rmax=Math.min(w*0.45,(h-top-12)/2*0.95);
+  const rmax=Math.max(1,p.a),sq=r=>Math.sqrt(r/rmax)*Rmax; // square-root scale so far planets fit
+  const P=(r,ang)=>[cx+sq(r)*Math.cos(ang),cy-sq(r)*Math.sin(ang)];
+  for(const q of PLAN.concat([{n:'地球',a:1,c:'#4ea8ff'}])){if(q.a>rmax*1.01)continue;a.strokeStyle=q===p||q.n==='地球'?q.c:'rgba(255,255,255,.1)';a.globalAlpha=q===p||q.n==='地球'?0.6:1;a.lineWidth=1.4;a.beginPath();a.arc(cx,cy,sq(q.a),0,TAU);a.stroke();a.globalAlpha=1;}
+  a.fillStyle='#ffcc4d';a.beginPath();a.arc(cx,cy,6,0,TAU);a.fill();
+  // animation of one transfer
+  const k=((now-CS.t0)/1000/5)%1.25,f=Math.min(1,k);
+  const e=Math.abs(p.a-1)/(p.a+1),dir=p.a>1?0:Math.PI; // periapsis direction
+  a.strokeStyle='rgba(255,209,102,.7)';a.setLineDash([5,4]);a.lineWidth=1.6;a.beginPath();
+  const rAt=nu=>c.at*(1-e*e)/(1+e*Math.cos(nu));
+  // outer planet: leave Earth at perihelion (ν 0→π); inner planet: leave Earth at aphelion (ν π→2π). Earth sits at angle 0 either way.
+  const inner=p.a<1,omega=inner?Math.PI:0,nu0=inner?Math.PI:0;
+  for(let i=0;i<=80;i++){const nu=nu0+Math.PI*i/80,ang=omega+nu,pt=P(rAt(nu),ang);i?a.lineTo(pt[0],pt[1]):a.moveTo(pt[0],pt[1]);}a.stroke();a.setLineDash([]);
+  // ship along ellipse in time
+  const M=nu0+Math.PI*f,E=kepler(M,e),nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2)),ang=omega+nu,sp=P(rAt(nu),ang);
+  // planet positions: Earth starts at angle 0 (or π for inner), target starts at phase
+  const eAng0=0,tAng0=eAng0+c.phase*D2R,tt=c.tt*f;
+  const ep=P(1,eAng0+TAU*tt/YEAR),tp=P(p.a,tAng0+TAU*tt/c.T2);
+  a.fillStyle='#4ea8ff';a.beginPath();a.arc(ep[0],ep[1],5.5,0,TAU);a.fill();
+  a.fillStyle=p.c;a.beginPath();a.arc(tp[0],tp[1],6.5,0,TAU);a.fill();
+  a.fillStyle='#ffd166';a.beginPath();a.arc(sp[0],sp[1],4,0,TAU);a.fill();
+  a.font='12px "Noto Sans TC",sans-serif';a.textAlign='center';a.fillStyle='#cfe6ff';a.fillText('地球',ep[0],ep[1]+18);a.fillStyle='#fff';a.fillText(p.n,tp[0],tp[1]+19);a.textAlign='left';
+  $('#roC').innerHTML=`<div class="big">地球 → ${p.n}：霍曼轉移</div><div>飛行 <b>${fmtDays(c.tt)}</b>　動畫進度 <b>${Math.round(f*100)}%</b></div><div style="color:var(--dim)">圖的距離做了壓縮（平方根比例），遠方行星才放得進畫面。</div>`;
+}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['mars','pilot','calc'])$('#p-'+t).hidden=t!==TAB;});
+let last=performance.now();
+function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(TAB==='mars')marsTick(dt);else if(TAB==='pilot')pilotTick(dt,now);else drawCalc(now);
+  requestAnimationFrame(frame);}
+buildMSpd();syncM();buildPSpd();$('#imp').oninput();pReset();buildPl();
+requestAnimationFrame(frame);
+})();
+</script>

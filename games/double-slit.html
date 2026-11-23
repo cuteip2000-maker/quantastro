@@ -1,0 +1,510 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>雙狹縫實驗</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: quantum lab bench — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#05060b;
+  --panel:#0f111a;
+  --panel2:#171a26;
+  --rule:#2a2e42;
+  --ink:#edf0f8;
+  --dim:#9ca2b8;
+  --e:#7df9ff;
+  --gold:#ffd76a;
+  --pink:#ff7ad9;
+  --ok:#6fd38f;
+  --bad:#ff7a6a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--e)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#030409}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(5,6,11,.88);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(350px,calc(100% - 24px))}
+.ro b{color:var(--gold);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--e);color:#02282b;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.pri{background:var(--e);border-color:var(--e);color:#02282b;font-weight:700}
+.btn.sel{border-color:var(--e);color:var(--e);box-shadow:inset 0 0 0 1px var(--e);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 230px}
+.sl input{flex:1;accent-color:var(--e);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:5.4em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--pink);width:16px;height:16px}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card.key{border-color:#3b6f74;background:#122026}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:60vh;min-height:430px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 一顆一顆發射<small>彈珠、水波、電子</small></button>
+      <button data-tab="B" aria-pressed="false">② 偷看走哪條縫<small>條紋去哪了？</small></button>
+      <button data-tab="C" aria-pressed="false">③ 水波槽<small>條紋是怎麼來的</small></button>
+      <button data-tab="D" aria-pressed="false">④ 光子撞電子<small>為什麼一看就沒了</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">發射</span>
+            <button class="btn sel" data-src="e">電子</button>
+            <button class="btn" data-src="m">彈珠</button>
+            <button class="btn" data-src="w">水波</button>
+          </div>
+          <div class="row">
+            <span class="lab">狹縫</span>
+            <button class="btn" data-sl="L">只開上面</button>
+            <button class="btn" data-sl="R">只開下面</button>
+            <button class="btn sel" data-sl="B">兩條都開</button>
+          </div>
+          <div class="row">
+            <button class="btn" id="a1">發射 1 顆</button>
+            <button class="btn pri" id="aRun">▶ 連續發射</button>
+            <button class="btn" id="aFast">⏩ 一口氣 2000 顆</button>
+            <button class="btn" id="aClear">↺ 清空屏幕</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <button class="btn sel" id="detOn">👁️ 探測器：開</button>
+            <label class="sl">探測用的光波長<input id="lam" type="range" min="0.2" max="4" step="0.02" value="0.3"><b id="lamV"></b></label>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="noOne">探測器照樣記錄，但<b>沒有任何人去看</b>紀錄</label>
+          </div>
+          <div class="row">
+            <button class="btn pri" id="bRun">▶ 連續發射</button>
+            <button class="btn" id="bFast">⏩ 一口氣 2000 顆</button>
+            <button class="btn" id="bClear">↺ 清空屏幕</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">波長<input id="wl" type="range" min="0.5" max="2" step="0.01" value="1"><b id="wlV"></b></label>
+            <label class="sl">兩縫距離<input id="sd" type="range" min="2" max="8" step="0.1" value="4"><b id="sdV"></b></label>
+          </div>
+          <div class="note">點屏幕上任何一點，看看從兩條縫走過去的路程差是幾個波長。</div>
+        </div>
+      </div>
+      <div class="pane" id="p-D" hidden>
+        <div class="cv"><canvas id="cD"></canvas><div class="ro" id="roD"></div><div class="toast" id="tD"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">燈的亮度<input id="dBr" type="range" min="0" max="1" step="0.01" value="1"><b id="dBrV"></b></label>
+            <label class="sl">光的波長<input id="dLam" type="range" min="0.2" max="4" step="0.02" value="0.3"><b id="dLamV"></b></label>
+          </div>
+          <div class="row">
+            <button class="btn" id="d1">🐢 慢動作發射 1 顆</button>
+            <button class="btn pri" id="dFast">⏩ 一次打 2000 顆</button>
+            <button class="btn" id="dClear">↺ 清空</button>
+          </div>
+          <div class="row">
+            <span class="lab">分組看</span>
+            <button class="btn sel" data-dv="all">全部</button>
+            <button class="btn" data-dv="up">紀錄：上縫</button>
+            <button class="btn" data-dv="dn">紀錄：下縫</button>
+            <button class="btn" data-dv="no">沒有紀錄</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>看一眼，條紋就不見了？</h1>
+    <p class="lede">電子一顆一顆射向兩條細縫，每一顆都只在屏幕上留下一個點。可是累積成千上萬顆之後，竟然排出一條一條的「波紋」。如果偷看電子走哪一條縫，條紋就消失了。這是物理學最有名的實驗之一。</p>
+
+    <div class="card key">
+      <h2>「觀看」會改變現實嗎？</h2>
+      <p>物理學裡的「觀測」，不是指<b>用眼睛看</b>或<b>有人知道</b>，而是指「有東西和電子發生了交互作用，留下了它走哪條縫的紀錄」。</p>
+      <p>想知道電子走哪一條縫，就得用光（或其他粒子）去碰它。這一碰，會把「走哪條縫」的資訊記在周圍的光或儀器上，兩條路徑就不能再互相干涉，條紋自然消失。</p>
+      <p>在 ② 勾選「沒有任何人去看紀錄」，條紋照樣消失。可見關鍵是<b>資訊被記錄下來</b>，和有沒有人的意識在看無關。</p>
+    </div>
+
+    <div class="card">
+      <h2>為什麼「碰一下」條紋就沒了？</h2>
+      <p>到 ④ 用慢動作發射一顆電子，可以看到每一步：</p>
+      <p><b>① 要看見電子，得有光子去撞它。</b>光子撞到電子後彈開，飛進儀器。光子是在上縫還是下縫被彈開的，就成了「電子走哪條縫」的紀錄。</p>
+      <p><b>② 看得清楚，就會撞得很用力。</b>兩條縫靠得很近，要分得清楚，光的波長必須比縫距還短，就像顯微鏡要用短波長才看得清細節。可是波長越短，光子的衝力越大（動量＝普朗克常數 ÷ 波長），一撞就把電子撞偏，原本排好的波峰波谷全被打亂。把波長調長，撞得比較輕，可是閃光糊成一大團，又分不出是哪條縫。兩者沒辦法兼得。</p>
+      <p><b>③ 更根本的原因是「資訊」。</b>條紋來自兩條路線互相疊加，而只有<b>完全分不出差別</b>的路線才能疊加。被光子撞過以後，世界上留下兩種不一樣的結局：「電子走上縫，光子在上縫彈開」和「電子走下縫，光子在下縫彈開」。結局不同，兩條路線就不能再互相加強或抵消。</p>
+      <p><b>④ 分組看就明白了。</b>在 ④ 打完 2000 顆後，按「紀錄：上縫」，只剩一個大鼓包；按「沒有紀錄」，條紋清清楚楚。電子並不是「知道有人在看」，而是留下紀錄的那些電子本來就不會排出條紋。</p>
+    </div>
+
+    <div class="card">
+      <h2>把紀錄擦掉，條紋會回來嗎？</h2>
+      <p>科學家做過「量子擦除」實驗（實驗用的是光子）：先把走哪條縫的資訊記在另一個東西上，之後再把它處理成永遠讀不出是哪條縫。</p>
+      <p>結果，按擦除後的結果把點分組，每一組裡的條紋都回來了。但如果不分組，把所有的點加在一起，還是看不到條紋。條紋一直「藏」在資料裡，要用對的方式分組才看得到。</p>
+    </div>
+
+    <div class="card">
+      <h2>彈珠、水波、電子</h2>
+      <p><b>彈珠</b>是粒子：一顆一顆打在屏幕上，兩條縫的結果直接相加，只會出現兩條亮帶。</p>
+      <p><b>水波</b>是波：會同時穿過兩條縫，兩邊的波互相疊加，波峰碰波峰變大，波峰碰波谷抵消，形成明暗相間的條紋。</p>
+      <p><b>電子</b>兩種都像：每次到達屏幕，都是一顆一顆的點，像粒子；但點的分布排成條紋，像波。</p>
+    </div>
+
+    <div class="card">
+      <h2>條紋間距的公式</h2>
+      <div class="fx">條紋間距 ≈ 波長 × 屏幕距離 ÷ 兩縫距離</div>
+      <p>波長越長、兩縫越近，條紋就越寬。電子的波長和它的速度有關（德布羅意波長），速度越快，波長越短。</p>
+    </div>
+
+    <div class="card">
+      <h2>一路走來</h2>
+      <p><b>1801 年</b>：英國的楊格用光做雙縫實驗，證明光是波。</p>
+      <p><b>1961 年</b>：德國的約恩松第一次用電子做出雙縫干涉條紋。</p>
+      <p><b>1989 年</b>：日本日立公司的外村彰團隊拍下電子「一顆一顆」慢慢累積成條紋的影片，被選為史上最美的物理實驗之一。</p>
+      <p>費曼說，這個實驗包含了量子力學「唯一的奧祕」。</p>
+    </div>
+
+    <div class="card">
+      <h2>那電子「真的」同時穿過兩條縫嗎？</h2>
+      <p>量子力學的公式可以非常精準地預測條紋會長什麼樣子，所有物理學家都同意這一點。</p>
+      <p>但沒有被觀測時，電子「到底」是什麼樣子？科學家到現在還在爭論，有好幾種不同的解釋。比較安全的說法是：電子的行為由一個「機率波」決定，這個波穿過兩條縫並互相干涉；一旦有東西記錄了它走哪條縫，干涉就消失。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,ms=4600){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const fmt=x=>x.toLocaleString('zh-TW');
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+let TAB='A';
+
+/* screen coordinate y ∈ [−1, 1]; slits at ±S */
+const S=0.22,PERIOD=0.2;
+const sinc2=x=>x===0?1:(Math.sin(x)/x)**2;
+const env=y=>sinc2(Math.PI*y/0.95);                       // single-slit diffraction envelope
+function intensity(src,slits,V){// relative intensity at screen position y (0..1)
+  return y=>{
+    if(src==='m'){const g=(c)=>Math.exp(-(((y-c)/0.09)**2));return slits==='B'?g(-S*1.25)+g(S*1.25):slits==='L'?g(-S*1.25):g(S*1.25);}
+    if(slits!=='B')return sinc2(Math.PI*(y-(slits==='L'?-0.05:0.05))/0.95);
+    return env(y)*(1+V*Math.cos(2*Math.PI*y/PERIOD))/2;};}
+function sample(f){for(let i=0;i<500;i++){const y=Math.random()*2-1;if(Math.random()<f(y))return y;}return 0;}
+
+/* animated interference field spreading from point sources (slit y positions), drawn at low resolution */
+const WATER=[40,70,110,110,180,75],ECYAN=[30,60,150,105,170,85];
+function waveField(a,x0,y0,pw,ph,srcs,lam,t,alpha,tint){
+  const res=4,W=Math.max(4,Math.floor(pw/res)),Hh=Math.max(4,Math.floor(ph/res));
+  const off=waveField.off||(waveField.off=document.createElement('canvas'));if(off.width!==W||off.height!==Hh){off.width=W;off.height=Hh;waveField.img=null;}
+  const oc=off.getContext('2d'),img=waveField.img||(waveField.img=oc.createImageData(W,Hh)),kk=2*Math.PI/lam,phs=2*Math.PI*t*1.2;
+  for(let j=0;j<Hh;j++){const py=y0+j*res;for(let i=0;i<W;i++){const px=i*res+2;let v=0;
+    for(const sy of srcs){const r=Math.hypot(px,py-sy);v+=Math.cos(kk*r-phs)/Math.sqrt(1+r/lam);}
+    const c=Math.max(-1,Math.min(1,v*1.1)),q=(j*W+i)*4;img.data[q]=tint[0]+tint[1]*c;img.data[q+1]=tint[2]+tint[3]*c;img.data[q+2]=tint[4]+tint[5]*c;img.data[q+3]=Math.min(255,60+190*Math.abs(c));}}
+  oc.putImageData(img,0,0);a.save();a.globalAlpha=alpha;a.imageSmoothingEnabled=true;a.drawImage(off,x0,y0,W*res,Hh*res);a.restore();}
+
+/* shared apparatus drawing */
+function apparatus(a,w,h,top,st,now,opts){
+  const L=24,gx=L+18,bx=w*0.42,sx=w*0.82,cy=top+(h-top)/2,H=(h-top-30)/2;
+  const Y=y=>cy+y*H;
+  // gun
+  a.fillStyle='#2a2e42';a.beginPath();a.roundRect(L,cy-14,34,28,6);a.fill();a.fillStyle=st.src==='m'?'#c9ced9':st.src==='w'?'#4aa3ff':'#7df9ff';a.beginPath();a.arc(L+34,cy,5,0,7);a.fill();
+  // barrier
+  a.fillStyle='#5a607a';const sw=10,gap=Math.max(5,H*0.06);
+  const open=k=>st.slits==='B'||(st.slits==='L'&&k<0)||(st.slits==='R'&&k>0);
+  const slitY=[Y(-S),Y(S)];
+  a.fillRect(bx-sw/2,top+6,sw,slitY[0]-gap/2-top-6);a.fillRect(bx-sw/2,slitY[0]+gap/2,sw,slitY[1]-slitY[0]-gap);a.fillRect(bx-sw/2,slitY[1]+gap/2,sw,h-6-slitY[1]-gap/2);
+  if(!open(-1))a.fillRect(bx-sw/2,slitY[0]-gap/2,sw,gap);if(!open(1))a.fillRect(bx-sw/2,slitY[1]-gap/2,sw,gap);
+  // water: show the actual waves — plane waves before the barrier, circular waves spreading from each open slit
+  if(st.src==='w'&&st.wt>0){
+    const fade=Math.min(1,st.wt/1.2),d=slitY[1]-slitY[0],Lp=sx-6-bx,lam=Math.max(6,PERIOD*H*d/Lp),t=now/1000,sp=lam*1.2;
+    a.save();a.globalAlpha=fade;
+    for(let x=L+34+((t*sp)%lam);x<bx-sw/2;x+=lam){a.strokeStyle='rgba(120,190,255,.55)';a.lineWidth=2;a.beginPath();a.moveTo(x,top+6);a.lineTo(x,h-6);a.stroke();}
+    a.restore();
+    const srcs=[];if(open(-1))srcs.push(slitY[0]);if(open(1))srcs.push(slitY[1]);
+    waveField(a,bx+sw/2,top+6,sx-6-bx-sw/2,h-top-12,srcs,lam,t,fade,WATER);
+  }
+  // electrons fired in a burst: between the slits and the screen, show the probability wave they travel as
+  if(st.src==='e'&&!opts.det){let nw=0;for(const p of st.fly){const u=(now-p.t0)/700;if(p.b&&u>0.5&&u<1)nw++;}
+    if(nw){const d=slitY[1]-slitY[0],srcs=[];if(open(-1))srcs.push(slitY[0]);if(open(1))srcs.push(slitY[1]);
+      waveField(a,bx+sw/2,top+6,sx-6-bx-sw/2,h-top-12,srcs,Math.max(6,PERIOD*H*d/(sx-6-bx)),now/1000,Math.min(0.7,0.2+nw*0.03),ECYAN);}}
+  // detector
+  if(opts.det){a.fillStyle='#ff7ad9';a.font='18px sans-serif';a.textAlign='center';a.textBaseline='middle';a.fillText('👁️',bx+26,cy);
+    a.strokeStyle='rgba(255,122,217,.35)';a.setLineDash([3,4]);a.beginPath();a.moveTo(bx+16,cy-6);a.lineTo(bx+4,slitY[0]);a.moveTo(bx+16,cy+6);a.lineTo(bx+4,slitY[1]);a.stroke();a.setLineDash([]);}
+  // screen
+  a.fillStyle='#0b0d16';a.fillRect(sx-6,top+6,14,h-top-12);
+  // hits
+  if(st.src==='w'){const f=intensity('w',st.slits,1);for(let py=top+6;py<h-6;py+=2){const y=(py-cy)/H,v=f(y)*Math.min(1,st.wt/3);a.fillStyle=`rgba(74,163,255,${v})`;a.fillRect(sx-6,py,14,2);}}
+  else{a.fillStyle=st.src==='m'?'#e8ecf5':'#7df9ff';for(const[y,jx]of st.hits){a.fillRect(sx-5+jx*12,Y(y)-1,2.4,2.4);}
+    // freshly landed electrons light up so a single hit is easy to see
+    const nowR=performance.now();st.recent=st.recent.filter(r=>nowR-r.t<1400);
+    for(const r of st.recent){const f=1-(nowR-r.t)/1400,yy=Y(r.y),gl=a.createRadialGradient(sx+1,yy,0,sx+1,yy,16);gl.addColorStop(0,`rgba(255,255,255,${f})`);gl.addColorStop(0.3,st.src==='m'?`rgba(232,236,245,${0.8*f})`:`rgba(125,249,255,${0.8*f})`);gl.addColorStop(1,'rgba(125,249,255,0)');a.fillStyle=gl;a.beginPath();a.arc(sx+1,yy,16,0,7);a.fill();}}
+  // histogram
+  const hx=sx+16,hw=w-hx-8;
+  if(hw>20){const bins=st.bins,mx=Math.max(1,...bins);a.fillStyle='rgba(125,249,255,.55)';if(st.src==='m')a.fillStyle='rgba(232,236,245,.55)';
+    if(st.src!=='w'){const bh=2*H/bins.length;bins.forEach((c,i)=>{const len=c/mx*hw;a.fillRect(hx,cy-H+i*bh,len,Math.max(1,bh-0.5));});}
+    else{const f=intensity('w',st.slits,1);a.strokeStyle='#4aa3ff';a.lineWidth=2;a.beginPath();for(let py=top+6;py<h-6;py+=2){const x=hx+f((py-cy)/H)*hw*Math.min(1,st.wt/3);py===top+6?a.moveTo(x,py):a.lineTo(x,py);}a.stroke();}}
+  // flying particles
+  for(const p of st.fly){const t=Math.max(0,(now-p.t0)/700); // rAF's timestamp can be a little earlier than the click time
+    if(t<0.5){const x=L+34+(bx-L-34)*t*2,aim=p.b?(p.via!=null?Y(p.via):Y(p.jy)):(st.src==='m'&&p.via?Y(p.via):cy);
+      a.fillStyle=st.src==='m'?'#e8ecf5':'#7df9ff';a.beginPath();a.arc(x,cy+(aim-cy)*t*2,p.b?2.4:3,0,7);a.fill();
+      if(st.src==='e'&&!opts.det&&!p.b){a.strokeStyle='rgba(125,249,255,.18)';a.beginPath();a.arc(L+34,cy,(bx-L-34)*t*2,-0.5,0.5);a.stroke();}}
+    else if(t<1){const u=(t-0.5)*2;
+      if(st.src==='e'&&!opts.det){if(!p.b){a.strokeStyle=`rgba(125,249,255,${0.3*(1-u)})`;for(const k of[-1,1]){if(!open(k))continue;a.beginPath();a.arc(bx,slitY[k<0?0:1],(sx-bx)*u,-1.1,1.1);a.stroke();}}}
+      else{const ys=p.via!=null?Y(p.via):cy,ye=Y(p.y);a.fillStyle=st.src==='m'?'#e8ecf5':'#7df9ff';a.beginPath();a.arc(bx+(sx-bx)*u,ys+(ye-ys)*u,p.b?2.4:3,0,7);a.fill();}
+      if(opts.det&&p.via!=null&&u<0.35){a.fillStyle=`rgba(255,122,217,${0.9-u*2})`;a.beginPath();a.arc(bx+4,Y(p.via),p.b?6:9,0,7);a.fill();}}}
+  let landed=0;
+  st.fly=st.fly.filter(p=>{if(now-p.t0<700)return true;if(p.b){addHit(st,p.y,p.via,true);landed++;}return false;});
+  a.fillStyle='#9ca2b8';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='top';
+  a.fillText('發射器',L+17,cy+18);a.fillText('雙狹縫',bx,h-20);a.fillText('屏幕',sx,h-20);if(hw>40)a.fillText('統計',hx+hw/2,h-20);
+  return landed;
+}
+function mkState(){return{src:'e',slits:'B',hits:[],bins:new Array(60).fill(0),fly:[],recent:[],run:false,last:0,wt:0,n:0,queue:0,lq:0};}
+// a burst releases the queue over ~3 seconds so every electron can be seen flying
+function pump(st,now,make){if(st.queue<=0)return;const dt=Math.min(100,st.lq?now-st.lq:16);st.lq=now;const n=Math.min(st.queue,Math.max(1,Math.round(dt*0.6)));
+  for(let i=0;i<n;i++)st.fly.push(Object.assign(make(),{t0:now,b:true,jy:(Math.random()*2-1)*S*1.4}));st.queue-=n;if(st.queue<=0){st.queue=0;st.lq=0;}}
+function addHit(st,y,via,flash){st.n++;if(flash){st.recent.push({y,t:performance.now()});if(st.recent.length>60)st.recent.shift();}if(st.hits.length<6000)st.hits.push([y,Math.random()]);const i=Math.floor((y+1)/2*st.bins.length);if(i>=0&&i<st.bins.length)st.bins[i]++;}
+
+/* ================= A ================= */
+const A=mkState();
+function fireA(k=1,anim=true){if(A.src==='w'){A.wt+=k>1?3:0.4;roA();return;}
+  const f=intensity(A.src,A.slits,1);
+  for(let i=0;i<k;i++){const{y,via}=makeA(f);
+    if(anim){A.fly.push({t0:performance.now(),y,via});setTimeout(()=>{addHit(A,y,via,true);roA();},700);}else addHit(A,y,via);}
+  roA();}
+function makeA(f){f=f||intensity(A.src,A.slits,1);const y=sample(f);let via=null;if(A.src==='m')via=A.slits==='B'?(y<0?-S:S):A.slits==='L'?-S:S;return{y,via};}
+$$('[data-src]').forEach(b=>b.onclick=()=>{A.src=b.dataset.src;$$('[data-src]').forEach(x=>x.classList.toggle('sel',x===b));clearA();
+  toast('#tA',{e:'電子：每一顆都只打出一個點。多打一些，看看點會排成什麼樣子？',m:'彈珠：每一顆從其中一條縫直直飛過去。',w:'水波：波是連續的，會同時穿過兩條縫。'}[A.src]);});
+$$('[data-sl]').forEach(b=>b.onclick=()=>{A.slits=b.dataset.sl;$$('[data-sl]').forEach(x=>x.classList.toggle('sel',x===b));clearA();});
+function clearA(){A.hits=[];A.bins.fill(0);A.fly=[];A.n=0;A.wt=0;A.queue=0;A.lq=0;roA();}
+$('#a1').onclick=()=>fireA(1);
+$('#aRun').onclick=()=>{A.run=!A.run;$('#aRun').textContent=A.run?'⏸ 停止':'▶ 連續發射';};
+$('#aFast').onclick=()=>{if(A.src==='w')fireA(2000,false);else A.queue+=2000;};
+$('#aClear').onclick=clearA;
+let toldA=false;
+function roA(){const nm={e:'電子',m:'彈珠',w:'水波'}[A.src],sl={B:'兩條縫都開',L:'只開上面',R:'只開下面'}[A.slits];
+  let s=`<span class="big">${nm}・${sl}</span>`;
+  if(A.src==='w')s+=`<span class="st">水波沒有「一顆一顆」，屏幕上直接出現連續的${A.slits==='B'?'明暗條紋':'一片亮光'}。</span>`;
+  else s+=`<span class="st">已經打到屏幕：<b>${fmt(A.n)}</b> 顆</span><span class="st">${A.n<30?'點看起來到處亂跑……':A.src==='e'&&A.slits==='B'?'點排成了好幾條條紋！像波一樣':A.src==='e'?'只開一條縫：一大片，沒有條紋':'只有兩條亮帶，就是兩條縫各自的影子'}</span>`;
+  $('#roA').innerHTML=s;
+  if(!toldA&&A.src==='e'&&A.slits==='B'&&A.n>=600){toldA=true;toast('#tA','每顆電子都只打出一個點，但很多顆合起來排成了條紋。試試看「只開一條縫」，條紋還在嗎？',6000);}}
+function drawA(a,w,h,now){a.fillStyle='#030409';a.fillRect(0,0,w,h);
+  if(A.run&&now-A.last>(A.src==='w'?120:40)){A.last=now;fireA(A.src==='w'?1:2);}
+  if(A.src!=='w'){const f=intensity(A.src,A.slits,1);pump(A,now,()=>makeA(f));}
+  if(apparatus(a,w,h,$('#roA').offsetHeight+18,A,now,{det:false}))roA();}
+
+/* ================= B: which-path ================= */
+const Bs=mkState();Bs.det=true;Bs.lam=0.3;Bs.noOne=false;
+const Dist=lam=>Math.min(1,1.2*Math.exp(-0.5*lam*lam)); // how well the detector can tell the two slits apart (0..1)
+function Vis(){return Bs.det?Math.sqrt(Math.max(0,1-Dist(Bs.lam)**2)):1;}
+// with the detector on: a fraction (1−V) of electrons land with their own slit's pattern, the rest still interfere → fringe visibility V
+const fBoth=intensity('e','B',1),fUp=intensity('e','L',1),fDn=intensity('e','R',1);
+function makeB(){if(!Bs.det)return{y:sample(fBoth),via:null};const via=Math.random()<0.5?-S:S;
+  return{y:Math.random()<Vis()?sample(fBoth):sample(via<0?fUp:fDn),via};}
+function fireB(k=1,anim=true){
+  for(let i=0;i<k;i++){const{y,via}=makeB();
+    if(anim){Bs.fly.push({t0:performance.now(),y,via});setTimeout(()=>{addHit(Bs,y,null,true);roB();},700);}else addHit(Bs,y);}
+  roB();}
+function clearB(){Bs.hits=[];Bs.bins.fill(0);Bs.fly=[];Bs.n=0;Bs.queue=0;Bs.lq=0;roB();}
+$('#detOn').onclick=()=>{Bs.det=!Bs.det;$('#detOn').textContent=Bs.det?'👁️ 探測器：開':'探測器：關';$('#detOn').classList.toggle('sel',Bs.det);clearB();
+  toast('#tB',Bs.det?'探測器打開了。再發射一批電子看看。':'探測器關掉了，再發射看看，條紋會回來嗎？');};
+$('#lam').oninput=e=>{Bs.lam=+e.target.value;clearB();};
+$('#noOne').onchange=e=>{Bs.noOne=e.target.checked;clearB();if(Bs.noOne)toast('#tB','探測器照樣運作、照樣存檔，只是沒有人去看。發射看看，條紋會回來嗎？',5200);};
+$('#bRun').onclick=()=>{Bs.run=!Bs.run;$('#bRun').textContent=Bs.run?'⏸ 停止':'▶ 連續發射';};
+$('#bFast').onclick=()=>{Bs.queue+=2000;if(Bs.det&&Vis()<0.4)setTimeout(()=>toast('#tB',Bs.noOne?'就算沒有人看紀錄，條紋還是消失了！重點是「走哪條縫」的資訊被記錄下來，跟有沒有人看無關。':'條紋不見了！只剩兩條縫各自的分布疊在一起，跟彈珠一樣。',6500),4300);};
+$('#bClear').onclick=clearB;
+function roB(){const D=Bs.det?Dist(Bs.lam):0,V=Vis();$('#lamV').textContent=(Bs.lam).toFixed(2)+' × 縫距';
+  let s=`<span class="big">${Bs.det?'👁️ 探測器開著':'探測器關著'}</span>`;
+  if(Bs.det){s+=`<span class="st">能分辨走哪條縫的把握：<b>${Math.round((0.5+D/2)*100)}%</b>（50% 等於亂猜）</span>`;
+    s+=`<span class="st">${Bs.lam<0.6?'光的波長比兩縫距離短，看得清清楚楚，但這一撞也把電子撞歪了。':Bs.lam<1.6?'光的波長和縫距差不多：只看得出大概，條紋也只剩一半清楚。':'光的波長太長，根本分不出是哪一條縫。'}</span>`;}
+  s+=`<span class="st">條紋清楚程度：<b>${Math.round(V*100)}%</b>・已經打到 ${fmt(Bs.n)} 顆</span>`;
+  if(Bs.det&&Bs.noOne)s+=`<span class="st" style="color:var(--pink)">紀錄存在電腦裡，沒有人去看</span>`;
+  $('#roB').innerHTML=s;}
+function drawB(a,w,h,now){a.fillStyle='#030409';a.fillRect(0,0,w,h);
+  if(Bs.run&&now-Bs.last>40){Bs.last=now;fireB(2);}
+  pump(Bs,now,makeB);
+  if(apparatus(a,w,h,$('#roB').offsetHeight+18,Bs,now,{det:Bs.det}))roB();}
+
+/* ================= C: ripple tank ================= */
+const C={wl:1,d:4,pick:null};
+$('#wl').oninput=e=>{C.wl=+e.target.value;$('#wlV').textContent=C.wl.toFixed(2)+' 公分';};
+$('#sd').oninput=e=>{C.d=+e.target.value;$('#sdV').textContent=C.d.toFixed(1)+' 公分';};
+let img=null,iw=0,ih=0;
+const cvC=$('#cC');
+cvC.addEventListener('click',e=>{const g=drawC.g;if(!g)return;const r=cvC.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(x>g.scrX-30)C.pick=(y-g.cy)/g.k;});
+function drawC(a,w,h,now){
+  a.fillStyle='#030409';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+16,cy=top+(h-top)/2,k=Math.min((h-top-20)/24,(w-40)/34);// px per cm
+  const bx=24+k*3,scrX=w-60,L=(scrX-bx)/k;drawC.g={scrX,cy,k};
+  // field image at low res
+  const res=Math.max(2,Math.round(3/Math.min(1,k/12))),W=Math.max(10,Math.floor((scrX-bx)/res)),Hh=Math.max(10,Math.floor((h-top-12)/res));
+  if(!img||iw!==W||ih!==Hh){img=a.createImageData(W,Hh);iw=W;ih=Hh;}
+  const t=now/1000,kk=2*Math.PI/C.wl,om=2*Math.PI*0.8,d2=C.d/2;
+  for(let j=0;j<Hh;j++){const y=((top+6+j*res)-cy)/k;for(let i=0;i<W;i++){const x=i*res/k+0.01;
+    const r1=Math.hypot(x,y+d2),r2=Math.hypot(x,y-d2);const v=(Math.cos(kk*r1-om*t)/Math.sqrt(r1+0.5)+Math.cos(kk*r2-om*t)/Math.sqrt(r2+0.5))*0.9;
+    const p=(j*W+i)*4,c=clamp(v,-1,1);img.data[p]=Math.round(40+60*c);img.data[p+1]=Math.round(110+80*c);img.data[p+2]=Math.round(180+70*c);img.data[p+3]=255;}}
+  // draw scaled
+  const off=drawC.off||(drawC.off=document.createElement('canvas'));off.width=W;off.height=Hh;off.getContext('2d').putImageData(img,0,0);
+  a.imageSmoothingEnabled=true;a.drawImage(off,bx,top+6,W*res,Hh*res);
+  // incoming plane waves
+  for(let x=24;x<bx;x+=C.wl*k){const ph=((t*0.8*C.wl*k)%(C.wl*k));a.strokeStyle='rgba(120,190,255,.35)';a.beginPath();a.moveTo(x+ph,top+6);a.lineTo(x+ph,h-6);a.stroke();}
+  // barrier
+  a.fillStyle='#5a607a';const Y=yc=>cy+yc*k,g=Math.max(4,k*0.35);
+  a.fillRect(bx-4,top+6,8,Y(-d2)-g/2-top-6);a.fillRect(bx-4,Y(-d2)+g/2,8,Y(d2)-Y(-d2)-g);a.fillRect(bx-4,Y(d2)+g/2,8,h-6-Y(d2)-g/2);
+  // screen intensity (time-averaged)
+  a.fillStyle='#0b0d16';a.fillRect(scrX,top+6,50,h-top-12);
+  for(let py=top+6;py<h-6;py+=2){const y=(py-cy)/k,r1=Math.hypot(L,y+d2),r2=Math.hypot(L,y-d2),I=Math.cos(Math.PI*(r1-r2)/C.wl)**2;a.fillStyle=`rgba(255,255,255,${I})`;a.fillRect(scrX+4,py,12,2);
+    a.fillStyle='rgba(125,249,255,.6)';a.fillRect(scrX+20,py,I*26,2);}
+  // nodal-line hint & pick
+  let s=`<span class="big">波峰＋波峰＝更高，波峰＋波谷＝抵消</span><span class="st">波長 ${C.wl.toFixed(2)} 公分・兩縫距離 ${C.d.toFixed(1)} 公分</span><span class="st">屏幕上的亮紋間距 ≈ ${(C.wl*L/C.d).toFixed(1)} 公分（波長 × 屏幕距離 ÷ 縫距）</span>`;
+  if(C.pick!=null){const y=C.pick,r1=Math.hypot(L,y+d2),r2=Math.hypot(L,y-d2),n=(r1-r2)/C.wl,rn=Math.round(n),half=Math.abs(n-rn)>0.4;
+    a.strokeStyle='#ffd76a';a.lineWidth=1.5;a.beginPath();a.moveTo(bx,Y(-d2));a.lineTo(scrX,Y(y));a.moveTo(bx,Y(d2));a.lineTo(scrX,Y(y));a.stroke();
+    a.fillStyle='#ffd76a';a.beginPath();a.arc(scrX,Y(y),5,0,7);a.fill();
+    s+=`<span class="st" style="color:var(--ink)">這一點：兩條路差 <b>${Math.abs(n).toFixed(2)}</b> 個波長 → ${Math.abs(n-rn)<0.15?'剛好整數個：波峰對波峰，<b>亮紋</b>':half?'差半個：波峰對波谷，<b>暗紋</b>':'介於中間：半亮'}</span>`;}
+  $('#roC').innerHTML=s;
+  a.fillStyle='#9ca2b8';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='bottom';a.fillText('屏幕',scrX+25,top+4+12);
+}
+
+/* ================= D: a photon hits the electron (Feynman's lamp) ================= */
+const GC={up:'#ff7ad9',dn:'#ffb347',no:'#7df9ff',blur:'#b8bccb'};
+const Dd={br:1,lam:0.3,hits:[],bins:{up:new Array(60).fill(0),dn:new Array(60).fill(0),no:new Array(60).fill(0)},fly:[],queue:0,lq:0,recent:[],
+  cnt:{up:0,dn:0,blur:0,dark:0},rec:{up:0,dn:0,blur:0},view:'all',n:0,doneAt:0,slowBusy:0};
+const TD=900,TS=5200;
+function genD(now,slow){const via=Math.random()<0.5?-1:1,hit=Math.random()<Dd.br,sharp=hit&&Math.random()<Dist(Dd.lam);
+  const g=sharp?(via<0?'up':'dn'):'no';
+  return{t0:now,T:slow?TS:TD,slow,via,hit,sharp,g,y:sample(g==='up'?fUp:g==='dn'?fDn:fBoth),jy:(Math.random()*2-1)*S*1.4,rec:false};}
+function landD(p){Dd.n++;const k=p.sharp?p.g:p.hit?'blur':'dark';Dd.cnt[k]++;
+  if(Dd.hits.length<6000)Dd.hits.push([p.y,Math.random(),p.g]);const i=Math.floor((p.y+1)/2*60);if(i>=0&&i<60)Dd.bins[p.g][i]++;
+  Dd.recent.push({y:p.y,g:p.g,t:performance.now(),big:p.slow});if(Dd.recent.length>60)Dd.recent.shift();}
+function clearD(){Dd.hits=[];for(const k in Dd.bins)Dd.bins[k].fill(0);Dd.fly=[];Dd.queue=0;Dd.lq=0;Dd.recent=[];Dd.n=0;Dd.doneAt=0;
+  Dd.cnt={up:0,dn:0,blur:0,dark:0};Dd.rec={up:0,dn:0,blur:0};roD();}
+$('#dBr').oninput=e=>{Dd.br=+e.target.value;clearD();};
+$('#dLam').oninput=e=>{Dd.lam=+e.target.value;clearD();};
+$('#dClear').onclick=clearD;
+$('#dFast').onclick=()=>{Dd.queue+=2000;Dd.doneAt=-1;};
+$$('[data-dv]').forEach(b=>b.onclick=()=>{Dd.view=b.dataset.dv;$$('[data-dv]').forEach(x=>x.classList.toggle('sel',x===b));roD();
+  if(Dd.n>=300)toast('#tD',{all:'全部的點：有紀錄和沒紀錄的混在一起。',up:'只看「光子說它走上縫」的電子：一個大鼓包，沒有條紋。',dn:'只看「光子說它走下縫」的電子：也只是一個大鼓包。',no:'只看沒留下紀錄的電子：條紋清清楚楚！'}[Dd.view],5000);});
+$('#d1').onclick=()=>{const now=performance.now();if(now<Dd.slowBusy)return;Dd.slowBusy=now+TS;
+  const p=genD(now,true);Dd.fly.push(p);const side=p.via<0?'上':'下';
+  const steps=[[0,'① 一顆電子飛向雙狹縫……']];
+  if(p.hit)steps.push([0.18,'② 燈射出一顆光子，飛向狹縫……']);
+  steps.push([0.4,p.sharp?`③ 光子在<b>${side}縫</b>撞到電子，彈進紀錄本：「電子走${side}縫」`:p.hit?'③ 光子撞到了，但光的波長太長，閃光糊成一大團，分不出是哪一條縫':'③ 燈不夠亮，這顆電子沒被光子碰到，什麼紀錄都沒留下']);
+  steps.push([0.62,p.sharp?`④ 有了紀錄，電子就只是一顆「從${side}縫出發」的粒子，沒有另一條路可以和它疊加`:'④ 沒有紀錄可以分辨，電子的波同時穿過兩條縫，在後面互相疊加']);
+  steps.push([1,`⑤ 落在屏幕上，變成一個點，算進「${p.sharp?'紀錄：'+side+'縫':'沒有紀錄'}」那一組`]);
+  steps.forEach(([f,m],i)=>setTimeout(()=>toast('#tD',m,i===steps.length-1?4200:TS*0.3),f*TS));};
+function roD(){$('#dBrV').textContent=Math.round(Dd.br*100)+'%';$('#dLamV').textContent=Dd.lam.toFixed(2)+' × 縫距';
+  const V=1-Dd.br*Dist(Dd.lam),c=Dd.cnt;
+  let s=`<span class="big">燈亮度 ${Math.round(Dd.br*100)}%・光波長 ${Dd.lam.toFixed(2)} 倍縫距</span>`;
+  s+=`<span class="st">已打 <b>${fmt(Dd.n)}</b> 顆：分清楚是上縫 <b style="color:${GC.up}">${fmt(c.up)}</b>、下縫 <b style="color:${GC.dn}">${fmt(c.dn)}</b></span>`;
+  s+=`<span class="st">閃光太糊 <b style="color:${GC.blur}">${fmt(c.blur)}</b>、沒被照到 <b style="color:${GC.no}">${fmt(c.dark)}</b>（這兩種都算「沒有紀錄」）</span>`;
+  s+=`<span class="st">預測條紋清楚程度：<b>${Math.round(V*100)}%</b></span>`;
+  if(Dd.view!=='all')s+=`<span class="st" style="color:${GC[Dd.view]}">正在只看：${{up:'紀錄說走上縫',dn:'紀錄說走下縫',no:'沒有紀錄'}[Dd.view]}</span>`;
+  $('#roD').innerHTML=s;}
+function drawD(a,w,h,now){a.fillStyle='#030409';a.fillRect(0,0,w,h);
+  if(Dd.queue>0){const dt=Math.min(100,Dd.lq?now-Dd.lq:16);Dd.lq=now;const n=Math.min(Dd.queue,Math.max(1,Math.round(dt*0.6)));
+    for(let i=0;i<n;i++)Dd.fly.push(genD(now,false));Dd.queue-=n;if(Dd.queue<=0){Dd.queue=0;Dd.lq=0;Dd.doneAt=now+TD+300;}}
+  if(Dd.doneAt>0&&now>Dd.doneAt){Dd.doneAt=0;const D=Dd.br*Dist(Dd.lam);
+    toast('#tD',D>0.9?'每一顆都被看得清清楚楚，條紋消失了。按「紀錄：上縫」分組看看。':D<0.1?'幾乎沒有留下紀錄，條紋清清楚楚。把燈調亮、波長調短再試一次。':'有紀錄和沒紀錄的混在一起，條紋半清楚。按下面的「分組看」，比較有紀錄和沒紀錄的兩組！',7000);}
+  const top=$('#roD').offsetHeight+18,L=24,bx=w*0.42,sx=w*0.82,cy=top+(h-top)/2,H=(h-top-30)/2,Y=y=>cy+y*H,sw=10,gap=Math.max(5,H*0.06),slitY=[Y(-S),Y(S)];
+  const sY=v=>slitY[v<0?0:1],lamp={x:bx+30,y:top+14};
+  const rb={x:10,y:Math.min(cy+40,h-108),w:Math.max(100,bx-36),h:88},rc={x:rb.x+rb.w/2,y:rb.y+rb.h/2};
+  // unrecorded electrons travel on as a wave through both slits
+  let nw=0;for(const p of Dd.fly){const u=(now-p.t0)/p.T;if(p.g==='no'&&u>0.42&&u<1)nw+=p.slow?12:1;}
+  if(nw)waveField(a,bx+sw/2,top+6,sx-6-bx-sw/2,h-top-12,slitY,Math.max(6,PERIOD*H*(slitY[1]-slitY[0])/(sx-6-bx)),now/1000,Math.min(0.7,0.2+nw*0.03),ECYAN);
+  // gun, barrier, lamp, screen
+  a.fillStyle='#2a2e42';a.beginPath();a.roundRect(L,cy-14,34,28,6);a.fill();a.fillStyle='#7df9ff';a.beginPath();a.arc(L+34,cy,5,0,7);a.fill();
+  a.fillStyle='#5a607a';a.fillRect(bx-sw/2,top+6,sw,slitY[0]-gap/2-top-6);a.fillRect(bx-sw/2,slitY[0]+gap/2,sw,slitY[1]-slitY[0]-gap);a.fillRect(bx-sw/2,slitY[1]+gap/2,sw,h-6-slitY[1]-gap/2);
+  const lg=a.createRadialGradient(lamp.x,lamp.y,0,lamp.x,lamp.y,22);lg.addColorStop(0,`rgba(255,215,106,${0.15+0.75*Dd.br})`);lg.addColorStop(1,'rgba(255,215,106,0)');
+  a.fillStyle=lg;a.beginPath();a.arc(lamp.x,lamp.y,22,0,7);a.fill();a.fillStyle=Dd.br>0.02?'#ffd76a':'#5a5030';a.beginPath();a.arc(lamp.x,lamp.y,6,0,7);a.fill();
+  a.fillStyle='#0b0d16';a.fillRect(sx-6,top+6,14,h-top-12);
+  // record book
+  a.fillStyle='rgba(23,26,38,.92)';a.strokeStyle='#3a3f58';a.lineWidth=1;a.beginPath();a.roundRect(rb.x,rb.y,rb.w,rb.h,8);a.fill();a.stroke();
+  a.font='12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillStyle='#edf0f8';a.fillText('📒 紀錄本',rb.x+8,rb.y+6);
+  [['up','上縫'],['dn','下縫'],['blur','糊掉']].forEach(([k,t],i)=>{a.fillStyle=GC[k];a.fillText(`${t}  ${fmt(Dd.rec[k])}`,rb.x+10,rb.y+26+i*19);});
+  // hits on the screen, coloured by what the record says
+  const show=g=>Dd.view==='all'||Dd.view===g;
+  for(const[y,jx,g]of Dd.hits){if(!show(g))continue;a.fillStyle=GC[g];a.fillRect(sx-5+jx*12,Y(y)-1,2.4,2.4);}
+  const nowR=performance.now();Dd.recent=Dd.recent.filter(r=>nowR-r.t<1400);
+  for(const r of Dd.recent){if(!show(r.g))continue;const f=1-(nowR-r.t)/1400,yy=Y(r.y),R=r.big?26:14,gl=a.createRadialGradient(sx+1,yy,0,sx+1,yy,R);
+    gl.addColorStop(0,`rgba(255,255,255,${f})`);gl.addColorStop(1,'rgba(255,255,255,0)');a.fillStyle=gl;a.beginPath();a.arc(sx+1,yy,R,0,7);a.fill();}
+  // histogram, stacked by group
+  const hx=sx+16,hw=w-hx-8;
+  if(hw>20){const gs=Dd.view==='all'?['no','up','dn']:[Dd.view],bh=2*H/60;let mx=1;
+    for(let i=0;i<60;i++){let t=0;for(const g of gs)t+=Dd.bins[g][i];mx=Math.max(mx,t);}
+    for(let i=0;i<60;i++){let x=hx;for(const g of gs){const len=Dd.bins[g][i]/mx*hw;a.fillStyle=GC[g];a.globalAlpha=0.6;a.fillRect(x,cy-H+i*bh,len,Math.max(1,bh-0.5));x+=len;}}
+    a.globalAlpha=1;}
+  // particles
+  for(const p of Dd.fly){const u=Math.max(0,(now-p.t0)/p.T),sy=sY(p.via),r=p.slow?4.5:2.2;
+    if(u<0.4){const v=u/0.4,ty=p.hit?sy:Y(p.jy);a.globalAlpha=p.hit?1:Math.min(1,(1-v)*3);a.fillStyle='#7df9ff';a.beginPath();a.arc(L+34+(bx-L-34)*v,cy+(ty-cy)*v,r,0,7);a.fill();a.globalAlpha=1;}
+    if(p.hit&&u>=0.18&&u<0.4){const v=(u-0.18)/0.22;a.fillStyle='#ffd76a';a.beginPath();a.arc(lamp.x+(bx+3-lamp.x)*v,lamp.y+(sy-lamp.y)*v,p.slow?4:1.8,0,7);a.fill();
+      if(p.slow){a.strokeStyle='rgba(255,215,106,.35)';a.setLineDash([3,4]);a.beginPath();a.moveTo(lamp.x,lamp.y);a.lineTo(bx+3,sy);a.stroke();a.setLineDash([]);}}
+    if(p.hit&&u>=0.4&&u<0.62){const f=1-(u-0.4)/0.22;
+      if(p.sharp){a.fillStyle=GC[p.g];a.globalAlpha=0.85*f;a.beginPath();a.arc(bx+3,sy,p.slow?14:7,0,7);a.fill();}
+      else{const R=Math.max(14,Dd.lam*(slitY[1]-slitY[0])*0.75),cyB=(slitY[0]+slitY[1])/2+(sy-(slitY[0]+slitY[1])/2)*0.3,gl=a.createRadialGradient(bx+3,cyB,0,bx+3,cyB,R);
+        gl.addColorStop(0,`rgba(230,232,245,${(p.slow?0.6:0.25)*f})`);gl.addColorStop(1,'rgba(230,232,245,0)');a.fillStyle=gl;a.beginPath();a.arc(bx+3,cyB,R,0,7);a.fill();}
+      a.globalAlpha=1;}
+    if(p.hit&&u>=0.4&&u<0.72){const v=(u-0.4)/0.32;a.fillStyle=p.sharp?GC[p.g]:GC.blur;a.beginPath();a.arc(bx+3+(rc.x-bx-3)*v,sy+(rc.y-sy)*v,p.slow?4:1.8,0,7);a.fill();}
+    if(p.hit&&u>=0.72&&!p.rec){p.rec=true;Dd.rec[p.sharp?p.g:'blur']++;}
+    if(u>=0.4&&u<1&&p.g!=='no'){const v=(u-0.4)/0.6;a.fillStyle=GC[p.g];a.beginPath();a.arc(bx+(sx-bx)*v,sy+(Y(p.y)-sy)*v,r,0,7);a.fill();}}
+  let landed=0;Dd.fly=Dd.fly.filter(p=>{if(now-p.t0<p.T)return true;if(p.hit&&!p.rec)Dd.rec[p.sharp?p.g:'blur']++;landD(p);landed++;return false;});
+  if(landed)roD();
+  a.fillStyle='#9ca2b8';a.font='11.5px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='top';
+  a.fillText('發射器',L+17,cy+18);a.fillText('燈',lamp.x+22,lamp.y-6);a.fillText('雙狹縫',bx,h-20);a.fillText('屏幕',sx,h-20);if(hw>40)a.fillText('統計',hx+hw/2,h-20);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C','D'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+function loop(now){requestAnimationFrame(loop);// schedule first so one bad frame can never freeze the animation
+  const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else if(TAB==='C')drawC(a,w,h,now);else drawD(a,w,h,now);}
+$('#wlV').textContent='1.00 公分';$('#sdV').textContent='4.0 公分';
+roA();roB();roD();requestAnimationFrame(loop);})();
+</script>

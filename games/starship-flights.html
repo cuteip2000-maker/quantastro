@@ -1,0 +1,881 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>星艦試飛指揮室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: mission-control split — flight canvas with telemetry left, flight archive rail right; stacks on phones */
+:root{
+  --bg:#090b0f;
+  --deck:#10141b;
+  --deck2:#171c25;
+  --rule:#252d3a;
+  --ink:#e8ecf2;
+  --dim:#8c97aa;
+  --steel:#cfd6e0;
+  --flame:#ff7a2f;
+  --good:#6ee0a1;
+  --bad:#ff5d5d;
+  --warn:#f5c451;
+  --f-disp:"Barlow Condensed","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"Roboto Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--flame);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 390px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#05070a}
+#cv{display:block;width:100%;height:100%;touch-action:none}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:20px 28px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-disp);font-weight:700;font-size:13px;letter-spacing:.28em;color:var(--flame);text-transform:uppercase}
+h1{margin:0;font-size:26px;font-weight:700;letter-spacing:.04em;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--dim);font-size:13px}
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-family:var(--f-disp);font-weight:700;font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+.grid15{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.fl{background:var(--deck2);border:1px solid var(--rule);border-radius:8px;padding:6px 0 5px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.fl b{font-family:var(--f-disp);font-weight:800;font-size:20px;line-height:1}
+.fl span{font-size:10px;color:var(--dim);font-family:var(--f-mono)}
+.fl i{font-style:normal;font-size:11px;letter-spacing:1px}
+.fl[aria-pressed="true"]{border-color:var(--flame);box-shadow:inset 0 0 0 1px var(--flame)}
+.fl .best{color:var(--warn);font-size:10px;font-family:var(--f-mono);min-height:14px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--dim)}
+
+.card{background:var(--deck2);border:1px solid var(--rule);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.card .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.card .no{font-family:var(--f-disp);font-weight:800;font-size:30px;line-height:1}
+.card .date{font-family:var(--f-mono);font-size:12px;color:var(--dim)}
+.card .head{font-size:15px;font-weight:700;margin:0}
+.vrow{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12.5px}
+.vrow dt{color:var(--dim)}
+.vrow dd{margin:0}
+.ok{color:var(--good)} .ng{color:var(--bad)} .mid{color:var(--warn)}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);border-radius:9px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:9px 6px;font-size:13.5px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--deck2);color:var(--ink);box-shadow:inset 0 -2px 0 var(--flame)}
+.go{background:var(--flame);border:0;border-radius:9px;padding:11px;font-weight:700;color:#1a0d04;font-size:15px}
+.go:hover{filter:brightness(1.08)}
+.hint{margin:0;font-size:12.5px;color:var(--dim)}
+
+.log{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:4px}
+.log div{display:grid;grid-template-columns:62px 1fr;gap:8px;font-size:12.5px;border-left:2px solid var(--rule);padding:2px 0 2px 8px}
+.log div time{font-family:var(--f-mono);color:var(--dim);font-size:11.5px}
+.log div.good{border-color:var(--good)} .log div.bad{border-color:var(--bad)} .log div.me{border-color:var(--flame)}
+.log .empty{display:block;border:0;color:var(--dim);padding:0}
+.src{font-size:11.5px;color:var(--dim);margin:0}
+.src a{color:var(--dim)}
+
+/* stage overlays */
+.tele{position:absolute;top:max(12px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;text-shadow:0 1px 4px #000;display:flex;flex-direction:column;gap:4px}
+.tele .clock{font-family:var(--f-disp);font-weight:800;font-size:40px;line-height:1;letter-spacing:.02em}
+.tele .fname{font-size:13px;color:var(--dim)}
+.tele table{border-collapse:collapse;font-family:var(--f-mono);font-size:12px;margin-top:4px}
+.tele td{padding:1px 10px 1px 0;color:var(--ink)}
+.tele td:first-child{color:var(--dim)}
+.ctrl{position:absolute;left:0;right:0;bottom:0;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;
+  padding-block:12px max(12px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:linear-gradient(transparent,rgba(5,7,10,.85))}
+.ctrl button{background:rgba(23,28,37,.9);border:1px solid var(--rule);border-radius:8px;height:38px;min-width:42px;padding:0 12px;font-size:13px}
+.ctrl button.on{background:var(--flame);border-color:var(--flame);color:#1a0d04;font-weight:700}
+.caption{position:absolute;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 60px);transform:translateX(-50%);
+  width:min(92%,560px);background:rgba(16,20,27,.92);border:1px solid var(--rule);border-left:3px solid var(--flame);border-radius:8px;
+  padding:9px 14px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none}
+.caption.show{opacity:1}
+.caption.good{border-left-color:var(--good)} .caption.bad{border-left-color:var(--bad)}
+.caption time{font-family:var(--f-mono);font-size:12px;color:var(--dim);margin-right:8px}
+.pad{position:absolute;bottom:calc(max(12px,env(safe-area-inset-bottom,0px)) + 12px);left:0;right:0;display:flex;justify-content:space-between;
+  padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));pointer-events:none}
+.pad .g{display:flex;gap:8px;pointer-events:auto}
+.pad button{width:64px;height:64px;border-radius:14px;background:rgba(23,28,37,.85);border:1px solid var(--rule);font-size:22px;touch-action:none;user-select:none;-webkit-user-select:none}
+.pad button.on{background:var(--flame);color:#1a0d04}
+.pad .wide{width:auto;padding:0 22px;font-size:16px;font-weight:700}
+.modal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,7,10,.7);padding:16px}
+.modal .box{background:var(--deck);border:1px solid var(--rule);border-radius:14px;padding:22px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:10px;max-height:100%;overflow:auto}
+.modal h3{margin:0;font-size:22px}
+.modal .grade{font-family:var(--f-disp);font-weight:800;font-size:64px;line-height:1;color:var(--flame)}
+.modal p{margin:0;color:#c9d0dc;font-size:13.5px}
+.modal ul{margin:0;padding-left:18px;font-size:13px;color:#c9d0dc}
+.modal .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.modal .row button{flex:1;min-width:120px;background:var(--deck2);border:1px solid var(--rule);border-radius:9px;padding:10px}
+.modal .row button.pri{background:var(--flame);border-color:var(--flame);color:#1a0d04;font-weight:700}
+
+.gaming .tele,.gaming .ctrl,.gaming .caption{display:none}
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:74vh;min-height:520px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .tele .clock{font-size:30px}
+}
+@media (prefers-reduced-motion:reduce){.caption{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="星艦飛行模擬畫面"></canvas>
+    <div class="tele" id="tele">
+      <div class="fname" id="tName">選一次試飛，按「開始」</div>
+      <div class="clock" id="tClock">T−00:10</div>
+      <table>
+        <tr><td>星艦</td><td id="tS">—</td></tr>
+        <tr><td>助推器</td><td id="tB">—</td></tr>
+      </table>
+    </div>
+    <div class="caption" id="cap"></div>
+    <div class="ctrl" id="ctrl">
+      <button id="bPlay">▶ 開始</button>
+      <button data-sp="1" class="on">1×</button>
+      <button data-sp="3">3×</button>
+      <button data-sp="10">10×</button>
+      <button id="bSkip">跳到下一事件</button>
+    </div>
+    <div class="pad" id="pad" hidden>
+      <div class="g"><button id="kL" aria-label="向左">◀</button><button id="kR" aria-label="向右">▶</button></div>
+      <div class="g"><button id="kU" aria-label="點火">▲</button><button id="kA" class="wide">執行</button></div>
+    </div>
+    <div class="modal" id="modal" hidden><div class="box" id="mbox"></div></div>
+  </div>
+
+  <aside class="rail">
+    <div>
+      <div class="eyebrow">Starship Flight Tests 1–15</div>
+      <h1>星艦試飛指揮室</h1>
+      <p class="lede">從 2023 年炸出大坑的首飛，到 2026 年的首次入軌與「雙捕捉」嘗試。重播每一次試飛的真實經過，或親自上陣，在熱分離、助推器捕捉、大氣再入和翻轉著陸的關鍵時刻接手操控，看看能不能改寫歷史。</p>
+    </div>
+
+    <section>
+      <h2>選擇試飛</h2>
+      <div class="grid15" id="grid"></div>
+      <div class="legend"><span><b class="ok">●</b> 達成主要目標</span><span><b class="mid">◐</b> 部分成功</span><span><b class="ng">✕</b> 星艦損失</span><span><b style="color:var(--warn)">?</b> 結果待確認</span></div>
+    </section>
+
+    <section>
+      <div class="card" id="card"></div>
+    </section>
+
+    <section>
+      <h2>模式</h2>
+      <div class="seg" id="modeSeg">
+        <button data-m="replay" aria-pressed="true">重播歷史</button>
+        <button data-m="play" aria-pressed="false">指揮挑戰</button>
+      </div>
+      <p class="hint" id="modeHint"></p>
+      <button class="go" id="bStart">開始第 1 次試飛</button>
+    </section>
+
+    <section>
+      <h2>飛行日誌</h2>
+      <div class="log" id="log"><span class="empty">開始後，事件會依序記錄在這裡。</span></div>
+    </section>
+
+    <p class="src">飛行資料整理自公開報導與維基百科條目（截至 2026/11/14）。第 13 次助推器的細節與第 15 次星艦的捕捉結果尚未能確認。時間點為約略值，軌跡為示意，高度已放大顯示。</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const RE = 6371, CIRC = 2*Math.PI*RE;
+
+// ---------------- flight archive ----------------
+// fate kinds: boom (lost), sea (ocean splashdown), catch (tower catch), unclear, pending
+const F = [
+ {n:1, date:'2023-04-20', b:'B7', s:'S24', ver:'Block 1', head:'首飛：無法分離，空中解體', stat:'fail', noSep:true,
+  bF:{t:239,k:'boom'}, sF:{t:239,k:'boom'}, bRes:'與星艦一同損失', sRes:'未能分離，損失',
+  ev:[[2,'升空。之後陸續有多具猛禽引擎熄火','info'],[62,'通過最大動壓（Max-Q）','info'],[150,'失去推力向量控制，整枝火箭開始翻滾','bad'],[170,'原定在此分離，但兩節分不開','bad'],[239,'飛行終止系統啟動後解體，最高約 39 公里','bad'],[240,'發射台底部被轟出大坑，後來加裝了噴水導流板','info']],
+  d:{stage:.95, bl:.6, re:.6, sl:.6}},
+ {n:2, date:'2023-11-18', b:'B9', s:'S25', ver:'Block 1', head:'首次熱分離成功，兩節都沒回來', stat:'fail',
+  bF:{t:212,k:'boom'}, sF:{t:480,k:'boom'}, bRes:'返航點火時爆炸', sRes:'接近關機時起火，損失',
+  ev:[[2,'33 具猛禽引擎全程正常運作','good'],[161,'首次「熱分離」成功：星艦在助推器還在噴火時就點火分離','good'],[212,'助推器返航點火時發生故障，空中爆炸','bad'],[400,'星艦飛越 100 公里，首次進入太空','good'],[480,'接近引擎關機時排放液氧引發火災，約 148 公里高處自毀','bad']],
+  d:{stage:.7, bl:.6, re:.6, sl:.6, asc:470}},
+ {n:3, date:'2024-03-14', b:'B10', s:'S28', ver:'Block 1', head:'第一次到達預定軌道，再入時失控', stat:'part',
+  bF:{t:400,k:'boom'}, sF:{t:2940,k:'boom'}, bRes:'降落點火失敗，在海面上空解體', sRes:'達到預定軌道，再入時損失',
+  ev:[[161,'熱分離','good'],[400,'助推器降落點火時引擎沒能全部重啟，在海面上空約 462 公尺處解體','bad'],[525,'星艦關機，首次到達預定的次軌道路徑','good'],[1000,'測試酬載艙門開關，並示範艙內推進劑轉移','good'],[1900,'因為滾轉問題，取消太空中的引擎重新點火','bad'],[2940,'再入時失去姿態控制，約 T+49 分失聯','bad']],
+  d:{stage:.55, bl:.55, re:.75, sl:.6}},
+ {n:4, date:'2024-06-06', b:'B11', s:'S29', ver:'Block 1', head:'兩節都第一次軟著陸濺落', stat:'ok',
+  bF:{t:444,k:'sea'}, sF:{t:3960,k:'sea'}, bRes:'墨西哥灣軟濺落', sRes:'印度洋軟濺落',
+  ev:[[161,'熱分離，拋棄熱分離環','good'],[444,'助推器首次在墨西哥灣完成軟著陸濺落','good'],[3000,'再入時一片前襟翼嚴重燒蝕，攝影機鏡頭都裂了，但還在控制','info'],[3960,'翻轉、點火，印度洋軟著陸濺落','good']],
+  d:{stage:.5, bl:.55, re:.7, sl:.6}},
+ {n:5, date:'2024-10-13', b:'B12', s:'S30', ver:'Block 1', head:'「筷子」第一次接住助推器', stat:'ok',
+  bF:{t:412,k:'catch'}, sF:{t:3940,k:'sea'}, bRes:'發射塔機械臂捕捉成功', sRes:'精準濺落印度洋',
+  ev:[[161,'熱分離','good'],[215,'塔台檢查通過，指令助推器返回發射場','good'],[412,'發射塔的「筷子」機械臂在半空中接住助推器！','good'],[3940,'星艦精準濺落在印度洋預定區域','good']],
+  d:{stage:.45, bl:.6, re:.6, sl:.55}},
+ {n:6, date:'2024-11-19', b:'B13', s:'S31', ver:'Block 1', head:'取消捕捉，首次太空中重新點火', stat:'ok',
+  bF:{t:420,k:'sea'}, sF:{t:3900,k:'sea'}, bRes:'取消捕捉，改墨西哥灣濺落', sRes:'印度洋濺落',
+  ev:[[161,'熱分離','good'],[215,'發射塔檢查未通過，取消捕捉，助推器改往墨西哥灣','bad'],[420,'助推器濺落墨西哥灣','info'],[2280,'星艦首次在太空中重新點燃猛禽引擎','good'],[3900,'在白天濺落印度洋','good']],
+  d:{stage:.45, bl:.55, re:.6, sl:.55}},
+ {n:7, date:'2025-01-16', b:'B14', s:'S33', ver:'Block 2', head:'第二代首飛：接住助推器，星艦起火', stat:'fail',
+  bF:{t:412,k:'catch'}, sF:{t:510,k:'boom'}, bRes:'發射塔捕捉成功', sRes:'上升段起火，損失',
+  ev:[[2,'第二代（Block 2）星艦首飛','info'],[161,'熱分離','good'],[412,'第二次成功捕捉助推器','good'],[480,'星艦後段推進劑洩漏起火，引擎陸續熄火','bad'],[510,'約 T+8:30 失聯解體，碎片落在特克斯與凱科斯群島附近','bad']],
+  d:{stage:.4, bl:.6, re:.6, sl:.55, asc:470}},
+ {n:8, date:'2025-03-06', b:'B15', s:'S34', ver:'Block 2', head:'再接住助推器，星艦又失聯', stat:'fail',
+  bF:{t:410,k:'catch'}, sF:{t:570,k:'boom'}, bRes:'發射塔捕捉成功', sRes:'上升段引擎失效，損失',
+  ev:[[161,'熱分離','good'],[410,'第三次成功捕捉助推器','good'],[540,'星艦多具引擎失效，失去姿態控制','bad'],[570,'約 T+9:30 失聯，碎片落在巴哈馬附近','bad']],
+  d:{stage:.4, bl:.6, re:.6, sl:.55, asc:540}},
+ {n:9, date:'2025-05-27', b:'B14-2', s:'S35', ver:'Block 2', head:'首次重複使用助推器，星艦滑行時失控', stat:'fail',
+  bF:{t:380,k:'boom'}, sF:{t:2760,k:'boom'}, bRes:'高攻角降落實驗中解體', sRes:'艙門故障、洩漏失控，再入時損失',
+  ev:[[2,'首次重複使用助推器（B14 第二次飛行）','info'],[161,'熱分離','good'],[380,'助推器做高攻角降落實驗，降落點火時失聯解體','bad'],[525,'星艦第一次完整飛完 Block 2 上升段','good'],[1100,'酬載艙門打不開，無法釋放星鏈模擬器','bad'],[1800,'推進劑洩漏導致失去姿態控制，取消太空點火','bad'],[2760,'在滾轉中再入大氣，於印度洋上空解體','bad']],
+  d:{stage:.35, bl:.65, re:.8, sl:.55, coast:1800}},
+ {n:10, date:'2025-08-26', b:'B16', s:'S37', ver:'Block 2', head:'第一次完整成功', stat:'ok',
+  bF:{t:420,k:'sea'}, sF:{t:3960,k:'sea'}, bRes:'引擎失效測試後軟濺落', sRes:'精準濺落印度洋',
+  ev:[[161,'熱分離','good'],[400,'助推器降落時刻意關掉一具中央引擎，測試備援','info'],[420,'助推器在墨西哥灣軟濺落','good'],[1100,'首次部署 8 顆星鏈模擬衛星','good'],[2280,'太空中重新點燃猛禽引擎','good'],[3000,'刻意拆掉部分隔熱瓦做測試，裙部和襟翼受損但撐住','info'],[3960,'精準濺落印度洋','good']],
+  d:{stage:.35, bl:.5, re:.6, sl:.5}},
+ {n:11, date:'2025-10-13', b:'B15-2', s:'S38', ver:'Block 2', head:'第二代最後一飛，圓滿結束', stat:'ok',
+  bF:{t:420,k:'sea'}, sF:{t:3960,k:'sea'}, bRes:'測試新降落配置後濺落', sRes:'濺落印度洋',
+  ev:[[161,'熱分離','good'],[420,'助推器測試新的降落點火引擎配置，濺落墨西哥灣','good'],[1100,'部署 8 顆星鏈模擬衛星','good'],[2280,'太空中重新點火','good'],[3700,'著陸前做「動態傾斜」機動，模擬日後返回發射場的路徑','info'],[3960,'濺落印度洋，第二代星艦謝幕','good']],
+  d:{stage:.3, bl:.5, re:.55, sl:.5}},
+ {n:12, date:'2026-05-22', b:'B19', s:'S39', ver:'V3', head:'第三代首飛：星艦成功，助推器損失', stat:'part',
+  bF:{t:215,k:'boom'}, sF:{t:3960,k:'sea'}, bRes:'返航點火異常，損失', sRes:'受控濺落印度洋',
+  ev:[[2,'第三代（V3）星艦首飛，也是第二座發射台首次啟用','info'],[161,'熱分離','good'],[215,'助推器返航點火時運作的引擎數量不足，之後損失','bad'],[1100,'部署 22 顆星鏈模擬器','good'],[2280,'一具猛禽引擎沒能在太空中重新點火','bad'],[3960,'仍完成受控再入，濺落印度洋。FAA 要求事故調查','info']],
+  d:{stage:.35, bl:.6, re:.6, sl:.55}},
+ {n:13, date:'2026-07-24', b:'—', s:'S40', ver:'V3', head:'星艦完美飛行，完整漂浮海上', stat:'ok',
+  bF:{t:420,k:'unclear'}, sF:{t:3960,k:'sea'}, bRes:'未達預期（細節未公開）', sRes:'最輕柔的濺落，完整回收',
+  ev:[[2,'前兩次嘗試中止，第三次才升空','info'],[161,'熱分離','good'],[420,'助推器表現未達預期','info'],[1100,'部署 20 顆星鏈模擬器','good'],[2280,'太空中重新點火成功','good'],[3960,'史上最輕柔的濺落：翻倒後沒有爆炸，完整漂浮在印度洋上','good'],[3990,'之後被拖到聖誕島，再運回星艦基地','info']],
+  d:{stage:.3, bl:.55, re:.5, sl:.45}},
+ {n:14, date:'2026-09-28', b:'B21', s:'S41', ver:'V3', head:'星艦首次進入地球軌道', stat:'ok', orbit:{ins:1520, deorbit:7920},
+  bF:{t:430,k:'sea'}, sF:{t:8700,k:'sea'}, bRes:'濺落墨西哥灣', sRes:'入軌、部署衛星後濺落太平洋',
+  ev:[[161,'熱分離','good'],[300,'星艦上升段一具猛禽引擎提早關機','bad'],[430,'助推器在墨西哥灣濺落','info'],[1520,'T+25:20 完成入軌點火，262 × 277 公里軌道：星艦首次入軌！','good'],[1700,'釋放 26 顆真正的 V3 星鏈衛星','good'],[7920,'繞地約兩圈後，T+2:12 執行離軌點火','info'],[8700,'濺落太平洋（各家報導對是否軟著陸說法不一）','info']],
+  d:{stage:.3, bl:.55, re:.55, sl:.5, asc:300}},
+ {n:15, date:'2026-11-13', b:'B22', s:'S42', ver:'V3', head:'首次「雙捕捉」嘗試', stat:'pend', orbit:{ins:1520, deorbit:80600}, shipCatch:true, bCatch:true,
+  bF:{t:400,k:'boom'}, sF:{t:81000,k:'pending'}, bRes:'取消捕捉，濺落前爆炸', sRes:'已入軌，塔台捕捉結果待確認',
+  ev:[[2,'最大膽的任務：兩節都要回到發射塔被接住','info'],[161,'熱分離','good'],[300,'飛控取消助推器捕捉，改往墨西哥灣','bad'],[400,'助推器在濺落前爆炸','bad'],[1520,'順利入軌','good'],[80600,'繞地約 22 小時後離軌，返回德州','info'],[81000,'預計在發射塔被首次接住。結果尚待確認','info']],
+  d:{stage:.3, bl:.6, re:.55, sl:.7}}
+];
+const STAT = {ok:['●','ok'], part:['◐','mid'], fail:['✕','ng'], pend:['?','mid']};
+
+// ---------------- trajectories (t s, alt km, downrange km, speed km/h) ----------------
+const ASC = [[0,0,0,0],[60,11,3,1500],[160,67,75,5800],[300,125,420,10500],[520,150,1700,26300]];
+function shipKF(f){
+  if (f.orbit){
+    const o = f.orbit, land = f.sF.t, k = [...ASC, [o.ins,262,8000,27700]];
+    const v = 7.65*3600/1000*1000/3600; // 7.65 km/s
+    const dAt = t => 8000 + (t - o.ins)*7.65;
+    for (let t = o.ins + 1800; t < o.deorbit; t += 1800) k.push([t, 270, dAt(t), 27700]);
+    const dd = dAt(o.deorbit);
+    let dLand = dd + 19800 - 6000;
+    if (f.shipCatch) dLand = Math.ceil(dd/CIRC + .25)*CIRC;
+    const span = dLand - dd, T = land - o.deorbit;
+    k.push([o.deorbit, 268, dd, 27700], [o.deorbit + T*.45, 120, dd + span*.6, 26500], [o.deorbit + T*.62, 75, dd + span*.82, 22000],
+           [o.deorbit + T*.8, 40, dd + span*.95, 7000], [land - 60, 3, dLand - 2, 900], [land, 0, dLand, 0]);
+    return k;
+  }
+  const L = 3960;
+  return [...ASC, [1200,200,6200,26600],[2000,190,11800,26600],[2700,110,16300,26000],[3050,75,18200,22000],[3400,45,19300,8000],[3820,6,19760,900],[3920,1,19795,250],[L,0,19800,0]];
+}
+function boosterKF(f){
+  if (f.noSep) return shipKF(f);
+  const dEnd = (f.bF.k === 'catch' || f.bCatch) ? 0 : 18;
+  return [[0,0,0,0],[60,11,3,1500],[160,67,75,5800],[185,80,88,4300],[215,90,92,2200],[260,95,82,2600],[330,72,48,3600],[380,22,dEnd+6,1600],[400,2,dEnd+.5,250],[412,0,dEnd,0],[460,0,dEnd,0]];
+}
+function interp(k, t){
+  if (t <= k[0][0]) return k[0].slice(1);
+  if (t >= k[k.length-1][0]) return k[k.length-1].slice(1);
+  let i = 1; while (k[i][0] < t) i++;
+  const a = k[i-1], b = k[i], u = (t - a[0])/(b[0] - a[0]), s = u*u*(3 - 2*u)*.35 + u*.65;
+  return [a[1] + (b[1]-a[1])*s, a[2] + (b[2]-a[2])*u, a[3] + (b[3]-a[3])*s];
+}
+
+// ---------------- state ----------------
+let cur = F[0], mode = 'replay';
+let T = -10, playing = false, started = false, finished = false, spd = 1;
+let sK = shipKF(cur), bK = boosterKF(cur);
+let fate = {b:{...cur.bF}, s:{...cur.sF}};
+let evIdx = 0, games = [], gIdx = 0, game = null, scores = [];
+let booms = [], trails = {s:[], b:[]};
+const camE = {x:0, y:RE, s:1}, camT = {x:0, y:RE, s:1};
+let W = 0, H = 0, DPR = 1;
+let best = {};
+try { best = JSON.parse(localStorage.getItem('starship-best') || '{}') || {}; } catch (e) {}
+
+// ---------------- archive UI ----------------
+function renderGrid(){
+  const g = $('#grid'); g.innerHTML = '';
+  F.forEach(f => {
+    const b = document.createElement('button'); b.className = 'fl';
+    const [ic, cl] = STAT[f.stat];
+    b.innerHTML = `<b>${f.n}</b><span>${f.date.slice(2,7).replace('-','/')}</span><i class="${cl}">${ic}</i><span class="best">${best[f.n] ? '★' + best[f.n] : ''}</span>`;
+    b.setAttribute('aria-pressed', f === cur);
+    b.setAttribute('aria-label', `第 ${f.n} 次試飛 ${f.date}`);
+    b.onclick = () => selectFlight(f);
+    g.appendChild(b);
+  });
+}
+function resCls(k){ return k === 'boom' ? 'ng' : k === 'unclear' || k === 'pending' ? 'mid' : 'ok'; }
+function renderCard(){
+  const f = cur;
+  $('#card').innerHTML = `<div class="top"><span class="no">FLIGHT ${f.n}</span><span class="date">${f.date} · ${f.ver}</span></div>
+    <p class="head">${f.head}</p>
+    <dl class="vrow"><dt>助推器 ${f.b}</dt><dd class="${resCls(f.bF.k)}">${f.bRes}</dd><dt>星艦 ${f.s}</dt><dd class="${resCls(f.sF.k)}">${f.sRes}</dd></dl>`;
+  $('#bStart').textContent = `開始第 ${f.n} 次試飛`;
+}
+function setModeUI(){
+  document.querySelectorAll('#modeSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === mode));
+  $('#modeHint').textContent = mode === 'replay'
+    ? '照實際發生的經過重播，關鍵事件會跳出說明。'
+    : '你來操控：熱分離時機、助推器降落、大氣再入姿態和翻轉著陸。表現好就能改寫歷史；失手的話，該節火箭就會損失。';
+}
+function selectFlight(f){ cur = f; reset(); renderGrid(); renderCard(); }
+
+// ---------------- mission control ----------------
+function reset(){
+  $('#stage').classList.remove('gaming');
+  T = -10; playing = false; started = false; finished = false; game = null; scores = []; booms = []; trails = {s:[], b:[]};
+  sK = shipKF(cur); bK = boosterKF(cur);
+  evIdx = 0; gIdx = 0;
+  if (mode === 'replay') fate = {b:{...cur.bF}, s:{...cur.sF}};
+  else {
+    fate = {b:{t: cur.noSep ? cur.sF.t : 412, k:(cur.bF.k === 'catch' || cur.bCatch) ? 'catch' : 'sea'}, s:{t:sK[sK.length-1][0], k:cur.shipCatch ? 'catch' : 'sea'}};
+    if (cur.noSep){ fate.b = {t:99999, k:'sea'}; }
+    games = buildGames(cur);
+  }
+  $('#log').innerHTML = '<span class="empty">開始後，事件會依序記錄在這裡。</span>';
+  $('#tName').textContent = `第 ${cur.n} 次試飛 · ${cur.b} / ${cur.s}`;
+  $('#bPlay').textContent = '▶ 開始'; $('#modal').hidden = true; $('#pad').hidden = true;
+  fitCam(true);
+}
+function buildGames(f){
+  const d = f.d, g = [];
+  g.push({t:158, type:'timing', who:'both', key:'stage', title:f.noSep ? '搶救分離' : '熱分離',
+    desc:f.noSep ? '多具引擎熄火、火箭開始翻滾。在指針進入綠色區間時按「執行」，強行讓兩節分開。' : '助推器把引擎降到最小推力的瞬間，點燃星艦引擎、推開助推器。在指針進入綠色區間時按「執行」。', diff:d.stage});
+  if (!f.noSep) g.push({t:396, type:'lander', who:'b', key:'bl', title:(f.bF.k === 'catch' || f.bCatch) ? '助推器塔台捕捉' : '助推器海上降落',
+    target:(f.bF.k === 'catch' || f.bCatch) ? 'tower' : 'sea', diff:d.bl});
+  if (d.asc) g.push({t:d.asc, type:'timing', who:'s', key:'asc', title:'上升段異常', desc:'警報！一具引擎溫度飆升。在指針進入綠色區間時按「執行」，關閉故障引擎並調整其餘引擎的推力。', diff:Math.min(.9, d.stage + .3)});
+  if (f.orbit) g.push({t:f.orbit.ins - 2, type:'timing', who:'s', key:'ins', title:'入軌點火', desc:'在正確的時間點燃引擎，把次軌道路徑抬升成圓軌道。指針進入綠色區間時按「執行」。', diff:.45});
+  if (d.coast) g.push({t:d.coast, type:'balance', who:'s', key:'coast', title:'太空滑行：穩住姿態', mode:'coast', diff:d.re});
+  const L = sK[sK.length-1][0];
+  g.push({t:L - (f.orbit ? (L - f.orbit.deorbit)*.4 : 900), type:'balance', who:'s', key:'re', title:'大氣再入', mode:'reentry', diff:d.re});
+  g.push({t:L - 20, type:'lander', who:'s', key:'sl', title:f.shipCatch ? '星艦塔台捕捉' : '翻轉著陸', target:f.shipCatch ? 'tower' : 'sea', ship:true, diff:d.sl});
+  return g;
+}
+function alive(w, t = T){ return t < fate[w].t || fate[w].k !== 'boom'; }
+function ended(w){ return T >= fate[w].t; }
+function posOf(w, t = T){
+  const k = w === 's' ? sK : bK, tt = Math.min(t, fate[w].t), [h, d, v] = interp(k, Math.max(0, tt));
+  return {h, d, v: t >= fate[w].t ? 0 : v};
+}
+function toXY(h, d){ const a = Math.PI/2 - d/RE, r = RE + h*EXAG(); return [r*Math.cos(a), r*Math.sin(a)]; }
+let exag = 6;
+const EXAG = () => exag;
+
+function nextTimes(){
+  const ts = [];
+  if (mode === 'replay') for (let i = evIdx; i < cur.ev.length; i++) ts.push(cur.ev[i][0]);
+  else { for (let i = gIdx; i < games.length; i++) ts.push(games[i].t); for (let i = evIdx; i < cur.ev.length; i++) ts.push(cur.ev[i][0]); }
+  for (const w of ['s','b']) if (fate[w].t > T) ts.push(fate[w].t);
+  return ts.filter(t => t > T).sort((a, b) => a - b);
+}
+function rate(){
+  const nt = nextTimes()[0];
+  if (T < 0) return 2;
+  if (nt === undefined) return 6;
+  const dt = nt - T;
+  if (dt < 6) return 3;
+  if (T < 560 && dt < 40) return 8;
+  return Math.min(4000, Math.max(10, dt/2.5));
+}
+function fmtT(t){
+  const s = Math.abs(Math.round(t)), h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (t < 0 ? 'T−' : 'T+') + (h ? h + ':' + String(m).padStart(2,'0') : String(m).padStart(2,'0')) + ':' + String(x).padStart(2,'0');
+}
+function logLine(t, txt, cls){
+  const box = $('#log'); const e = box.querySelector('.empty'); if (e) e.remove();
+  const d = document.createElement('div'); d.className = cls || '';
+  d.innerHTML = `<time>${fmtT(t)}</time><span>${txt}</span>`; box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+let capT;
+function caption(t, txt, cls){
+  const c = $('#cap'); c.className = 'caption show ' + (cls || ''); c.innerHTML = `<time>${fmtT(t)}</time>${txt}`;
+  clearTimeout(capT); capT = setTimeout(() => c.classList.remove('show'), 5200);
+}
+
+function tick(dt){
+  if (!playing || game || finished) return;
+  const step = dt*rate()*spd;
+  let nt = T + step;
+  // stop exactly at the next game
+  if (mode === 'play' && gIdx < games.length && nt >= games[gIdx].t){
+    nt = games[gIdx].t;
+  }
+  // fates
+  for (const w of ['s','b']){
+    if (T < fate[w].t && nt >= fate[w].t){
+      const p = posOf(w, fate[w].t);
+      if (fate[w].k === 'boom'){ booms.push({w, h:p.h, d:p.d, t0:performance.now()}); }
+    }
+  }
+  T = nt;
+  // history events
+  while (evIdx < cur.ev.length && cur.ev[evIdx][0] <= T){
+    const [t, txt, c] = cur.ev[evIdx++];
+    if (mode === 'replay'){ caption(t, txt, c); logLine(t, txt, c); }
+    else logLine(t, '歷史上：' + txt, '');
+  }
+  // trails
+  for (const w of ['s','b']) if (T >= 0 && T <= fate[w].t + 1){ const p = posOf(w); trails[w].push([p.h, p.d]); if (trails[w].length > 4000) trails[w].splice(0, 1000); }
+  // games
+  if (mode === 'play' && gIdx < games.length && T >= games[gIdx].t){
+    const g = games[gIdx++];
+    const needed = g.who === 'both' ? (T < fate.s.t) : (T < fate[g.who].t);
+    if (needed) startGame(g);
+  }
+  // finish
+  if (T > Math.max(fate.s.t, cur.noSep ? 0 : Math.min(fate.b.t, 500)) + 3 && T > 30) finish();
+}
+function finish(){
+  if (finished) return; finished = true; playing = false; $('#bPlay').textContent = '↺ 再一次';
+  showSummary();
+}
+
+// ---------------- camera ----------------
+function fitCam(snap){
+  const pts = [[0, 0]];
+  for (const w of ['s','b']){ if (T >= 0 && (T < fate[w].t + 20 || fate[w].k === 'pending')){ const p = posOf(w); pts.push([p.h, p.d]); } }
+  let xs = [], ys = [];
+  pts.forEach(([h, d]) => { const [x, y] = toXY(h, d); xs.push(x); ys.push(y); });
+  let minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+  let span = Math.max(maxx - minx, maxy - miny);
+  const far = T > 700 && !(cur.shipCatch && T > fate.s.t - 400);
+  if (far){ camT.x = 0; camT.y = 0; camT.s = Math.min(W, H)/(2*(RE + 400*exag)*1.08); }
+  else {
+    span = Math.max(span*1.6, 260);
+    camT.x = (minx + maxx)/2; camT.y = (miny + maxy)/2 + span*.12;
+    camT.s = Math.min(W, H)/span;
+  }
+  if (snap) Object.assign(camE, camT);
+}
+function animCam(){
+  const k = .06;
+  camE.x += (camT.x - camE.x)*k; camE.y += (camT.y - camE.y)*k;
+  camE.s = Math.exp(Math.log(camE.s) + (Math.log(camT.s) - Math.log(camE.s))*k);
+}
+const scr = (x, y) => [W/2 + (x - camE.x)*camE.s, H/2 - (y - camE.y)*camE.s];
+
+// ---------------- drawing: mission view ----------------
+const stars = Array.from({length:220}, () => [Math.random(), Math.random(), Math.random()*.6 + .2]);
+function drawMission(now){
+  ctx.fillStyle = '#04060a'; ctx.fillRect(0, 0, W, H);
+  for (const [x, y, b] of stars){ ctx.fillStyle = `rgba(220,228,245,${b*.5})`; ctx.fillRect(x*W, y*H, 1.2, 1.2); }
+  // Earth
+  const [ex, ey] = scr(0, 0), er = RE*camE.s;
+  const atm = ctx.createRadialGradient(ex, ey, er*.98, ex, ey, er + Math.max(6, 120*exag*camE.s));
+  atm.addColorStop(0, 'rgba(90,150,230,.55)'); atm.addColorStop(1, 'rgba(90,150,230,0)');
+  ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(ex, ey, er + Math.max(6, 120*exag*camE.s), 0, Math.PI*2); ctx.fill();
+  const eg = ctx.createRadialGradient(ex - er*.3, ey - er*.4, er*.1, ex, ey, er);
+  eg.addColorStop(0, '#1d4f7a'); eg.addColorStop(1, '#0b2238');
+  ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI*2); ctx.fill();
+  // 100 km line (Kármán)
+  ctx.strokeStyle = 'rgba(160,190,230,.18)'; ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.arc(ex, ey, (RE + 100*exag)*camE.s, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  if (camE.s*100*exag > 30){ const [lx, ly] = scr(...toXY(100, -60)); ctx.fillStyle = 'rgba(160,190,230,.5)'; ctx.font = '11px "Noto Sans TC", sans-serif'; ctx.fillText('100 公里 · 太空邊界', lx - 110, ly); }
+  // Starbase + Gulf labels
+  { const [sx, sy] = scr(...toXY(0, 0)); ctx.fillStyle = '#ff7a2f'; ctx.fillRect(sx - 2, sy - 10, 4, 10);
+    ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillStyle = '#ffb38a'; ctx.fillText('星艦基地（德州）', sx - 104, sy - 4);
+    if (camE.s > .3){ const [gx, gy] = scr(...toXY(-1, 40)); ctx.fillStyle = 'rgba(160,200,240,.6)'; ctx.font = '11px "Noto Sans TC", sans-serif'; ctx.fillText('墨西哥灣', gx - 20, gy + 16); } }
+  // trails
+  const drawTrail = (tr, col) => { if (tr.length < 2) return; ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.beginPath();
+    tr.forEach(([h, d], i) => { const [x, y] = scr(...toXY(h, d)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke(); };
+  drawTrail(trails.b, 'rgba(255,170,90,.7)');
+  drawTrail(trails.s, 'rgba(200,215,235,.85)');
+  // pending dashed future for flight 15 in replay
+  if (mode === 'replay' && fate.s.k === 'pending' && T > 1600){
+    ctx.setLineDash([5, 6]); ctx.strokeStyle = 'rgba(245,196,81,.5)'; ctx.beginPath();
+    for (let t = Math.max(T, fate.s.t - 900); t <= fate.s.t; t += 20){ const [h, d] = interp(sK, t); const [x, y] = scr(...toXY(h, d)); t === Math.max(T, fate.s.t - 900) ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  // vehicles
+  const vdot = (w, col, label) => {
+    if (T < 0) return;
+    const p = posOf(w), [x, y] = scr(...toXY(p.h, p.d));
+    if (T >= fate[w].t){
+      const k = fate[w].k;
+      ctx.font = '600 12px "Noto Sans TC", sans-serif';
+      if (k === 'boom'){ ctx.strokeStyle = '#ff5d5d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x-5,y-5); ctx.lineTo(x+5,y+5); ctx.moveTo(x+5,y-5); ctx.lineTo(x-5,y+5); ctx.stroke(); }
+      else { ctx.fillStyle = k === 'catch' ? '#6ee0a1' : k === 'sea' ? '#7fc4ff' : '#f5c451'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill(); }
+      const tag = k === 'boom' ? '損失' : k === 'catch' ? '捕捉' : k === 'sea' ? '濺落' : k === 'pending' ? '待確認' : '未達預期';
+      ctx.fillStyle = '#e8ecf2'; ctx.fillText(`${label}${tag}`, x + 8, y + (w === 'b' ? 16 : -8));
+      return;
+    }
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2); ctx.fill();
+    ctx.font = '600 12px "Noto Sans TC", sans-serif'; ctx.fillStyle = col; ctx.fillText(label, x + 8, y + (w === 'b' ? 16 : -6));
+  };
+  const together = T < 161 || cur.noSep;
+  if (together){ vdot('s', '#ffffff', cur.noSep && T >= fate.s.t ? '整枝' : '星艦＋助推器'); }
+  else { vdot('b', '#ffaa5a', '助推器 '); vdot('s', '#e6edf7', '星艦 '); }
+  // explosions
+  booms = booms.filter(b => now - b.t0 < 1600);
+  for (const b of booms){
+    const [x, y] = scr(...toXY(b.h, b.d)), a = (now - b.t0)/1600;
+    const r = 6 + a*40;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(255,240,200,${1 - a})`); g.addColorStop(.4, `rgba(255,120,40,${.8*(1 - a)})`); g.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+  }
+  drawInset(now);
+}
+
+// close-up camera
+function drawRocket(x, y, scale, ang, opts){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(scale, scale);
+  const steel = '#cfd6e0', dark = '#1b1f26';
+  if (opts.booster){
+    ctx.fillStyle = steel; ctx.fillRect(-9, 0, 18, 70);
+    ctx.fillStyle = '#9aa3b0'; ctx.fillRect(-9, 0, 18, 3);
+    ctx.fillStyle = '#3a414c'; [[-14, 4], [10, 4]].forEach(([gx, gy]) => ctx.fillRect(gx, gy, 4, 8));
+    if (opts.flame){ flame(0, 70, 16, opts.flame); }
+    if (opts.ring){ ctx.fillStyle = '#5b6370'; ctx.fillRect(-9, -4, 18, 4); }
+  }
+  if (opts.ship){
+    const y0 = opts.booster ? -52 : 0;
+    ctx.fillStyle = steel; ctx.beginPath(); ctx.moveTo(-9, y0 + 52); ctx.lineTo(-9, y0 + 14); ctx.quadraticCurveTo(-9, y0, 0, y0 - 4); ctx.quadraticCurveTo(9, y0, 9, y0 + 14); ctx.lineTo(9, y0 + 52); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(-9, y0 + 52); ctx.lineTo(-9, y0 + 14); ctx.quadraticCurveTo(-9, y0, 0, y0 - 4); ctx.lineTo(-1, y0 + 52); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a3039'; ctx.fillRect(-13, y0 + 8, 4, 9); ctx.fillRect(9, y0 + 8, 4, 9); ctx.fillRect(-13, y0 + 40, 4, 11); ctx.fillRect(9, y0 + 40, 4, 11);
+    if (opts.sflame) flame(0, y0 + 52, 10, opts.sflame);
+  }
+  ctx.restore();
+}
+function flame(x, y, w, len){
+  const g = ctx.createLinearGradient(0, y, 0, y + len);
+  g.addColorStop(0, 'rgba(255,250,230,.95)'); g.addColorStop(.3, 'rgba(255,160,60,.85)'); g.addColorStop(1, 'rgba(255,90,30,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - w/2, y); ctx.quadraticCurveTo(x, y + len*1.1, x + w/2, y); ctx.closePath(); ctx.fill();
+}
+function drawInset(now){
+  const iw = Math.min(210, W*.36), ih = iw*1.25, ix = W - iw - Math.max(14, 0), iy = 14;
+  ctx.save();
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(ix, iy, iw, ih, 10) : ctx.rect(ix, iy, iw, ih); ctx.clip();
+  const sp = posOf('s'), alt = T < 0 ? 0 : sp.h;
+  const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
+  const f = Math.min(1, alt/80);
+  sky.addColorStop(0, `rgb(${Math.round(70*(1-f)+4)},${Math.round(120*(1-f)+6)},${Math.round(190*(1-f)+12)})`);
+  sky.addColorStop(1, `rgb(${Math.round(150*(1-f)+6)},${Math.round(190*(1-f)+8)},${Math.round(230*(1-f)+16)})`);
+  ctx.fillStyle = sky; ctx.fillRect(ix, iy, iw, ih);
+  const cx = ix + iw/2, cy = iy + ih*.45, sc = iw/170;
+  const L = sK[sK.length-1][0];
+  const sAlive = T < fate.s.t, bAlive = T < fate.b.t;
+  const jitter = (Math.random() - .5)*1.2;
+  if (T < 0){
+    ctx.fillStyle = '#2a2f37'; ctx.fillRect(ix, iy + ih*.86, iw, ih*.14);
+    ctx.fillStyle = '#3d444f'; ctx.fillRect(cx + 22*sc, iy + ih*.86 - 150*sc, 10*sc, 150*sc);
+    drawRocket(cx, iy + ih*.86 - 70*sc - 2, sc*.9, 0, {booster:1, ship:1});
+    label('發射台待命');
+  } else if (T < 161 || (cur.noSep && sAlive)){
+    const tum = cur.noSep && T > 150 ? (T - 150)*.05 : 0;
+    drawRocket(cx + jitter, cy - 10*sc, sc*.9, tum, {booster:1, ship:1, flame:60 + Math.random()*20});
+    label(T < 70 ? '升空' : T < 150 ? '上升中' : cur.noSep ? '翻滾！' : '熱分離');
+  } else if (sAlive){
+    let ang = Math.PI/2*.85, sf = 0, txt = '滑行';
+    if (T < (cur.orbit ? 520 : 520)){ ang = .5; sf = 40 + Math.random()*10; txt = '星艦引擎燃燒中'; }
+    else if (cur.orbit && T > cur.orbit.ins - 60 && T < cur.orbit.ins + 10){ sf = 35; txt = '入軌點火'; }
+    else if (T > L - 25){ ang = Math.max(0, (L - T - 10)/15)*Math.PI/2; sf = T > L - 12 ? 34 : 0; txt = '翻轉、著陸點火'; }
+    else if (T > L - 900*(cur.orbit ? 1 : 1) && T < L - 25 && (!cur.orbit || T > cur.orbit.deorbit + 200)){
+      ang = Math.PI/2*.9; txt = '大氣再入';
+      const pg = ctx.createRadialGradient(cx, cy + 14*sc, 0, cx, cy + 14*sc, 70*sc);
+      pg.addColorStop(0, 'rgba(255,170,255,.75)'); pg.addColorStop(.4, 'rgba(255,110,160,.45)'); pg.addColorStop(1, 'rgba(255,80,120,0)');
+      ctx.fillStyle = pg; ctx.fillRect(ix, iy, iw, ih);
+    }
+    drawRocket(cx, cy - 20*sc, sc, ang, {ship:1, sflame:sf});
+    label(txt);
+  } else {
+    ctx.fillStyle = fate.s.k === 'boom' ? 'rgba(255,93,93,.25)' : 'rgba(110,224,161,.18)'; ctx.fillRect(ix, iy, iw, ih);
+    label(fate.s.k === 'boom' ? '星艦訊號中斷' : fate.s.k === 'pending' ? '等待捕捉結果' : '星艦任務結束');
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#252d3a'; ctx.lineWidth = 1; ctx.strokeRect(ix + .5, iy + .5, iw - 1, ih - 1);
+  ctx.fillStyle = 'rgba(232,236,242,.55)'; ctx.font = '10px "Roboto Mono", monospace'; ctx.fillText('ONBOARD VIEW', ix + 8, iy + 16);
+  function label(t){ ctx.fillStyle = 'rgba(5,7,10,.65)'; ctx.fillRect(ix, iy + ih - 26, iw, 26); ctx.fillStyle = '#e8ecf2'; ctx.font = '600 13px "Noto Sans TC", sans-serif'; ctx.fillText(t, ix + 10, iy + ih - 9); }
+}
+
+// ---------------- mini-games ----------------
+const keys = {L:false, R:false, U:false};
+function startGame(g){
+  game = {...g, t0:performance.now(), el:0, done:false};
+  if (g.type === 'timing'){
+    const d = g.diff; game.speed = .55 + d*1.0; game.win = .26 - d*.17; game.c = .3 + Math.random()*.4; game.ph = Math.random()*6;
+  } else if (g.type === 'lander'){
+    const d = g.diff;
+    Object.assign(game, {x:(Math.random() - .5)*120, y:g.ship ? 650 : 720, vx:(Math.random() - .5)*12, vy:g.ship ? -58 : -78, fuel:g.ship ? 12 : 14, flip:g.ship ? 1 : 0, wind:1 + d*4, wph:Math.random()*6, res:null});
+  } else if (g.type === 'balance'){
+    Object.assign(game, {th:0, om:0, integ:100, dur:16, dist:.6 + g.diff*1.4, band:g.mode === 'coast' ? 14 : 8, nph:Math.random()*10});
+  }
+  $('#pad').hidden = false; $('#stage').classList.add('gaming');
+  $('#kA').hidden = g.type !== 'timing'; $('#kU').hidden = g.type !== 'lander'; $('#kL').parentElement.hidden = g.type === 'timing';
+  caption(T, `接手操控：${g.title}`, '');
+}
+function endGame(pass, score, note){
+  if (!game || game.done) return;
+  game.done = true; const g = game;
+  scores.push({title:g.title, pass, score:Math.round(score), note});
+  logLine(T, `你的操作：${g.title}：${pass ? '成功' : '失敗'}（${Math.round(score)} 分）${note ? '，' + note : ''}`, pass ? 'me' : 'bad');
+  caption(T, `${g.title}：${pass ? '成功' : '失敗'}${note ? '，' + note : ''}`, pass ? 'good' : 'bad');
+  if (!pass){
+    if (g.who === 'both'){ fate.s = {t:T + .5, k:'boom'}; fate.b = {t:T + .5, k:'boom'}; }
+    else fate[g.who] = {t:T + .5, k:'boom'};
+  } else if (g.type === 'lander'){
+    fate[g.who] = {t:T + .5, k:g.target === 'tower' ? 'catch' : 'sea'};
+  } else if (g.key === 'stage' && cur.noSep){
+    // rewrote history: give flight 1 a separated booster that splashes in the Gulf
+    cur = {...cur, noSep:false}; bK = boosterKF({...cur, bF:{k:'sea'}}); fate.b = {t:430, k:'sea'};
+  }
+  setTimeout(() => { game = null; $('#pad').hidden = true; $('#stage').classList.remove('gaming'); }, g.type === 'lander' ? 1200 : 500);
+}
+function actPress(){
+  if (!game || game.done || game.type !== 'timing') return;
+  const p = timingPos(), off = Math.abs(p - game.c), half = game.win/2;
+  const pass = off <= half;
+  endGame(pass, pass ? 60 + 40*(1 - off/half) : Math.max(0, 40 - (off - half)*200), pass ? (off < half*.3 ? '時機完美' : '') : (p < game.c ? '太早了' : '太晚了'));
+}
+const timingPos = () => .5 + .5*Math.sin(game.ph + game.el*game.speed*Math.PI*2);
+
+function updateGame(dt){
+  if (!game || game.done) return;
+  game.el += dt;
+  if (game.type === 'timing'){ if (game.el > 9) endGame(false, 0, '沒有在時限內執行'); return; }
+  if (game.type === 'lander'){
+    const g = game, G = 9.8;
+    let ax = Math.sin(g.el*.8 + g.wph)*g.wind*.6, ay = -G;
+    const firing = keys.U && g.fuel > 0;
+    if (firing){
+      if (g.flip > 0) g.flip = Math.max(0, g.flip - dt/1.1);
+      ay += (g.flip > 0 ? 10 : 23); g.fuel = Math.max(0, g.fuel - dt);
+    }
+    if (keys.L) ax -= g.ship && !firing ? 1.2 : 4.5;
+    if (keys.R) ax += g.ship && !firing ? 1.2 : 4.5;
+    g.vx += ax*dt; g.vy += ay*dt; g.x += g.vx*dt; g.y += g.vy*dt; g.firing = firing;
+    if (g.y <= 0){
+      g.y = 0;
+      const tower = g.target === 'tower', tol = tower ? 7 : 40, vtol = tower ? 4.5 : 7, htol = tower ? 2.5 : 4;
+      const okX = Math.abs(g.x) < tol, okV = Math.abs(g.vy) < vtol, okH = Math.abs(g.vx) < htol, upright = g.flip < .15;
+      const pass = okX && okV && okH && upright;
+      const sc = pass ? 100 - Math.abs(g.x)/tol*25 - Math.abs(g.vy)/vtol*25 - Math.abs(g.vx)/htol*10 : Math.max(0, 40 - Math.abs(g.vy));
+      const why = pass ? (tower ? '機械臂穩穩夾住' : '軟著陸濺落') : !upright ? '還沒翻正就落地' : !okX ? (tower ? '偏離機械臂' : '偏離目標海域') : !okV ? `下降太快（${Math.abs(g.vy).toFixed(1)} m/s）` : '水平速度太大';
+      g.res = pass ? 'ok' : 'boom';
+      endGame(pass, sc, why);
+    }
+    return;
+  }
+  if (game.type === 'balance'){
+    const g = game;
+    const n = Math.sin(g.el*1.3 + g.nph)*1.0 + Math.sin(g.el*2.9 + g.nph*2)*.6 + Math.sin(g.el*.47)*.8;
+    const u = (keys.R ? 1 : 0) - (keys.L ? 1 : 0);
+    const al = n*g.dist*(1 + g.el/g.dur)*6 + u*22 - g.om*1.4 + g.th*.25;
+    g.om += al*dt; g.th += g.om*dt;
+    const over = Math.abs(g.th) - g.band;
+    if (over > 0) g.integ -= over*(g.mode === 'coast' ? 1.2 : 2.2)*dt;
+    if (g.integ <= 0) endGame(false, 0, g.mode === 'coast' ? '滾轉失控' : '隔熱罩燒穿');
+    else if (g.el >= g.dur) endGame(true, g.integ, g.integ > 85 ? '幾乎毫髮無傷' : '');
+  }
+}
+function drawGame(){
+  const g = game; if (!g) return;
+  ctx.fillStyle = 'rgba(4,6,10,.88)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff7a2f'; ctx.font = '700 13px "Barlow Condensed", sans-serif'; ctx.fillText('MANUAL CONTROL', W/2, 64);
+  ctx.fillStyle = '#e8ecf2'; ctx.font = '700 24px "Noto Sans TC", sans-serif'; ctx.fillText(g.title, W/2, 94);
+  ctx.textAlign = 'start';
+  if (g.type === 'timing') drawTiming(g);
+  else if (g.type === 'lander') drawLander(g);
+  else drawBalance(g);
+}
+function wrapText(txt, x, y, maxW, lh){
+  let line = '', yy = y;
+  for (const ch of txt){ if (ctx.measureText(line + ch).width > maxW){ ctx.fillText(line, x, yy); line = ch; yy += lh; } else line += ch; }
+  ctx.fillText(line, x, yy); return yy;
+}
+function drawTiming(g){
+  ctx.fillStyle = '#c9d0dc'; ctx.font = '14px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  const mw = Math.min(520, W - 40); const lines = []; let line = '';
+  for (const ch of g.desc){ if (ctx.measureText(line + ch).width > mw){ lines.push(line); line = ch; } else line += ch; } lines.push(line);
+  lines.forEach((l, i) => ctx.fillText(l, W/2, 126 + i*21));
+  const bw = Math.min(560, W - 50), bx = (W - bw)/2, by = H*.5, bh = 26;
+  ctx.fillStyle = '#171c25'; ctx.fillRect(bx, by, bw, bh);
+  ctx.fillStyle = 'rgba(110,224,161,.35)'; ctx.fillRect(bx + (g.c - g.win/2)*bw, by, g.win*bw, bh);
+  ctx.fillStyle = 'rgba(110,224,161,.9)'; ctx.fillRect(bx + (g.c - g.win*.15)*bw, by, g.win*.3*bw, bh);
+  const p = g.done ? g.lastP ?? timingPos() : timingPos(); if (!g.done) g.lastP = p;
+  const px = bx + p*bw;
+  ctx.fillStyle = '#ff7a2f'; ctx.fillRect(px - 2, by - 12, 4, bh + 24);
+  ctx.fillStyle = '#8c97aa'; ctx.font = '12px "Noto Sans TC", sans-serif';
+  ctx.fillText('按「執行」或空白鍵', W/2, by + bh + 40);
+  ctx.fillText(`剩餘 ${Math.max(0, 9 - g.el).toFixed(1)} 秒`, W/2, by + bh + 60);
+  ctx.textAlign = 'start';
+}
+function drawLander(g){
+  const top = 120, groundY = H - 120, scale = (groundY - top)/760;
+  const X = x => W/2 + x*scale*1.2, Y = y => groundY - y*scale;
+  // sky
+  const sky = ctx.createLinearGradient(0, top, 0, groundY); sky.addColorStop(0, '#0d1a2e'); sky.addColorStop(1, '#2b4b6e');
+  ctx.fillStyle = sky; ctx.fillRect(0, top - 10, W, groundY - top + 10);
+  if (g.target === 'tower'){
+    ctx.fillStyle = '#2a2f37'; ctx.fillRect(0, groundY, W, H - groundY);
+    const tx = X(0) + 26; ctx.fillStyle = '#4a525e'; ctx.fillRect(tx, Y(140), 16, 140*scale + 4);
+    for (let y = 0; y < 140; y += 12){ ctx.strokeStyle = '#2f353f'; ctx.beginPath(); ctx.moveTo(tx, Y(y)); ctx.lineTo(tx + 16, Y(y + 12)); ctx.stroke(); }
+    ctx.fillStyle = '#8b94a3'; ctx.fillRect(X(-8), Y(2) - 4, (tx + 4) - X(-8), 5);
+    ctx.fillStyle = 'rgba(110,224,161,.6)'; ctx.fillRect(X(-7), Y(0) + 4, X(7) - X(-7), 3);
+    ctx.fillStyle = '#8c97aa'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('筷子機械臂', tx + 22, Y(2));
+  } else {
+    ctx.fillStyle = '#123150'; ctx.fillRect(0, groundY, W, H - groundY);
+    ctx.strokeStyle = 'rgba(140,190,240,.35)';
+    for (let i = 0; i < 6; i++){ ctx.beginPath(); for (let x = 0; x <= W; x += 10){ const y = groundY + 8 + i*14 + Math.sin(x*.05 + g.el*2 + i)*2; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+    ctx.fillStyle = 'rgba(110,224,161,.35)'; ctx.fillRect(X(-40), groundY - 2, X(40) - X(-40), 5);
+    ctx.fillStyle = '#8c97aa'; ctx.font = '12px "Noto Sans TC", sans-serif'; ctx.fillText('目標海域', X(40) + 6, groundY + 4);
+  }
+  // suggested ignition line
+  const aNet = 23 - 9.8, sug = g.vy < 0 ? g.vy*g.vy/(2*aNet) : 0;
+  if (!g.done && sug > 5){ ctx.strokeStyle = 'rgba(255,122,47,.45)'; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(0, Y(sug)); ctx.lineTo(W, Y(sug)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,170,120,.8)'; ctx.font = '11px "Noto Sans TC", sans-serif'; ctx.fillText('以現在速度，最晚要在這條線開始點火', 12, Y(sug) - 6); }
+  // vehicle
+  if (g.res !== 'boom'){
+    const vs = Math.max(.55, scale*1.6);
+    const ang = g.ship ? g.flip*Math.PI/2*.95 : Math.max(-.25, Math.min(.25, g.vx*.03));
+    ctx.save(); ctx.translate(X(g.x), Y(g.y)); ctx.rotate(ang);
+    if (g.ship){ drawRocket(0, -52*vs, vs, 0, {ship:1, sflame:g.firing ? 34 : 0}); }
+    else { drawRocket(0, -70*vs, vs, 0, {booster:1, flame:g.firing ? 40 : 0}); }
+    ctx.restore();
+  } else {
+    const a = Math.min(1, (performance.now() - g.t0)/400);
+    const gr = ctx.createRadialGradient(X(g.x), Y(0), 0, X(g.x), Y(0), 80);
+    gr.addColorStop(0, 'rgba(255,230,180,.9)'); gr.addColorStop(.5, 'rgba(255,120,40,.6)'); gr.addColorStop(1, 'rgba(255,60,20,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(X(g.x), Y(0), 80, 0, Math.PI*2); ctx.fill();
+  }
+  // HUD
+  const hud = [['高度', g.y.toFixed(0) + ' m'], ['下降速度', (-g.vy).toFixed(1) + ' m/s'], ['水平速度', g.vx.toFixed(1) + ' m/s'], ['水平偏差', g.x.toFixed(0) + ' m'], ['燃料', g.fuel.toFixed(1) + ' s']];
+  ctx.font = '13px "Roboto Mono", monospace';
+  hud.forEach(([k, v], i) => { ctx.fillStyle = '#8c97aa'; ctx.fillText(k, 16, 140 + i*20); ctx.fillStyle = '#e8ecf2'; ctx.fillText(v, 100, 140 + i*20); });
+  ctx.fillStyle = '#c9d0dc'; ctx.font = '13px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  const tip = g.target === 'tower' ? '目標：以 4.5 m/s 以下、偏差 7 m 內落進機械臂' : '目標：以 7 m/s 以下落在綠色海域';
+  ctx.fillText((g.ship ? '按住 ▲ 翻正並點火，' : '按住 ▲ 點火，') + '◀ ▶ 修正水平位置。' + tip, W/2, 116);
+  ctx.textAlign = 'start';
+}
+function drawBalance(g){
+  const cx = W/2, cy = H*.52, R = Math.min(W, H)*.26;
+  ctx.fillStyle = '#c9d0dc'; ctx.font = '14px "Noto Sans TC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(g.mode === 'coast' ? '推進劑洩漏讓船體不停打轉。用 ◀ ▶ 噴氣修正，把姿態穩在綠色範圍內。' : '以約 60° 攻角、隔熱罩朝前衝進大氣。用 ◀ ▶ 操作襟翼，別讓不耐熱的那一面迎風。', cx, 126);
+  ctx.textAlign = 'start';
+  // band arc
+  const base = -Math.PI/2;
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#2a1a1a'; ctx.beginPath(); ctx.arc(cx, cy, R, base - 1.2, base + 1.2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(110,224,161,.55)'; ctx.beginPath(); ctx.arc(cx, cy, R, base - g.band*Math.PI/180*2.2, base + g.band*Math.PI/180*2.2); ctx.stroke();
+  ctx.lineWidth = 1;
+  const a = base + Math.max(-1.2, Math.min(1.2, g.th*Math.PI/180*2.2));
+  ctx.strokeStyle = '#ff7a2f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a)*(R + 10), cy + Math.sin(a)*(R + 10)); ctx.stroke(); ctx.lineWidth = 1;
+  // ship + plasma
+  if (g.mode === 'reentry'){
+    const heat = Math.min(1, Math.max(.3, Math.abs(g.th)/g.band));
+    const pg = ctx.createRadialGradient(cx, cy + 30, 0, cx, cy + 30, R*.8);
+    pg.addColorStop(0, `rgba(255,${Math.round(200 - heat*120)},${Math.round(255 - heat*150)},.7)`); pg.addColorStop(1, 'rgba(255,90,140,0)');
+    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy + 30, R*.8, 0, Math.PI*2); ctx.fill();
+  }
+  drawRocket(cx, cy, Math.max(1.2, R/70), Math.PI/2 - (60 - g.th)*Math.PI/180*.3 + g.th*Math.PI/180, {ship:1});
+  // bars
+  const bw = Math.min(360, W - 40), bx = (W - bw)/2, by = cy + R + 40;
+  ctx.fillStyle = '#171c25'; ctx.fillRect(bx, by, bw, 12);
+  ctx.fillStyle = g.integ > 50 ? '#6ee0a1' : g.integ > 25 ? '#f5c451' : '#ff5d5d'; ctx.fillRect(bx, by, bw*Math.max(0, g.integ)/100, 12);
+  ctx.fillStyle = '#8c97aa'; ctx.font = '12px "Noto Sans TC", sans-serif';
+  ctx.fillText(g.mode === 'coast' ? '姿態控制餘裕' : '隔熱罩完整度', bx, by - 6);
+  ctx.textAlign = 'right'; ctx.fillText(`剩餘 ${Math.max(0, g.dur - g.el).toFixed(1)} 秒`, bx + bw, by - 6); ctx.textAlign = 'start';
+}
+
+// ---------------- summary ----------------
+function grade(s){ return s >= 90 ? 'S' : s >= 75 ? 'A' : s >= 55 ? 'B' : s >= 35 ? 'C' : 'D'; }
+function kindText(k){ return {boom:'損失', sea:'濺落', catch:'被塔台接住', unclear:'未達預期', pending:'待確認'}[k]; }
+function showSummary(){
+  const f = F.find(x => x.n === cur.n), box = $('#mbox');
+  if (mode === 'replay'){
+    box.innerHTML = `<h3>第 ${f.n} 次試飛 · 歷史結果</h3><p>${f.head}</p>
+      <ul><li>助推器 ${f.b}：<b class="${resCls(f.bF.k)}">${f.bRes}</b></li><li>星艦 ${f.s}：<b class="${resCls(f.sF.k)}">${f.sRes}</b></li></ul>
+      <p>想試試看能不能做得比歷史更好？切到「指揮挑戰」。</p>
+      <div class="row"><button class="pri" id="mPlay">挑戰這次試飛</button><button id="mNext">${f.n < 15 ? '下一次試飛' : '回到第 1 次'}</button></div>`;
+  } else {
+    const avg = scores.length ? scores.reduce((a, b) => a + b.score, 0)/scores.length : 0;
+    const bonus = (fate.s.k !== 'boom' ? 10 : 0) + (fate.b.k !== 'boom' ? 5 : 0);
+    const total = Math.min(100, Math.round(avg*.85 + bonus));
+    const gr = grade(total);
+    const prev = best[f.n]; const rank = ['D','C','B','A','S'];
+    if (!prev || rank.indexOf(gr) > rank.indexOf(prev)){ best[f.n] = gr; try { localStorage.setItem('starship-best', JSON.stringify(best)); } catch (e) {} renderGrid(); }
+    const sBetter = fate.s.k !== 'boom' && f.sF.k === 'boom', bBetter = fate.b.k !== 'boom' && f.bF.k === 'boom';
+    const sWorse = fate.s.k === 'boom' && f.sF.k !== 'boom', bWorse = fate.b.k === 'boom' && f.bF.k !== 'boom';
+    let verdict = sBetter || bBetter ? '你改寫了歷史！' : sWorse || bWorse ? '這次比真實飛行還慘。' : '和歷史結果相當。';
+    box.innerHTML = `<h3>第 ${f.n} 次試飛 · 你的指揮</h3><div class="grade">${gr}</div><p><b>${verdict}</b> 總分 ${total}</p>
+      <ul>${scores.map(s => `<li>${s.title}：<b class="${s.pass ? 'ok' : 'ng'}">${s.pass ? '成功' : '失敗'}</b> ${s.score} 分${s.note ? '（' + s.note + '）' : ''}</li>`).join('')}</ul>
+      <p>你的結果：助推器${kindText(fate.b.k === 'sea' && f.noSep ? 'boom' : fate.b.k)}、星艦${kindText(fate.s.k)}<br>真實歷史：助推器「${f.bRes}」、星艦「${f.sRes}」</p>
+      <div class="row"><button class="pri" id="mPlay">再挑戰一次</button><button id="mNext">${f.n < 15 ? '下一次試飛' : '回到第 1 次'}</button></div>`;
+  }
+  $('#modal').hidden = false;
+  $('#mPlay').onclick = () => { cur = F.find(x => x.n === f.n); setMode('play'); reset(); begin(); };
+  $('#mNext').onclick = () => { selectFlight(F[f.n % 15]); begin(); };
+}
+
+// ---------------- controls ----------------
+function begin(){ if (finished) reset(); started = true; playing = true; $('#bPlay').textContent = '❚❚ 暫停'; $('#modal').hidden = true;
+  if (window.matchMedia('(max-width:900px)').matches) document.querySelector('.stage').scrollIntoView({behavior:'smooth', block:'start'}); }
+function setMode(m){ mode = m; setModeUI(); }
+$('#bStart').onclick = () => { cur = F.find(x => x.n === cur.n); reset(); begin(); };
+$('#bPlay').onclick = () => { if (finished){ reset(); begin(); return; } if (!started){ begin(); return; } playing = !playing; $('#bPlay').textContent = playing ? '❚❚ 暫停' : '▶ 繼續'; };
+document.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { spd = +b.dataset.sp; document.querySelectorAll('[data-sp]').forEach(x => x.classList.toggle('on', x === b)); });
+$('#bSkip').onclick = () => { if (game || !started || finished) return; const nt = nextTimes()[0]; if (nt !== undefined){ const jump = Math.max(T, nt - 2); while (T < jump - 1){ const before = T; tickTo(jump); if (T === before) break; } } };
+function tickTo(t){ const save = spd; const need = t - T; if (need <= 0) return; const r = rate(); spd = need/r/0.05; tick(0.05); spd = save; }
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => { setMode(b.dataset.m); cur = F.find(x => x.n === cur.n); reset(); });
+
+const bindHold = (el, k) => {
+  const on = e => { e.preventDefault(); keys[k] = true; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (_) {} };
+  const off = () => { keys[k] = false; el.classList.remove('on'); };
+  el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
+};
+bindHold($('#kL'), 'L'); bindHold($('#kR'), 'R'); bindHold($('#kU'), 'U');
+$('#kA').addEventListener('pointerdown', e => { e.preventDefault(); actPress(); });
+cv.addEventListener('pointerdown', () => { if (game && game.type === 'timing') actPress(); });
+const KM = {ArrowLeft:'L', a:'L', A:'L', ArrowRight:'R', d:'R', D:'R', ArrowUp:'U', w:'U', W:'U'};
+addEventListener('keydown', e => {
+  if (KM[e.key] && game){ keys[KM[e.key]] = true; e.preventDefault(); }
+  if (e.key === ' '){ if (game && game.type === 'timing'){ actPress(); e.preventDefault(); } else if (game && game.type === 'lander'){ keys.U = true; e.preventDefault(); } }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; if (e.key === ' ') keys.U = false; });
+addEventListener('blur', () => { keys.L = keys.R = keys.U = false; });
+
+// ---------------- telemetry ----------------
+let teleT = 0;
+function tele(now){
+  if (now - teleT < 100) return; teleT = now;
+  $('#tClock').textContent = fmtT(T);
+  const fmt = w => { if (T < 0) return '待命';
+    if (T >= fate[w].t) return kindText(cur.noSep && w === 'b' && fate.b.t > 9999 ? 'boom' : fate[w].k);
+    if ((T < 161 || cur.noSep) && w === 'b') return '與星艦相連';
+    const p = posOf(w); return `${p.h.toFixed(p.h < 10 ? 1 : 0)} km · ${Math.round(p.v).toLocaleString()} km/h`; };
+  $('#tS').textContent = fmt('s'); $('#tB').textContent = fmt('b');
+}
+
+// ---------------- loop ----------------
+const stage = $('#stage');
+function resize(){ const r = stage.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR); fitCam(true); }
+new ResizeObserver(resize).observe(stage);
+resize();
+renderGrid(); renderCard(); setModeUI(); reset();
+
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  if (game) updateGame(dt); else tick(dt);
+  fitCam(false); animCam();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (W){ drawMission(now); if (game) drawGame(); }
+  tele(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

@@ -1,0 +1,565 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>星系相撞實驗場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: full-height split — 3D particle stage left, control rail right; stacks on phones */
+:root{
+  --void:#07050b;
+  --deck:#0f0b16;
+  --deck2:#171122;
+  --rule:#2a2039;
+  --ink:#eee8f6;
+  --dim:#9d93b3;
+  --warm:#ffb978;
+  --cool:#8fb2ff;
+  --good:#86e3b0;
+  --bad:#ff8a7a;
+  --f-cjk:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-disp:"Big Shoulders Display","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--void);color:var(--ink);font-family:var(--f-cjk);font-size:14px;line-height:1.55}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--warm);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--void)}
+#cv{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#cv:active{cursor:grabbing}
+
+.rail{background:var(--deck);border-left:1px solid var(--rule);overflow-y:auto;min-height:0;
+  padding-block:22px 30px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:22px}
+.brand .eyebrow{font-family:var(--f-disp);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--warm),var(--cool));-webkit-background-clip:text;background-clip:text;color:transparent}
+h1{margin:2px 0 0;font-size:25px;font-weight:700;letter-spacing:.05em;text-wrap:balance}
+.lede{margin:6px 0 0;color:var(--dim);font-size:13px}
+
+section{display:flex;flex-direction:column;gap:10px}
+h2{margin:0;font-family:var(--f-disp);font-weight:600;font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--rule)}
+h2 .dot{width:9px;height:9px;border-radius:50%}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:transparent;border:1px solid var(--rule);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--dim)}
+.chip:hover{color:var(--ink);border-color:#463a5e}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#120d1a;font-weight:700}
+.note{background:var(--deck2);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font-size:13px;color:#cfc7de;margin:0}
+.note b{color:var(--ink)}
+
+.ctl{display:grid;grid-template-columns:76px 1fr 64px;align-items:center;gap:10px;font-size:13px;color:var(--dim)}
+.ctl input{width:100%;min-width:0;accent-color:var(--warm)}
+.ctl.cool input{accent-color:var(--cool)}
+.ctl output{font-family:var(--f-mono);font-size:12px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.sub{font-size:11.5px;color:var(--dim);margin:-4px 0 0 86px}
+
+.missions{display:flex;flex-direction:column;gap:8px}
+.mis{background:var(--deck2);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.mis h3{margin:0;font-size:14px}
+.mis p{margin:0;grid-column:1/-1;font-size:12.5px;color:var(--dim)}
+.mis .goal{color:#cfc7de}
+.mis .st{font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--rule);color:var(--dim);align-self:start;white-space:nowrap}
+.mis.done{border-color:rgba(134,227,176,.55)}
+.mis.done .st{background:var(--good);border-color:var(--good);color:#0b1a12;font-weight:500}
+.mis .tip{display:none}
+.mis.open .tip{display:block}
+.mis button.hintb{grid-column:1/-1;justify-self:start;background:none;border:0;padding:0;font-size:12px;color:var(--warm);text-decoration:underline;text-underline-offset:3px}
+
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stat{background:var(--deck2);border:1px solid var(--rule);border-radius:10px;padding:8px 10px}
+.stat span{display:block;font-size:11.5px;color:var(--dim)}
+.stat b{font-family:var(--f-disp);font-size:26px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat small{font-size:12px;color:var(--dim);margin-left:2px}
+.foot{font-size:12px;color:var(--dim);margin:0}
+
+/* stage overlays */
+.hud{position:absolute;top:max(12px,env(safe-area-inset-top,0px));left:max(14px,env(safe-area-inset-left,0px));pointer-events:none;
+  display:flex;flex-direction:column;gap:0;text-shadow:0 1px 4px #000}
+.hud .time{font-family:var(--f-disp);font-weight:800;font-size:34px;line-height:1;letter-spacing:.02em}
+.hud .time small{font-family:var(--f-cjk);font-size:14px;font-weight:500;color:var(--dim);margin-left:6px}
+.hud .phase{font-size:13px;color:var(--dim);margin-top:4px}
+.hud .sep{font-family:var(--f-mono);font-size:12px;color:var(--dim)}
+.legend{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));pointer-events:none;
+  display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--dim);align-items:flex-end;text-shadow:0 1px 4px #000}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.bar{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;
+  padding-block:12px max(14px,env(safe-area-inset-bottom,0px));padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
+  background:linear-gradient(transparent,rgba(7,5,11,.85))}
+.bar button{background:rgba(23,17,34,.85);border:1px solid var(--rule);border-radius:9px;height:40px;min-width:40px;padding:0 12px;font-size:13px;backdrop-filter:blur(4px)}
+.bar button:hover{border-color:#4a3d63}
+.bar .go{background:linear-gradient(90deg,var(--warm),#ff9fb0);color:#1b0f12;border:0;font-weight:700;padding:0 20px;font-size:14px}
+.bar .grp{display:flex;gap:4px}
+.toast{position:absolute;top:max(70px,calc(env(safe-area-inset-top,0px) + 58px));left:50%;transform:translateX(-50%);max-width:min(92%,460px);
+  background:rgba(15,11,22,.92);border:1px solid var(--rule);border-radius:9px;padding:8px 14px;font-size:13px;text-align:center;opacity:0;transition:opacity .35s;pointer-events:none}
+.toast.show{opacity:1}
+
+@media (max-width:880px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .stage{height:68vh;min-height:400px}
+  .rail{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  .hud .time{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <canvas id="cv" aria-label="星系碰撞三維模擬畫面"></canvas>
+    <div class="hud">
+      <div class="time" id="hTime">0.0<small>億年</small></div>
+      <div class="phase" id="hPhase">準備中：調好參數後按「開始碰撞」</div>
+      <div class="sep" id="hSep"></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--warm)"></i>星系 A 的恆星</span>
+      <span><i style="background:var(--cool)"></i>星系 B 的恆星</span>
+      <span>拖曳旋轉視角 · 滾輪縮放</span>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="bar">
+      <button class="go" id="bGo">▶ 開始碰撞</button>
+      <button id="bReset">↺ 重設</button>
+      <div class="grp"><button id="vTop">俯視</button><button id="vTilt">斜視</button><button id="vSide">側視</button></div>
+      <div class="grp"><button id="zOut" aria-label="縮小">−</button><button id="zIn" aria-label="放大">+</button></div>
+    </div>
+  </div>
+
+  <aside class="rail">
+    <div class="brand">
+      <div class="eyebrow">Galactic Encounter Lab</div>
+      <h1>星系相撞實驗場</h1>
+      <p class="lede">兩個星系擦身而過時，潮汐力會把恆星甩成長長的尾巴、互相搶奪，最後融合成一個。調整撞擊角度與自轉方向，親手做出宇宙裡最壯觀的車禍。</p>
+    </div>
+
+    <section>
+      <h2>真實星系場景</h2>
+      <div class="chips" id="presets"></div>
+      <p class="note" id="presetNote"></p>
+    </section>
+
+    <section>
+      <h2>任務</h2>
+      <div class="missions" id="missions"></div>
+    </section>
+
+    <section>
+      <h2>觀測數據</h2>
+      <div class="stats">
+        <div class="stat"><span>潮汐尾裡的恆星</span><b id="sTail">0</b><small>%</small></div>
+        <div class="stat"><span>A 被 B 搶走</span><b id="sStolen">0</b><small>%</small></div>
+        <div class="stat"><span>逃離兩個星系</span><b id="sEsc">0</b><small>%</small></div>
+        <div class="stat"><span>最近距離</span><b id="sMin">—</b><small>萬光年</small></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>軌道</h2>
+      <div class="ctl"><span>近心距</span><input type="range" id="q" min="0.05" max="5" step="0.05"><output id="oq"></output></div>
+      <p class="sub">兩個核心最接近時的距離。越近，破壞越大。</p>
+      <div class="ctl"><span>離心率</span><input type="range" id="e" min="0.6" max="1.6" step="0.02"><output id="oe"></output></div>
+      <p class="sub" id="eSub"></p>
+    </section>
+
+    <section>
+      <h2><span class="dot" style="background:var(--warm)"></span>星系 A</h2>
+      <div class="ctl"><span>盤面傾角</span><input type="range" id="iA" min="0" max="180" step="1"><output id="oiA"></output></div>
+      <div class="ctl"><span>傾斜方位</span><input type="range" id="wA" min="-180" max="180" step="1"><output id="owA"></output></div>
+    </section>
+
+    <section>
+      <h2><span class="dot" style="background:var(--cool)"></span>星系 B</h2>
+      <div class="ctl cool"><span>質量比 B/A</span><input type="range" id="m" min="0.1" max="1.5" step="0.05"><output id="om"></output></div>
+      <div class="ctl cool"><span>盤面傾角</span><input type="range" id="iB" min="0" max="180" step="1"><output id="oiB"></output></div>
+      <div class="ctl cool"><span>傾斜方位</span><input type="range" id="wB" min="-180" max="180" step="1"><output id="owB"></output></div>
+      <p class="foot">傾角 0° 代表星系自轉方向和軌道運動相同（順行），180° 代表相反（逆行）。</p>
+    </section>
+
+    <section>
+      <h2>模擬</h2>
+      <div class="ctl"><span>速度</span><input type="range" id="spd" min="0" max="100" value="50"><output id="ospd"></output></div>
+      <div class="ctl"><span>恆星數</span><input type="range" id="n" min="2000" max="14000" step="1000" value="7000"><output id="on"></output></div>
+      <p class="foot">模型沿用 Toomre 兄弟 1972 年的經典做法：恆星只受兩個星系核心（含暗物質暈）的引力，彼此之間不互相吸引，另以動力摩擦讓核心逐漸合併。長度單位 1 格 ≈ 3.3 萬光年，時間 1 單位 ≈ 4,700 萬年。</p>
+    </section>
+  </aside>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d');
+const DEG = Math.PI/180, MYR = 47, EPS2 = 0.15*0.15, CEPS2 = 0.3*0.3;
+const FRIC = 0.3, FW = 1.2;
+
+const PRESETS = {
+  antennae:{name:'觸鬚星系', m:1, q:1.0, e:0.8, iA:60, wA:30, iB:60, wB:-70,
+    note:'<b>NGC 4038/4039</b>：烏鴉座裡一對正在合併的星系，兩條彎曲的潮汐尾像昆蟲的觸鬚。兩個盤面都斜斜地順行交會，尾巴才會這麼長。'},
+  mice:{name:'老鼠星系', m:1, q:1.6, e:1.0, iA:20, wA:0, iB:35, wB:90,
+    note:'<b>NGC 4676</b>：后髮座，距離約 3 億光年。兩個星系各拖著一條又細又直的尾巴，看起來像兩隻老鼠。'},
+  cartwheel:{name:'車輪星系', m:0.3, q:0.05, e:1.15, iA:90, wA:90, iB:20, wB:0,
+    note:'<b>車輪星系</b>：玉夫座，距離約 5 億光年。一個小星系垂直穿過大星系的正中央，激起一圈向外擴散的波紋，像丟進池塘的石頭。從斜視角度看最清楚。'},
+  mw:{name:'銀河系 × 仙女座', m:1.2, q:1.4, e:0.9, iA:35, wA:0, iB:110, wB:60,
+    note:'<b>我們的未來</b>：仙女座星系正以約每秒 110 公里朝我們接近。過去的預測是約 45 億年後首次交會；2025 年的新研究則認為，100 億年內合併的機率大約一半。這裡 A 是銀河系，B 是仙女座。'},
+  retro:{name:'逆行擦身', m:1, q:1.8, e:1.0, iA:180, wA:0, iB:180, wB:0,
+    note:'<b>對照組</b>：和老鼠星系距離差不多，但兩個星系都逆著軌道方向自轉。比比看潮汐尾差多少。'},
+  custom:{name:'自訂', note:'<b>自訂</b>：自己調整下面的參數，試著完成任務。'}
+};
+const P = {m:1, q:1.0, e:0.8, iA:60, wA:30, iB:60, wB:-70, n:7000};
+let presetKey = 'antennae';
+
+const MISSIONS = [
+  {id:'tail', title:'甩出潮汐尾', goal:'讓至少 40% 的恆星同時位在潮汐尾中。',
+    tip:'潮汐尾最長的情況：盤面接近軌道面（傾角小）而且順行。這時盤上的恆星和入侵者「同步」移動，受潮汐力拉扯的時間最長。'},
+  {id:'thief', title:'星星小偷', goal:'兩星系分開後，讓 B 搶走 A 至少 20% 的恆星。',
+    tip:'B 要夠重（質量比調高），近心距要近到穿過 A 的外圍盤面，而且 A 要順行。'},
+  {id:'merge', title:'合而為一', goal:'讓兩個星系核心在 30 億年內合併。',
+    tip:'降低離心率（束縛軌道），近心距也調近一點，動力摩擦就會讓它們越繞越近。'},
+  {id:'calm', title:'毫髮無傷', goal:'近心距在 6.5 萬光年以內擦身而過，A 仍保住 85% 的恆星。',
+    tip:'Toomre 的發現：逆行（傾角 180°）的盤面幾乎不會產生潮汐尾，因為恆星和入侵者反向運動，被拉扯的時間很短。'}
+];
+let done = {};
+try { done = JSON.parse(localStorage.getItem('gx-missions') || '{}') || {}; } catch (e) {}
+
+// ---------- state ----------
+let N = 0, nA = 0, pos, vel, acc, cores, M1 = 1, M2 = 1, RA = 1.5, RB = 1.5;
+let t = 0, running = false, started = false, speed = 1.2;
+let minSep = Infinity, tMin = 0, periDone = false, closeT = 0, merged = false, mergeT = 0;
+let preview = [[], []], effE = 0.8;
+let W = 0, H = 0, DPR = 1;
+const view = {yaw:-0.5, pitch:1.0, s:60, cx:0, cy:0, cz:0};
+const viewT = {yaw:-0.5, pitch:1.0, s:60};
+const stats = {tail:0, stolen:0, esc:0, keptA:1};
+
+// ---------- setup ----------
+function rotDisk(x, y, z, inc, w){
+  const ci = Math.cos(inc), si = Math.sin(inc), cw = Math.cos(w), sw = Math.sin(w);
+  const y1 = y*ci - z*si, z1 = y*si + z*ci;
+  return [x*cw - y1*sw, x*sw + y1*cw, z1];
+}
+function orbitStart(){
+  M1 = 1; M2 = P.m; const M = M1 + M2;
+  let e = P.e, q = P.q;
+  if (e < 1){ const ra = q*(1 + e)/(1 - e); if (ra < 9) e = (9 - q)/(9 + q); }
+  effE = e;
+  const p = q*(1 + e);
+  let r0 = 13; if (e < 1) r0 = Math.min(r0, 0.97*p/(1 - e));
+  const cf = Math.max(-1, Math.min(1, (p/r0 - 1)/e)), f = -Math.acos(cf);
+  const r = p/(1 + e*Math.cos(f));
+  const h = Math.sqrt(M*p), vr = M/h*e*Math.sin(f), vt = M/h*(1 + e*Math.cos(f));
+  const rel = [r*Math.cos(f), r*Math.sin(f), 0];
+  const rv = [vr*Math.cos(f) - vt*Math.sin(f), vr*Math.sin(f) + vt*Math.cos(f), 0];
+  const a = M2/M, b = M1/M;
+  return [
+    {x:-a*rel[0], y:-a*rel[1], z:0, vx:-a*rv[0], vy:-a*rv[1], vz:0, ax:0, ay:0, az:0, M:M1},
+    {x:b*rel[0], y:b*rel[1], z:0, vx:b*rv[0], vy:b*rv[1], vz:0, ax:0, ay:0, az:0, M:M2}
+  ];
+}
+function build(){
+  cores = orbitStart();
+  RA = 1.5; RB = Math.max(0.55, 1.5*Math.sqrt(M2));
+  N = P.n; nA = Math.round(N*Math.min(0.8, Math.max(0.3, 1/(1 + M2))));
+  pos = new Float32Array(N*3); vel = new Float32Array(N*3); acc = new Float32Array(N*3);
+  const disk = (c, R, inc, w, i0, i1) => {
+    for (let i = i0; i < i1; i++){
+      const r = R*(0.08 + 0.92*Math.pow(Math.random(), 0.75)), ph = Math.random()*Math.PI*2;
+      const v = Math.sqrt(c.M*r*r/Math.pow(r*r + EPS2, 1.5));
+      const zz = (Math.random() - .5)*0.03*R;
+      const [x, y, z] = rotDisk(r*Math.cos(ph), r*Math.sin(ph), zz, inc, w);
+      const [vx, vy, vz] = rotDisk(-v*Math.sin(ph), v*Math.cos(ph), 0, inc, w);
+      pos[i*3] = c.x + x; pos[i*3 + 1] = c.y + y; pos[i*3 + 2] = c.z + z;
+      vel[i*3] = c.vx + vx; vel[i*3 + 1] = c.vy + vy; vel[i*3 + 2] = c.vz + vz;
+    }
+  };
+  disk(cores[0], RA, P.iA*DEG, P.wA*DEG, 0, nA);
+  disk(cores[1], RB, P.iB*DEG, P.wB*DEG, nA, N);
+  t = 0; minSep = Infinity; tMin = 0; periDone = false; closeT = 0; merged = false; mergeT = 0; started = false; running = false;
+  accel();
+  computePreview(); measure(); setGo();
+  $('#hPhase').textContent = '準備中：虛線是兩個核心的預測軌道';
+}
+
+// ---------- physics ----------
+function coreAccel(cs){
+  const [a, b] = cs;
+  const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z, d2 = dx*dx + dy*dy + dz*dz, d = Math.sqrt(d2);
+  const inv = 1/Math.pow(d2 + CEPS2, 1.5);
+  a.ax = b.M*dx*inv; a.ay = b.M*dy*inv; a.az = b.M*dz*inv;
+  b.ax = -a.M*dx*inv; b.ay = -a.M*dy*inv; b.az = -a.M*dz*inv;
+  // dynamical friction on relative motion (momentum-conserving)
+  const w = FRIC*Math.exp(-d2/(FW*FW)), M = a.M + b.M;
+  const rvx = b.vx - a.vx, rvy = b.vy - a.vy, rvz = b.vz - a.vz;
+  a.ax += w*b.M/M*rvx; a.ay += w*b.M/M*rvy; a.az += w*b.M/M*rvz;
+  b.ax -= w*a.M/M*rvx; b.ay -= w*a.M/M*rvy; b.az -= w*a.M/M*rvz;
+}
+function accel(){
+  coreAccel(cores);
+  const [a, b] = cores;
+  for (let i = 0, j = 0; i < N; i++, j += 3){
+    const x = pos[j], y = pos[j + 1], z = pos[j + 2];
+    let dx = a.x - x, dy = a.y - y, dz = a.z - z;
+    let k = a.M/Math.pow(dx*dx + dy*dy + dz*dz + EPS2, 1.5);
+    let ax = dx*k, ay = dy*k, az = dz*k;
+    dx = b.x - x; dy = b.y - y; dz = b.z - z;
+    k = b.M/Math.pow(dx*dx + dy*dy + dz*dz + EPS2, 1.5);
+    acc[j] = ax + dx*k; acc[j + 1] = ay + dy*k; acc[j + 2] = az + dz*k;
+  }
+}
+function step(dt){
+  const h = dt/2;
+  for (const c of cores){ c.vx += c.ax*h; c.vy += c.ay*h; c.vz += c.az*h; c.x += c.vx*dt; c.y += c.vy*dt; c.z += c.vz*dt; }
+  for (let j = 0; j < N*3; j++){ vel[j] += acc[j]*h; pos[j] += vel[j]*dt; }
+  accel();
+  for (const c of cores){ c.vx += c.ax*h; c.vy += c.ay*h; c.vz += c.az*h; }
+  for (let j = 0; j < N*3; j++) vel[j] += acc[j]*h;
+  t += dt;
+  const s = sep();
+  if (s < minSep){ minSep = s; tMin = t; }
+  if (!periDone && minSep < 6 && s > minSep*1.15 && t - tMin > 0.5){ periDone = true; toast('第一次近距離交會結束！潮汐力已經開始把恆星甩出去。'); }
+  if (s < 0.45){ closeT += dt; if (closeT > 3 && !merged){ merged = true; mergeT = t; toast(`兩個核心合併了，用了 ${(t*MYR/100).toFixed(1)} 億年。`); } }
+  else closeT = 0;
+}
+const sep = () => Math.hypot(cores[1].x - cores[0].x, cores[1].y - cores[0].y, cores[1].z - cores[0].z);
+
+function computePreview(){
+  const cs = orbitStart(), dt = 0.02; preview = [[], []];
+  coreAccel(cs);
+  for (let n = 0; n < 3500; n++){
+    const h = dt/2;
+    for (const c of cs){ c.vx += c.ax*h; c.vy += c.ay*h; c.vz += c.az*h; c.x += c.vx*dt; c.y += c.vy*dt; c.z += c.vz*dt; }
+    coreAccel(cs);
+    for (const c of cs){ c.vx += c.ax*h; c.vy += c.ay*h; c.vz += c.az*h; }
+    if (n % 6 === 0){ preview[0].push([cs[0].x, cs[0].y, cs[0].z]); preview[1].push([cs[1].x, cs[1].y, cs[1].z]); }
+  }
+}
+
+// ---------- measurements & missions ----------
+function measure(){
+  const [a, b] = cores; let tail = 0, stolen = 0, esc = 0, kept = 0;
+  for (let i = 0, j = 0; i < N; i++, j += 3){
+    const x = pos[j], y = pos[j + 1], z = pos[j + 2];
+    const d1 = Math.hypot(x - a.x, y - a.y, z - a.z), d2 = Math.hypot(x - b.x, y - b.y, z - b.z);
+    const v1 = (vel[j] - a.vx)**2 + (vel[j + 1] - a.vy)**2 + (vel[j + 2] - a.vz)**2;
+    const v2 = (vel[j] - b.vx)**2 + (vel[j + 1] - b.vy)**2 + (vel[j + 2] - b.vz)**2;
+    const E1 = .5*v1 - a.M/Math.sqrt(d1*d1 + EPS2), E2 = .5*v2 - b.M/Math.sqrt(d2*d2 + EPS2);
+    const owner = (E1 >= 0 && E2 >= 0) ? -1 : (E1 < E2 ? 0 : 1);
+    if (d1 > 1.7*RA && d2 > 1.7*RB) tail++;
+    if (owner === -1) esc++;
+    if (i < nA){ if (owner === 1) stolen++; else if (owner === 0 && d1 < 2.2) kept++; }
+  }
+  stats.tail = tail/N; stats.stolen = stolen/nA; stats.esc = esc/N; stats.keptA = kept/nA;
+  if (!started) return;
+  const s = sep();
+  if (stats.tail >= 0.40) win('tail');
+  if (periDone && !merged && s > 4 && stats.stolen >= 0.20) win('thief');
+  if (merged && mergeT <= 3000/MYR) win('merge');
+  if (periDone && !merged && minSep <= 2.0 && t - tMin > 12 && stats.keptA >= 0.85) win('calm');
+}
+function win(id){
+  if (done[id]) return;
+  done[id] = true;
+  try { localStorage.setItem('gx-missions', JSON.stringify(done)); } catch (e) {}
+  const m = MISSIONS.find(x => x.id === id);
+  toast(`任務達成：${m.title}！`);
+  renderMissions();
+}
+function renderMissions(){
+  const box = $('#missions'); box.innerHTML = '';
+  MISSIONS.forEach(m => {
+    const el = document.createElement('div'); el.className = 'mis' + (done[m.id] ? ' done' : '');
+    el.innerHTML = `<h3>${m.title}</h3><span class="st">${done[m.id] ? '✓ 達成' : '未完成'}</span><p class="goal">${m.goal}</p><p class="tip">${m.tip}</p><button class="hintb">看提示</button>`;
+    el.querySelector('.hintb').onclick = ev => { el.classList.toggle('open'); ev.target.textContent = el.classList.contains('open') ? '收起提示' : '看提示'; };
+    box.appendChild(el);
+  });
+}
+
+// ---------- camera / projection ----------
+const F = 22;
+let cy_, sy_, cp_, sp_;
+function prepView(){ cy_ = Math.cos(view.yaw); sy_ = Math.sin(view.yaw); cp_ = Math.cos(view.pitch); sp_ = Math.sin(view.pitch); }
+const P3 = [0, 0, 0];
+function proj(x, y, z){
+  x -= view.cx; y -= view.cy; z -= view.cz;
+  const x1 = x*cy_ - y*sy_, y1 = x*sy_ + y*cy_;
+  const u = z*cp_ + y1*sp_, d = y1*cp_ - z*sp_;
+  const k = F/Math.max(F*0.15, F + d);
+  P3[0] = W/2 + x1*k*view.s; P3[1] = H/2 - u*k*view.s; P3[2] = k;
+  return P3;
+}
+
+// ---------- drawing ----------
+const bgStars = Array.from({length:260}, () => [Math.random(), Math.random(), Math.random()*.6 + .15, Math.random() < .1 ? 1.6 : 1]);
+function draw(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#07050b'; ctx.fillRect(0, 0, W, H);
+  for (const [x, y, b, z] of bgStars){ ctx.fillStyle = `rgba(225,215,245,${b*.5})`; ctx.fillRect(x*W, y*H, z, z); }
+  prepView();
+
+  // orbit preview
+  if (!started){
+    ctx.setLineDash([4, 6]); ctx.lineWidth = 1.3;
+    preview.forEach((pts, k) => {
+      ctx.strokeStyle = k ? 'rgba(143,178,255,.6)' : 'rgba(255,185,120,.6)'; ctx.beginPath();
+      pts.forEach(([x, y, z], i) => { proj(x, y, z); i ? ctx.lineTo(P3[0], P3[1]) : ctx.moveTo(P3[0], P3[1]); });
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+  }
+
+  ctx.globalCompositeOperation = 'lighter';
+  const base = Math.max(1, Math.min(2.2, view.s/55));
+  const drawSet = (i0, i1, col) => {
+    ctx.fillStyle = col;
+    for (let i = i0, j = i0*3; i < i1; i++, j += 3){
+      proj(pos[j], pos[j + 1], pos[j + 2]);
+      const sz = base*P3[2];
+      if (P3[0] < -4 || P3[0] > W + 4 || P3[1] < -4 || P3[1] > H + 4) continue;
+      ctx.fillRect(P3[0] - sz/2, P3[1] - sz/2, sz, sz);
+    }
+  };
+  const alpha = Math.min(.75, Math.max(.28, 4200/N*.32));
+  drawSet(0, nA, `rgba(255,178,110,${alpha})`);
+  drawSet(nA, N, `rgba(130,165,255,${alpha})`);
+
+  // cores
+  cores.forEach((c, k) => {
+    proj(c.x, c.y, c.z); const r = (k ? 10 : 12)*Math.sqrt(c.M)*P3[2]*Math.max(.6, view.s/60);
+    const g = ctx.createRadialGradient(P3[0], P3[1], 0, P3[0], P3[1], r);
+    g.addColorStop(0, 'rgba(255,250,240,.95)'); g.addColorStop(.25, k ? 'rgba(150,180,255,.55)' : 'rgba(255,190,130,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P3[0], P3[1], r, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------- HUD ----------
+let hudT = 0;
+function hud(now){
+  if (now - hudT < 120) return; hudT = now;
+  const yrs = t*MYR/100;
+  $('#hTime').innerHTML = `${yrs.toFixed(1)}<small>億年</small>`;
+  const s = sep();
+  $('#hSep').textContent = `核心距離 ${(s*3.26).toFixed(1)} 萬光年`;
+  if (started){
+    let ph;
+    if (merged) ph = '合併完成：正在形成一個新的橢圓星系';
+    else if (s < 2.5 && !periDone) ph = '近距離交會中';
+    else if (!periDone) ph = '接近中';
+    else if (s < 2.5) ph = '再次交會';
+    else ph = '分開後拖出潮汐尾';
+    $('#hPhase').textContent = ph + (running ? '' : '（已暫停）');
+  }
+  $('#sTail').textContent = Math.round(stats.tail*100);
+  $('#sStolen').textContent = Math.round(stats.stolen*100);
+  $('#sEsc').textContent = Math.round(stats.esc*100);
+  $('#sMin').textContent = isFinite(minSep) && started ? (minSep*3.26).toFixed(1) : '—';
+}
+
+// ---------- UI ----------
+let toastTimer;
+function toast(msg){ const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 4500); }
+function setGo(){ $('#bGo').textContent = running ? '❚❚ 暫停' : started ? '▶ 繼續' : '▶ 開始碰撞'; }
+function fmtTilt(v){ return v + '°' + (v < 30 ? ' 順' : v > 150 ? ' 逆' : ''); }
+const SL = {
+  q:v => (v*3.26).toFixed(1) + '萬',
+  e:v => (+v).toFixed(2),
+  m:v => (+v).toFixed(2),
+  iA:fmtTilt, iB:fmtTilt,
+  wA:v => v + '°', wB:v => v + '°'
+};
+function syncSliders(){
+  for (const k of Object.keys(SL)){ $('#' + k).value = P[k]; $('#o' + k).textContent = SL[k](P[k]); }
+  $('#n').value = P.n; $('#on').textContent = P.n;
+  updateESub();
+}
+function updateESub(){
+  const e = effE;
+  $('#eSub').textContent = e < 0.98 ? `束縛軌道（實際 e = ${e.toFixed(2)}）：會繞回來再撞一次，容易合併。` : e <= 1.02 ? '拋物線：剛好能飛走的速度，第二次交會要等很久。' : '雙曲線：速度很快，撞一次就各奔東西。';
+}
+function applyPreset(k){
+  presetKey = k;
+  if (k !== 'custom'){ const p = PRESETS[k]; for (const key of ['m','q','e','iA','wA','iB','wB']) P[key] = p[key]; }
+  document.querySelectorAll('#presets .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+  $('#presetNote').innerHTML = PRESETS[k].note;
+  build(); syncSliders();
+  if (k === 'cartwheel'){ viewT.pitch = 0.55; viewT.yaw = -1.2; }
+}
+Object.entries(PRESETS).forEach(([k, p]) => {
+  const b = document.createElement('button'); b.className = 'chip'; b.dataset.k = k; b.textContent = p.name; b.onclick = () => applyPreset(k);
+  $('#presets').appendChild(b);
+});
+for (const k of Object.keys(SL)){
+  $('#' + k).addEventListener('input', e => {
+    P[k] = +e.target.value; $('#o' + k).textContent = SL[k](P[k]);
+    if (presetKey !== 'custom'){ presetKey = 'custom'; document.querySelectorAll('#presets .chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === 'custom')); $('#presetNote').innerHTML = PRESETS.custom.note; }
+    build(); updateESub();
+  });
+}
+$('#n').addEventListener('input', e => { P.n = +e.target.value; $('#on').textContent = P.n; build(); });
+const spd = $('#spd');
+function readSpeed(){ speed = 0.25*Math.pow(24, spd.value/100); $('#ospd').textContent = Math.round(speed*MYR) + ' 百萬年/秒'; }
+spd.oninput = readSpeed;
+$('#bGo').onclick = () => { if (!started){ started = true; } running = !running; setGo(); };
+$('#bReset').onclick = () => { build(); };
+$('#vTop').onclick = () => { viewT.pitch = Math.PI/2 - 0.001; };
+$('#vTilt').onclick = () => { viewT.pitch = 1.0; };
+$('#vSide').onclick = () => { viewT.pitch = 0.05; };
+$('#zIn').onclick = () => { viewT.s = Math.min(600, viewT.s*1.4); };
+$('#zOut').onclick = () => { viewT.s = Math.max(8, viewT.s/1.4); };
+addEventListener('keydown', e => { if (e.key === ' ' && e.target === document.body){ e.preventDefault(); $('#bGo').click(); } });
+
+// drag to orbit
+let drag = null;
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = {x:e.clientX, y:e.clientY, yaw:viewT.yaw, pitch:viewT.pitch}; });
+cv.addEventListener('pointermove', e => {
+  if (!drag) return;
+  viewT.yaw = drag.yaw - (e.clientX - drag.x)*0.008;
+  viewT.pitch = Math.max(-1.55, Math.min(1.57, drag.pitch + (e.clientY - drag.y)*0.008));
+  view.yaw = viewT.yaw; view.pitch = viewT.pitch;
+});
+cv.addEventListener('pointerup', () => drag = null);
+cv.addEventListener('pointercancel', () => drag = null);
+cv.addEventListener('wheel', e => { e.preventDefault(); viewT.s = Math.max(8, Math.min(600, viewT.s*Math.exp(-e.deltaY*0.0015))); }, {passive:false});
+
+// ---------- sizing & loop ----------
+const stage = $('#stage');
+function resize(){
+  const r = stage.getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1);
+  const first = !W; W = r.width; H = r.height; cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  if (first){ viewT.s = view.s = Math.min(W, H)/16; }
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+readSpeed();
+renderMissions();
+applyPreset('antennae');
+view.yaw = viewT.yaw; view.pitch = viewT.pitch;
+toast('選一個場景，按「開始碰撞」。拖曳畫面可以轉動視角。');
+
+let last = performance.now(), measT = 0;
+function frame(now){
+  const rdt = Math.min(0.05, (now - last)/1000); last = now;
+  if (running){
+    let simT = rdt*speed; const dt = 0.012, n = Math.min(40, Math.ceil(simT/dt));
+    for (let i = 0; i < n; i++) step(simT/n);
+  }
+  // camera follows centre of mass
+  const M = cores[0].M + cores[1].M;
+  const tx = (cores[0].x*cores[0].M + cores[1].x*cores[1].M)/M, ty = (cores[0].y*cores[0].M + cores[1].y*cores[1].M)/M, tz = (cores[0].z*cores[0].M + cores[1].z*cores[1].M)/M;
+  view.cx += (tx - view.cx)*.1; view.cy += (ty - view.cy)*.1; view.cz += (tz - view.cz)*.1;
+  view.yaw += (viewT.yaw - view.yaw)*.12; view.pitch += (viewT.pitch - view.pitch)*.12; view.s += (viewT.s - view.s)*.15;
+  if (now - measT > 400){ measT = now; measure(); }
+  if (W) draw();
+  hud(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

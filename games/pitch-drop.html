@@ -1,0 +1,477 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>瀝青滴落實驗</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: old lab bench — canvas panes with tabs left, explainer rail right; stacks on phones. Single light look. */
+:root{
+  --paper:#f2ede3;
+  --sheet:#fdfaf3;
+  --rule:#dad0bd;
+  --ink:#24211c;
+  --dim:#6f685c;
+  --amber:#c7821e;
+  --red:#c2452f;
+  --green:#3d8b56;
+  --blue:#3b6d9c;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:#e8e0cf;border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);box-shadow:inset 0 3px 0 var(--amber)}
+.view{position:relative;flex:1;min-height:0;background:var(--sheet);border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(253,250,243,.94);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(360px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--amber)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.side{position:absolute;right:12px;top:10px;background:rgba(253,250,243,.94);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:12.5px;line-height:1.5;max-width:230px}
+.side b{font-family:var(--f-num)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.pop{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--ink);border-radius:14px;padding:14px 18px;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.25);width:min(300px,calc(100% - 32px))}
+.pop p{margin:0 0 10px;font-size:15px}
+.black{position:absolute;inset:0;background:#111;color:#ddd;display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:15px;text-align:center;padding:20px}
+.black b{font-size:28px}
+.flash{position:absolute;inset:0;background:#fff;pointer-events:none;opacity:0;transition:opacity .5s}
+.flash.on{opacity:.85;transition:none}
+.dock{background:#f7f2e7;border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:7px 13px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.big{font-size:17px;padding:9px 20px;background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber);color:var(--amber);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px}
+.sl input{flex:1;accent-color:var(--amber);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:4.6em;text-align:right}
+.seg{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{background:transparent;border:0;padding:7px 12px;font-size:14px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:700}
+.yr{width:5.2em;font:inherit;font-family:var(--f-num);padding:5px 8px;border:1px solid var(--rule);border-radius:8px}
+.note{font-size:13px;color:var(--dim)}
+.note b{color:var(--ink);font-family:var(--f-num)}
+
+.rail{background:#faf6ee;border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.drops{width:100%;border-collapse:collapse;font-size:13px}
+.drops td{padding:3px 4px;border-top:1px dashed var(--rule)}
+.drops td:first-child{font-family:var(--f-num);color:var(--amber);font-weight:700;width:2.4em}
+.drops td:last-child{text-align:right;color:var(--dim)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:58vh;min-height:380px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .side{display:none}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="time" aria-pressed="true">時光機<small>快轉 90 年</small></button>
+      <button data-tab="race" aria-pressed="false">黏度大賽<small>誰滴得最快？</small></button>
+      <button data-tab="solid" aria-pressed="false">固體還是液體？<small>敲一下、等一下</small></button>
+    </nav>
+    <div class="view">
+      <!-- time machine -->
+      <div class="pane" id="p-time">
+        <div class="cv" id="cvT"><canvas id="cT"></canvas><div class="ro" id="roT"></div><div class="side" id="sideT"></div>
+          <div class="flash" id="flash"></div><div class="pop" id="pop" hidden></div><div class="black" id="black" hidden></div><div class="toast" id="tT"></div></div>
+        <div class="dock">
+          <div class="row">
+            <div class="seg" id="tMode"><button data-m="hist" aria-pressed="true">看歷史</button><button data-m="game" aria-pressed="false">🎮 守候挑戰</button></div>
+            <button class="btn pri" id="tPlay">▶ 播放</button>
+            <span id="spdRow" class="row"></span>
+            <button class="btn big" id="snap" hidden>📷 拍下來！</button>
+          </div>
+          <div class="row" id="scrubRow">
+            <label class="sl">年份<input id="tYear" type="range" min="1927" max="2026" step="0.01" value="1927"><b id="tYearV"></b></label>
+          </div>
+          <div class="row" id="lifeRow">
+            <span class="note">我出生在</span><input class="yr" id="birth" type="number" min="1927" max="2026" placeholder="2012"><span class="note">年 →</span><span class="note" id="lifeOut">輸入看看你出生後掉了幾滴</span>
+          </div>
+        </div>
+      </div>
+      <!-- viscosity race -->
+      <div class="pane" id="p-race" hidden>
+        <div class="cv"><canvas id="cR"></canvas><div class="ro" id="roR"></div><div class="toast" id="tR"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">選 4 個</span><span class="row" id="fluidBtns"></span></div>
+          <div class="row">
+            <button class="btn pri" id="rGo">▶ 同時開始滴</button>
+            <button class="btn" id="rReset">↺ 重來</button>
+            <span class="note">估算方法：同一個漏斗，滴一滴的時間和黏度成正比（瀝青 ≈ 9 年）</span>
+          </div>
+        </div>
+      </div>
+      <!-- solid or liquid -->
+      <div class="pane" id="p-solid" hidden>
+        <div class="cv"><canvas id="cS"></canvas><div class="ro" id="roS"></div><div class="toast" id="tS"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">材料</span><span class="row" id="matBtns"></span></div>
+          <div class="row">
+            <button class="btn big" id="hammer">🔨 用力敲一下</button>
+            <label class="sl">放著不管<input id="wait" type="range" min="0" max="1050" value="0"><b id="waitV"></b></label>
+            <button class="btn" id="sReset">↺ 換一塊新的</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>瀝青滴落實驗</h1>
+    <p class="lede">世界上跑最久的實驗室實驗：近一百年，只滴了 9 滴。</p>
+
+    <div class="card">
+      <h2>敲得碎的「液體」</h2>
+      <p>瀝青（柏油的原料）在室溫下摸起來硬梆梆，用槌子一敲就碎成好幾塊，看起來完全是固體。</p>
+      <p>1927 年，澳洲昆士蘭大學的<b>帕內爾教授</b>想讓學生看看：其實瀝青是一種<b>非常非常黏的液體</b>。他把加熱的瀝青倒進封住的漏斗，等它冷卻、沉澱 3 年，1930 年剪開漏斗口，開始等。</p>
+    </div>
+
+    <div class="card">
+      <h2>9 滴的紀錄</h2>
+      <table class="drops">
+        <tr><td>1</td><td>1938 年 12 月</td><td>等了約 8 年</td></tr>
+        <tr><td>2</td><td>1947 年 2 月</td><td></td></tr>
+        <tr><td>3</td><td>1954 年 4 月</td><td></td></tr>
+        <tr><td>4</td><td>1962 年 5 月</td><td></td></tr>
+        <tr><td>5</td><td>1970 年 8 月</td><td></td></tr>
+        <tr><td>6</td><td>1979 年 4 月</td><td></td></tr>
+        <tr><td>7</td><td>1988 年 7 月</td><td></td></tr>
+        <tr><td>8</td><td>2000 年 11 月</td><td>裝冷氣後變慢</td></tr>
+        <tr><td>9</td><td>2014 年 4 月</td><td></td></tr>
+      </table>
+      <p style="margin-top:8px">大約每 8～13 年一滴。第 10 滴什麼時候掉下來，要看昆士蘭大學的直播攝影機。</p>
+    </div>
+
+    <div class="card">
+      <h2>沒有人親眼看過</h2>
+      <p>第二任管理員<b>梅恩斯通</b>從 1961 年照顧這個實驗五十多年，卻從來沒親眼看到瀝青滴落。據說有一次他只是離開去喝東西；2000 年那一滴，偏偏遇上暴風雨，攝影機剛好故障。</p>
+      <p>2005 年，帕內爾（已過世）和梅恩斯通一起獲得<b>搞笑諾貝爾獎</b>。</p>
+      <p>2013 年，愛爾蘭都柏林三一學院另一個瀝青實驗（1944 年開始），第一次用攝影機錄到瀝青滴下的瞬間。</p>
+    </div>
+
+    <div class="card">
+      <h2>到底有多黏？</h2>
+      <p>科學家用這個實驗估算：瀝青的黏度大約是水的<b>一千億倍以上</b>（約 2300 億倍）。</p>
+      <div class="fx">水 0.001 → 蜂蜜約 10 → 瀝青約 2.3 億（帕・秒）</div>
+      <p>黏度越大，流得越慢。在「黏度大賽」可以看到這些數字差多少個「零」。</p>
+    </div>
+
+    <div class="card">
+      <h2>固體還是液體？看你等多久</h2>
+      <p>一個東西像固體還是像液體，要比較兩個時間：<b>你觀察（或施力）多久</b>，和<b>它需要多久才會流動</b>。</p>
+      <p>敲一下只有千分之一秒，瀝青來不及流動，所以碎掉；放幾年，它就慢慢攤平。冰河也一樣：冰塊敲得碎，但巨大的冰河會像很慢的河流一樣往下流。</p>
+    </div>
+
+    <div class="card">
+      <h2>迷思：老教堂的玻璃會往下流？</h2>
+      <p>常聽人說歐洲老教堂的窗玻璃「下面比較厚，是因為玻璃流下來了」。這是錯的！室溫的玻璃要流動，需要的時間比宇宙的年齡還長太多。下面厚是因為當年做玻璃的方法本來就厚薄不均，工匠常把厚的那邊裝在下面。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3200){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+let TAB='time';
+
+/* ======================= 1. TIME MACHINE ======================= */
+const DROPS=[1938.95,1947.12,1954.29,1962.37,1970.62,1979.29,1988.54,2000.91,2014.29];
+const DROPLAB=['1938 年 12 月','1947 年 2 月','1954 年 4 月','1962 年 5 月','1970 年 8 月','1979 年 4 月','1988 年 7 月','2000 年 11 月','2014 年 4 月'];
+const START=1930.0,NOW=(()=>{const d=new Date();return Math.min(2100,Math.max(2015,d.getFullYear()+d.getMonth()/12));})();
+const EVENTS=[
+  [1927.0,1929.9,'1927 年：帕內爾教授把加熱的瀝青倒進封住的漏斗，讓它沉澱。'],
+  [1930.0,1931.5,'1930 年：剪開漏斗下端，實驗正式開始！'],
+  [1948.0,1949.5,'1948 年：帕內爾教授過世，實驗繼續由學校保管。'],
+  [1961.0,1963.0,'1961 年：梅恩斯通接手照顧實驗（之後五十多年都沒親眼看過滴落）。'],
+  [1988.6,1990.5,'1988 年後：實驗室裝了冷氣，溫度變低，瀝青滴得更慢。'],
+  [2000.6,2001.6,'2000 年：第 8 滴掉落時遇上暴風雨，攝影機剛好故障，沒錄到！'],
+  [2005.0,2006.5,'2005 年：帕內爾和梅恩斯通獲得搞笑諾貝爾獎。'],
+  [2013.4,2014.0,'2013 年：愛爾蘭的另一個瀝青實驗，第一次用攝影機錄到滴落瞬間。'],
+];
+const TM={t:1927,run:false,speed:1,mode:'hist',falls:[],lastT:1927,game:null};
+const SPEEDS=[{v:1/365,n:'1 秒 = 1 天'},{v:1/12,n:'1 秒 = 1 個月'},{v:1,n:'1 秒 = 1 年'},{v:4,n:'1 秒 = 4 年'}];
+function dropsBefore(t){let n=0;for(const d of DROPS)if(d<=t)n++;return n;}
+function growth(t){ // 0..1 progress of the current hanging drop
+  if(t<START)return 0;const n=dropsBefore(t),prev=n?DROPS[n-1]:START;
+  const next=n<DROPS.length?DROPS[n]:prev+13.5;
+  return Math.max(0,Math.min(1,(t-prev)/(next-prev)));
+}
+function fmtYM(t){const y=Math.floor(t),m=Math.min(12,Math.floor((t-y)*12)+1);return `${y} 年 ${m} 月`;}
+function drawTime(nowMs){
+  const cv=$('#cT'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,cx=w/2,top=Math.max(96,h*0.16),bot=h-46;
+  const H=bot-top,u=Math.min(H/10,w/7.5); // unit
+  // table
+  a.fillStyle='#b48a5a';a.fillRect(0,bot,w,8);a.fillStyle='#8f6a40';a.fillRect(0,bot+8,w,h-bot-8);
+  // bell jar
+  const jw=u*3.1,jt=top,jb=bot;
+  a.fillStyle='rgba(180,210,230,.16)';a.strokeStyle='rgba(120,160,190,.55)';a.lineWidth=2;
+  a.beginPath();a.moveTo(cx-jw,jb);a.lineTo(cx-jw,jt+jw*0.8);a.quadraticCurveTo(cx-jw,jt,cx,jt);a.quadraticCurveTo(cx+jw,jt,cx+jw,jt+jw*0.8);a.lineTo(cx+jw,jb);a.closePath();a.fill();a.stroke();
+  a.strokeStyle='rgba(255,255,255,.7)';a.lineWidth=3;a.beginPath();a.moveTo(cx-jw*0.8,jt+jw*0.9);a.quadraticCurveTo(cx-jw*0.8,jt+jw*0.3,cx-jw*0.35,jt+jw*0.12);a.stroke();
+  // stand
+  const ft=top+u*1.6,fw=u*1.5,stemTop=ft+u*1.9,stemBot=stemTop+u*1.1,sw=u*0.17;
+  a.fillStyle='#7c7f86';a.fillRect(cx-u*2.6,ft+u*0.55,u*5.2,u*0.18);
+  a.fillRect(cx-u*2.5,ft+u*0.55,u*0.14,bot-ft-u*0.55);a.fillRect(cx+u*2.36,ft+u*0.55,u*0.14,bot-ft-u*0.55);
+  // pitch in funnel (level drops a bit over the years)
+  const used=Math.min(1,dropsBefore(TM.t)/9+growth(TM.t)/9);
+  const lvl=ft+u*0.25+used*u*0.35;
+  const coneX=y=>fw*(1-(y-ft)/(stemTop-ft))+sw*((y-ft)/(stemTop-ft));
+  const pg=a.createLinearGradient(cx-fw,0,cx+fw,0);pg.addColorStop(0,'#141210');pg.addColorStop(0.35,'#3a342c');pg.addColorStop(0.5,'#1a1714');pg.addColorStop(1,'#0c0b0a');
+  a.fillStyle=pg;a.beginPath();a.moveTo(cx-coneX(lvl),lvl);a.lineTo(cx+coneX(lvl),lvl);a.lineTo(cx+sw,stemTop);a.lineTo(cx+sw,stemBot);a.lineTo(cx-sw,stemBot);a.lineTo(cx-sw,stemTop);a.closePath();a.fill();
+  // funnel glass
+  a.strokeStyle='rgba(110,140,160,.85)';a.lineWidth=2.5;a.beginPath();a.moveTo(cx-fw-3,ft);a.lineTo(cx-sw-3,stemTop);a.lineTo(cx-sw-3,stemBot);a.moveTo(cx+fw+3,ft);a.lineTo(cx+sw+3,stemTop);a.lineTo(cx+sw+3,stemBot);a.stroke();
+  // beaker + pile
+  const bkTop=bot-u*2.2,bkW=u*1.3;
+  const n=dropsBefore(TM.t);
+  a.fillStyle='#14110e';
+  for(let i=0;i<n;i++){const row=Math.floor(i/3),col=i%3,bx=cx+(col-1)*u*0.62+(row%2?u*0.3:0),by=bot-u*0.3-row*u*0.38;
+    a.beginPath();a.ellipse(bx,by,u*0.38,u*0.24,0,0,7);a.fill();}
+  a.strokeStyle='rgba(110,140,160,.85)';a.lineWidth=2.5;a.beginPath();a.moveTo(cx-bkW,bkTop);a.lineTo(cx-bkW,bot);a.lineTo(cx+bkW,bot);a.lineTo(cx+bkW,bkTop);a.stroke();
+  // hanging drop
+  if(TM.t>=START){
+    const p=growth(TM.t),L=u*2.6*Math.pow(p,1.25),R=u*0.18+u*0.42*Math.pow(p,0.6);
+    const neck=p>0.88?sw*(1-(p-0.88)/0.12*0.85):sw*(0.95+0.25*p);
+    const by=stemBot+Math.max(R*0.6,L);
+    a.fillStyle=pg;a.beginPath();
+    a.moveTo(cx-sw,stemBot-1);a.bezierCurveTo(cx-neck,stemBot+L*0.35,cx-R*1.02,by-R*1.4,cx-R,by);
+    a.arc(cx,by,R,Math.PI,0,true);
+    a.bezierCurveTo(cx+R*1.02,by-R*1.4,cx+neck,stemBot+L*0.35,cx+sw,stemBot-1);a.closePath();a.fill();
+    a.fillStyle='rgba(255,255,255,.25)';a.beginPath();a.ellipse(cx-R*0.35,by-R*0.25,R*0.18,R*0.32,0.3,0,7);a.fill();
+  }
+  // falling drops (real time animation)
+  for(const f of TM.falls){const k=Math.min(1,(nowMs-f.t0)/650);const y=stemBot+u*2.6+(bot-u*0.6-stemBot-u*2.6)*k*k;
+    a.fillStyle='#14110e';a.beginPath();a.ellipse(cx,y,u*0.42,u*0.5*(1+0.2*k),0,0,7);a.fill();}
+  TM.falls=TM.falls.filter(f=>nowMs-f.t0<900);
+  // timeline
+  const tx0=24,tx1=w-24,ty=h-22,X=t=>tx0+(t-1927)/(NOW-1927)*(tx1-tx0);
+  a.strokeStyle='rgba(255,255,255,.65)';a.lineWidth=3;a.beginPath();a.moveTo(tx0,ty);a.lineTo(tx1,ty);a.stroke();
+  a.fillStyle='#fff';DROPS.forEach(dd=>{a.beginPath();a.arc(X(dd),ty,4,0,7);a.fill();});
+  a.fillStyle='#ffcf6a';a.beginPath();a.moveTo(X(TM.t),ty-7);a.lineTo(X(TM.t)-6,ty-15);a.lineTo(X(TM.t)+6,ty-15);a.closePath();a.fill();
+  a.fillStyle='rgba(255,255,255,.85)';a.font='11px Lexend,sans-serif';a.fillText('1927',tx0,ty+15);a.textAlign='right';a.fillText(String(Math.floor(NOW)),tx1,ty+15);a.textAlign='left';
+  // readouts
+  const ev=EVENTS.find(e=>TM.t>=e[0]&&TM.t<e[1]);
+  const p=growth(TM.t),nextTxt=TM.t<START?'還沒剪開漏斗':n>=9?`第 10 滴正在長大（動畫只畫到第 9 滴的紀錄）`:`第 ${n+1} 滴已長大 <b>${Math.round(p*100)}%</b>`;
+  $('#roT').innerHTML=`<div class="big"><b>${fmtYM(TM.t)}</b>　已經滴了 <b>${n}</b> 滴</div><div>${nextTxt}</div>`+(ev?`<div style="color:var(--red)">${ev[2]}</div>`:'');
+  $('#sideT').innerHTML=TM.mode==='game'&&TM.game?`<div><b>守候挑戰</b></div><div>親眼看到：<b style="color:var(--green)">${TM.game.seen}</b> 滴</div><div>錯過：<b style="color:var(--red)">${TM.game.miss}</b> 滴</div><div style="color:var(--dim)">瀝青掉下來的瞬間按「📷 拍下來！」</div>`:
+    `<div>速度：<b>${SPEEDS.find(s=>s.v===TM.speed).n}</b></div><div style="color:var(--dim)">白點＝每一滴掉下來的時間</div>`;
+}
+function advance(dtReal,nowMs){
+  const before=TM.t;
+  TM.t=Math.min(TM.mode==='game'?2015:NOW,TM.t+dtReal*TM.speed);
+  for(let i=0;i<DROPS.length;i++)if(before<DROPS[i]&&TM.t>=DROPS[i]){
+    TM.falls.push({t0:nowMs,i});
+    if(TM.mode==='hist')toast('#tT',`第 ${i+1} 滴掉下來了！（${DROPLAB[i]}）`,2600);
+    else gameDrop(i,nowMs);
+  }
+  if(TM.t>=(TM.mode==='game'?2015:NOW)){TM.run=false;syncPlay();if(TM.mode==='game')gameOver();else toast('#tT','已經到現在了。第 10 滴還在慢慢長大…',3000);}
+  $('#tYear').value=TM.t;$('#tYearV').textContent=Math.floor(TM.t)+' 年';
+}
+function syncPlay(){$('#tPlay').textContent=TM.run?'⏸ 暫停':'▶ 播放';}
+$('#tPlay').onclick=()=>{
+  if(TM.mode==='game'){if(!TM.game||TM.game.over)startGame();else{TM.run=!TM.run;syncPlay();}return;}
+  if(TM.t>=NOW)TM.t=1927;TM.run=!TM.run;syncPlay();};
+$('#tYear').oninput=()=>{TM.t=+$('#tYear').value;$('#tYearV').textContent=Math.floor(TM.t)+' 年';TM.falls=[];};
+function buildSpeeds(){const r=$('#spdRow');r.innerHTML='';for(const s of SPEEDS){const b=document.createElement('button');b.className='btn'+(s.v===TM.speed?' sel':'');b.textContent=s.n;b.onclick=()=>{TM.speed=s.v;buildSpeeds();};r.appendChild(b);}}
+$('#birth').oninput=()=>{const y=+$('#birth').value;const o=$('#lifeOut');
+  if(!y||y<1900||y>2026){o.textContent='輸入看看你出生後掉了幾滴';return;}
+  const n=DROPS.filter(dd=>dd>=y).length;
+  o.innerHTML=n===0?`你出生後<b>一滴都還沒掉</b>！第 10 滴可能就是你的第一滴。`:`你出生後掉了 <b>${n}</b> 滴${n===1?'，就是 2014 年那一滴':''}。`;};
+document.querySelectorAll('#tMode button').forEach(b=>b.onclick=()=>{
+  TM.mode=b.dataset.m;document.querySelectorAll('#tMode button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  TM.run=false;syncPlay();$('#pop').hidden=true;$('#black').hidden=true;
+  const g=TM.mode==='game';$('#snap').hidden=!g;$('#spdRow').hidden=g;$('#scrubRow').hidden=g;$('#lifeRow').hidden=g;
+  if(g){TM.game=null;TM.t=1930;$('#tPlay').textContent='▶ 開始守候';toast('#tT','快轉中！瀝青掉下來的瞬間按「📷 拍下來！」，小心別被分心。',4000);}
+  else{TM.t=1927;TM.speed=1;buildSpeeds();}
+});
+/* ---- witness game ---- */
+function startGame(){TM.game={seen:0,miss:0,window:null,cool:0,over:false,nextPop:performance.now()+2500,results:[]};TM.t=1930;TM.speed=2.2;TM.run=true;TM.falls=[];syncPlay();$('#tPlay').textContent='⏸ 暫停';}
+function gameDrop(i,nowMs){
+  const G=TM.game;
+  if(i===7){ // 2000: the storm
+    $('#black').hidden=false;$('#black').innerHTML='<b>⛈️ 暴風雨！</b><div>攝影機斷線了……（2000 年真的發生過）</div>';
+    setTimeout(()=>{$('#black').hidden=true;},1600);G.miss++;G.results.push(false);return;}
+  G.window={i,t0:nowMs,t1:nowMs+700,got:false};
+}
+$('#snap').onclick=()=>{
+  const G=TM.game;if(!G||G.over||!TM.run)return;const now=performance.now();
+  if(now<G.cool){toast('#tT','相機還在充電…',900);return;}
+  const f=$('#flash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),60);
+  if(G.window&&!G.window.got&&now<=G.window.t1&&$('#pop').hidden){G.window.got=true;G.seen++;G.results.push(true);toast('#tT',`拍到了！第 ${G.window.i+1} 滴（${DROPLAB[G.window.i]}）`,1800);}
+  else{G.cool=now+1200;toast('#tT','什麼都沒拍到，瀝青還掛在那裡…',1200);}
+};
+function gameTick(now){
+  const G=TM.game;if(!G||G.over||!TM.run)return;
+  if(G.window&&now>G.window.t1){if(!G.window.got){G.miss++;G.results.push(false);toast('#tT',`錯過了第 ${G.window.i+1} 滴！`,1500);}G.window=null;}
+  if(now>G.nextPop&&$('#pop').hidden&&!G.window){
+    const msgs=['☕ 同事找你去泡咖啡！','📞 電話響了，是校長打來的！','🍱 便當送到了，快來吃！','😴 好睏……眼睛快閉上了','📺 外面有人在看球賽！'];
+    const pop=$('#pop');pop.hidden=false;pop.innerHTML=`<p>${msgs[Math.floor(Math.random()*msgs.length)]}</p><button class="btn pri" id="popNo">不要，我要盯著瀝青！</button>`;
+    $('#popNo').onclick=()=>{pop.hidden=true;};
+    G.nextPop=now+3500+Math.random()*4000;
+  }
+}
+function gameOver(){const G=TM.game;G.over=true;$('#pop').hidden=true;
+  toast('#tT',`守候結束：你親眼看到 <b>${G.seen}</b> / 9 滴。梅恩斯通守了 52 年，一滴都沒看到！`,6000);$('#tPlay').textContent='↺ 再挑戰一次';}
+
+/* ======================= 2. VISCOSITY RACE ======================= */
+// eta in Pa·s; drop time ≈ 9 years × eta / 2.3e8  ≈ 1.235 × eta seconds
+const FL=[
+  {id:'water',n:'水',eta:0.001,col:'#6fb7e6',a:.55},
+  {id:'oil',n:'橄欖油',eta:0.08,col:'#c9b23a',a:.8},
+  {id:'syrup',n:'糖漿',eta:2.5,col:'#c77a2a',a:.85},
+  {id:'honey',n:'蜂蜜',eta:10,col:'#e0a12a',a:.9},
+  {id:'ketchup',n:'番茄醬',eta:50,col:'#c0392b',a:1},
+  {id:'pb',n:'花生醬',eta:250,col:'#a8743d',a:1},
+  {id:'pitch',n:'瀝青',eta:2.3e8,col:'#15120f',a:1},
+  {id:'ice',n:'冰河冰（約）',eta:1e13,col:'#cfe6f2',a:1}
+];
+const T9=9*365.25*86400;
+function dropTime(f){return T9*f.eta/2.3e8;}
+function fmtDur(s){
+  if(s<1)return (s*1000).toPrecision(2)+' 毫秒';if(s<60)return s.toFixed(1)+' 秒';if(s<3600)return (s/60).toFixed(1)+' 分鐘';
+  if(s<86400)return (s/3600).toFixed(1)+' 小時';if(s<86400*365.25)return (s/86400).toFixed(0)+' 天';
+  const y=s/31557600;if(y<1e4)return y.toFixed(y<10?1:0)+' 年';return Math.round(y/1e4)+' 萬年';}
+const RA={pick:['water','honey','pb','pitch'],t:0,run:false,done:{}};
+function buildFluids(){const r=$('#fluidBtns');r.innerHTML='';for(const f of FL){const b=document.createElement('button');b.className='btn'+(RA.pick.includes(f.id)?' sel':'');b.textContent=f.n;
+  b.onclick=()=>{if(RA.pick.includes(f.id)){if(RA.pick.length>1)RA.pick=RA.pick.filter(x=>x!==f.id);}else{RA.pick.push(f.id);if(RA.pick.length>4)RA.pick.shift();}RA.pick.sort((a,b)=>FL.findIndex(f=>f.id===a)-FL.findIndex(f=>f.id===b));buildFluids();raceReset();};r.appendChild(b);}}
+function raceReset(){RA.t=0;RA.run=false;RA.done={};}
+function drawRace(){
+  const cv=$('#cR'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,top=136,chartH=Math.min(150,h*0.3),funBot=h-chartH-30,n=RA.pick.length;
+  const colW=w/n,u=Math.min(colW/4.5,(funBot-top)/7);
+  RA.pick.forEach((id,i)=>{
+    const f=FL.find(x=>x.id===id),cx=colW*(i+0.5),T=dropTime(f),p=Math.min(1,RA.t/T),done=RA.t>=T;
+    const ft=top+u*0.6,fw=u*1.4,st=ft+u*1.8,sb=st+u*0.9,sw=u*0.14;
+    a.globalAlpha=f.a;a.fillStyle=f.col;
+    a.beginPath();a.moveTo(cx-fw*0.85,ft+u*0.2);a.lineTo(cx+fw*0.85,ft+u*0.2);a.lineTo(cx+sw,st);a.lineTo(cx+sw,sb);a.lineTo(cx-sw,sb);a.lineTo(cx-sw,st);a.closePath();a.fill();
+    // drop
+    const cupT=sb+u*2.4,cupB=cupT+u*1.2;
+    const pp=done?((RA.t-T)/T)%1:p;const R=u*0.12+u*0.3*Math.sqrt(pp),L=u*1.2*pp;
+    if(done&&T<0.3){a.fillRect(cx-sw*0.7,sb,sw*1.4,cupB-sb);}else{
+    a.beginPath();a.moveTo(cx-sw,sb);a.quadraticCurveTo(cx-sw,sb+L*0.5,cx-R,sb+L+R*0.3);a.arc(cx,sb+L+R*0.3,R,Math.PI,0,true);a.quadraticCurveTo(cx+sw,sb+L*0.5,cx+sw,sb);a.closePath();a.fill();}
+    // cup with collected drops
+    const lvl=done?Math.min(1,0.15+0.05*Math.min(20,Math.floor((RA.t-T)/T+1))):0;
+    if(lvl>0)a.fillRect(cx-u*0.75,cupB-lvl*u*1.2,u*1.5,lvl*u*1.2);
+    a.globalAlpha=1;
+    a.strokeStyle='rgba(90,110,130,.8)';a.lineWidth=2;
+    a.beginPath();a.moveTo(cx-fw,ft);a.lineTo(cx-sw-2,st);a.lineTo(cx-sw-2,sb);a.moveTo(cx+fw,ft);a.lineTo(cx+sw+2,st);a.lineTo(cx+sw+2,sb);a.stroke();
+    a.beginPath();a.moveTo(cx-u*0.8,cupT);a.lineTo(cx-u*0.8,cupB);a.lineTo(cx+u*0.8,cupB);a.lineTo(cx+u*0.8,cupT);a.stroke();
+    a.fillStyle='#24211c';a.textAlign='center';a.font='700 14px "Noto Sans TC",sans-serif';a.fillText(f.n,cx,ft-8);
+    a.font='12px "Noto Sans TC",sans-serif';a.fillStyle=done?'#3d8b56':'#6f685c';
+    a.fillText(done?`✔ ${fmtDur(T)} 滴一滴`:RA.run?(T>3600?`要等 ${fmtDur(T)}`:`${Math.round(p*100)}%`):`一滴：${fmtDur(T)}`,cx,cupB+18);
+  });
+  a.textAlign='left';
+  // log chart of all fluids
+  const cx0=60,cx1=w-20,cy0=h-chartH-6,cy1=h-10;
+  a.fillStyle='#fff';a.strokeStyle='#dad0bd';a.fillRect(16,cy0,w-32,cy1-cy0);a.strokeRect(16,cy0,w-32,cy1-cy0);
+  const lmin=-3.5,lmax=13.6,LX=s=>cx0+(Math.log10(s)-lmin)/(lmax-lmin)*(cx1-cx0);
+  const marks=[[1,'1 秒'],[60,'1 分'],[3600,'1 時'],[86400,'1 天'],[31557600,'1 年'],[2.5e9,'一輩子'],[3.16e11,'一萬年'],[3.16e13,'一百萬年']];
+  a.font='10.5px "Noto Sans TC",sans-serif';
+  for(const [s,l] of marks){const x=LX(s);if(x>cx1)continue;a.strokeStyle='rgba(0,0,0,.08)';a.beginPath();a.moveTo(x,cy0+16);a.lineTo(x,cy1-14);a.stroke();a.fillStyle='#8a8170';a.textAlign='center';a.fillText(l,x,cy1-3);}
+  a.textAlign='left';a.fillStyle='#6f685c';a.fillText('滴一滴要多久（每一格是乘上很多倍）',24,cy0+13);
+  const rows=FL.length,rh=(cy1-cy0-32)/rows;
+  FL.forEach((f,i)=>{const y=cy0+18+i*rh,x=LX(dropTime(f));a.fillStyle=f.id==='ice'?'#9cc3d8':f.col;a.globalAlpha=RA.pick.includes(f.id)?1:0.45;
+    a.fillRect(cx0,y+1,Math.max(2,x-cx0),Math.max(2,rh-3));a.globalAlpha=1;a.fillStyle='#24211c';a.textAlign='right';a.fillText(f.n.replace('（約）',''),cx0-4,y+rh-3);a.textAlign='left';});
+  const slowest=RA.pick.map(id=>FL.find(f=>f.id===id)).sort((x,y)=>y.eta-x.eta)[0];
+  $('#roR').innerHTML=`<div class="big">同一個漏斗，換不同的液體</div><div>經過 <b>${fmtDur(RA.t)}</b>${RA.run?'':'（按「同時開始滴」）'}</div><div style="color:var(--dim)">黏度（帕・秒）：${RA.pick.map(id=>{const f=FL.find(x=>x.id===id);return f.n.replace('（約）','')+' '+(f.eta<1?f.eta:f.eta>=1e6?f.eta.toExponential(1).replace('e+',' × 10^'):f.eta);}).join('、')}</div>`;
+}
+function raceTick(dt){if(RA.run){RA.t+=dt;const done=RA.pick.filter(id=>RA.t>=dropTime(FL.find(f=>f.id===id)));
+  for(const id of done)if(!RA.done[id]){RA.done[id]=1;const f=FL.find(x=>x.id===id);if(dropTime(f)>0.05)toast('#tR',`${f.n}滴下第一滴！（${fmtDur(dropTime(f))}）`,1800);}
+  if(RA.t>90&&!RA.done._msg){RA.done._msg=1;const s=RA.pick.map(id=>FL.find(f=>f.id===id)).filter(f=>dropTime(f)>3600);if(s.length)toast('#tR',`${s.map(f=>f.n).join('、')}你等不到的！要 ${s.map(f=>fmtDur(dropTime(f))).join('、')}`,4200);}}
+  drawRace();}
+$('#rGo').onclick=()=>{raceReset();RA.run=true;};$('#rReset').onclick=raceReset;
+
+/* ======================= 3. SOLID OR LIQUID ======================= */
+const MAT=[
+  {id:'pitch',n:'瀝青',tau:1e8,col:'#1a1612',hit:'shatter',note:'敲：碎掉　等幾年：攤平'},
+  {id:'putty',n:'彈力黏土',tau:900,col:'#e07a5f',hit:'bounce',note:'敲：彈回來　等幾十分鐘：攤平'},
+  {id:'ice',n:'冰（很厚的冰河）',tau:3e10,col:'#cfe7f4',hit:'shatter',note:'敲：碎掉　等幾千年：流動'},
+  {id:'glass',n:'玻璃',tau:1e30,col:'#a9d6cf',hit:'shatter',note:'敲：碎掉　等到宇宙結束：還是不會流'}
+];
+const SO={mat:MAT[0],wait:0,shards:null,bounce:0};
+function waitSec(){return Math.pow(10,+$('#wait').value/100);} // 1 s .. 10^10.5 s
+function buildMats(){const r=$('#matBtns');r.innerHTML='';for(const m of MAT){const b=document.createElement('button');b.className='btn'+(m===SO.mat?' sel':'');b.textContent=m.n;b.onclick=()=>{SO.mat=m;buildMats();solidReset();};r.appendChild(b);}}
+function solidReset(){SO.shards=null;SO.bounce=0;$('#wait').value=0;syncWait();}
+function syncWait(){$('#waitV').textContent=+$('#wait').value===0?'剛放下':fmtDur(waitSec());}
+$('#wait').oninput=()=>{if(SO.shards){SO.shards=null;}syncWait();};
+$('#sReset').onclick=solidReset;
+$('#hammer').onclick=()=>{
+  const m=SO.mat;
+  if(m.hit==='bounce'){SO.bounce=performance.now();toast('#tS','啵！彈力黏土像橡膠一樣彈回來：敲的時間太短，它來不及流動。');return;}
+  if(SO.shards)return;const sh=[];for(let i=0;i<14;i++)sh.push({x:(Math.random()-0.5)*0.8,y:Math.random()*0.5,vx:(Math.random()-0.5)*3.2,vy:-1-Math.random()*2.5,r:Math.random()*6,va:(Math.random()-0.5)*8,s:0.12+Math.random()*0.16});
+  SO.shards={t0:performance.now(),sh};toast('#tS',m.id==='pitch'?'喀啦！瀝青像石頭一樣碎掉了。可是它其實是液體……':`喀啦！${m.n}碎掉了。`,3000);
+};
+function drawSolid(now){
+  const cv=$('#cS'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,tbl=h*0.72,cx=w/2,U=Math.min(w/7,(tbl-110)/2.2);
+  a.fillStyle='#c79b67';a.fillRect(0,tbl,w,10);a.fillStyle='#a77c4b';a.fillRect(0,tbl+10,w,h-tbl-10);
+  const m=SO.mat,t=+$('#wait').value===0?0:waitSec(),De=m.tau/Math.max(t,1e-9);
+  if(SO.shards){
+    const k=Math.min(1.4,(now-SO.shards.t0)/1000);
+    for(const s of SO.shards.sh){const tt=k;let x=cx+(s.x+s.vx*tt)*U,y=tbl-U*0.5+(s.y+s.vy*tt+4.9*tt*tt)*U;y=Math.min(y,tbl-s.s*U*0.4);
+      a.save();a.translate(x,y);a.rotate(s.r+s.va*tt);a.fillStyle=m.col;a.beginPath();a.moveTo(-s.s*U,0);a.lineTo(0,-s.s*U*0.8);a.lineTo(s.s*U*0.9,s.s*U*0.2);a.lineTo(0,s.s*U*0.5);a.closePath();a.fill();
+      a.strokeStyle='rgba(0,0,0,.25)';a.stroke();a.restore();}
+  }else{
+    // slump: height falls as the observation time grows compared with the flow time
+    const f=1/Math.sqrt(1+Math.pow(t/m.tau,0.9)*6),hh=Math.max(0.06,f)*U*1.4,ww=U*1.6*(1.4*U/hh)*0.55+U*0.45;
+    let sq=1;if(SO.bounce){const k=(now-SO.bounce)/1000;if(k<0.8)sq=1-0.35*Math.exp(-6*k)*Math.cos(18*k);else SO.bounce=0;}
+    const H=hh*sq,W=Math.min(w*0.9,ww/Math.sqrt(sq));
+    const r=Math.min(H*0.9,W*0.5)*(f<0.7?1:0.25);
+    a.fillStyle=m.col;a.beginPath();a.moveTo(cx-W/2,tbl);a.lineTo(cx-W/2,tbl-H+r);a.quadraticCurveTo(cx-W/2,tbl-H,cx-W/2+r,tbl-H);a.lineTo(cx+W/2-r,tbl-H);a.quadraticCurveTo(cx+W/2,tbl-H,cx+W/2,tbl-H+r);a.lineTo(cx+W/2,tbl);a.closePath();a.fill();
+    a.strokeStyle='rgba(0,0,0,.2)';a.lineWidth=1.5;a.stroke();
+    a.fillStyle='rgba(255,255,255,.25)';a.fillRect(cx-W/2+6,tbl-H+6,Math.max(0,W*0.25),Math.max(0,H*0.15));
+  }
+  // verdict
+  const verdict=SO.shards?'像固體（敲的時間只有千分之一秒）':t===0?'剛放上桌':De>10?'看起來像固體':De>0.3?'正在慢慢流動…':'像液體一樣攤平了';
+  $('#roS').innerHTML=`<div class="big">${m.n}：${verdict}</div><div>你觀察的時間：<b>${SO.shards?'0.001 秒':t===0?'0 秒':fmtDur(t)}</b>　它流動需要：<b>${m.tau>=1e20?'比宇宙年齡還久':'約 '+fmtDur(m.tau)}</b></div><div style="color:var(--dim)">${m.note}</div>`;
+}
+
+/* ---------- tabs & loop ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['time','race','solid'])$('#p-'+t).hidden=t!==TAB;});
+let last=performance.now();
+function frame(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(TAB==='time'){if(TM.run)advance(dt,now);if(TM.mode==='game')gameTick(now);drawTime(now);}
+  else if(TAB==='race')raceTick(dt);else drawSolid(now);
+  requestAnimationFrame(frame);}
+buildSpeeds();buildFluids();buildMats();syncWait();$('#tYear').max=NOW.toFixed(2);$('#tYearV').textContent='1927 年';
+
+requestAnimationFrame(frame);
+})();
+</script>

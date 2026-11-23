@@ -1,0 +1,399 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>國際太空站</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: mission control — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#05070c;
+  --panel:#0f131b;
+  --panel2:#161b26;
+  --rule:#283041;
+  --ink:#ecf1f8;
+  --dim:#9aa6ba;
+  --acc:#6fd6ff;
+  --gold:#ffd76a;
+  --ok:#6fd38f;
+  --bad:#ff7a6a;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--acc)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#03050a}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(5,7,12,.88);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(350px,calc(100% - 24px))}
+.ro b{color:var(--gold);font-family:var(--f-num)}
+.ro .big{font-family:var(--f-disp);font-size:16px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro .ok{color:var(--ok)}.ro .no{color:var(--bad)}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--acc);color:#04202c;font-weight:700;border-radius:10px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:5}
+.toast.on{opacity:1}
+.toast.bad{background:var(--bad);color:#2a0606}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.38;cursor:default}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#04202c;font-weight:700}
+.btn.sel{border-color:var(--acc);color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-weight:700}
+.btn.fire{background:#ff9a3c;border-color:#ff9a3c;color:#2a1300;font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px}
+.sl input{flex:1;accent-color:var(--acc);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:5.2em;text-align:right}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:13.5px;text-align:center;margin:6px 0}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;margin:0}
+.facts dt{color:var(--dim)}.facts dd{margin:0;font-family:var(--f-num)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:62vh;min-height:440px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:min(300px,calc(100% - 24px))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 為什麼不會掉下來？<small>牛頓的大砲</small></button>
+      <button data-tab="B" aria-pressed="false">② 一天 16 次日出<small>幫太空站維持高度</small></button>
+      <button data-tab="C" aria-pressed="false">③ 抬頭找太空站<small>什麼時候看得到</small></button>
+    </nav>
+    <div class="view">
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">水平發射速度<input id="v0" type="range" min="1" max="11.5" step="0.01" value="5"><b id="v0V"></b></label>
+            <button class="btn pri" id="fire">🚀 發射</button>
+          </div>
+          <div class="row">
+            <span class="lab">試試看</span>
+            <button class="btn" data-v="2">每秒 2 公里</button>
+            <button class="btn" data-v="6">每秒 6 公里</button>
+            <button class="btn" data-v="7.67">太空站的速度</button>
+            <button class="btn" data-v="9.5">每秒 9.5 公里</button>
+            <button class="btn" data-v="11">每秒 11 公里</button>
+          </div>
+          <div class="note">從 400 公里高（太空站的高度）水平丟出一顆球。地球和高度都是按照真實比例畫的。</div>
+        </div>
+      </div>
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">時間</span>
+            <button class="btn sel" data-sp="60">1 秒 ＝ 1 分鐘</button>
+            <button class="btn" data-sp="3600">1 秒 ＝ 1 小時</button>
+            <button class="btn" data-sp="86400">1 秒 ＝ 1 天</button>
+            <button class="btn" id="bPause">⏸ 暫停</button>
+          </div>
+          <div class="row">
+            <button class="btn fire" id="burn">🔥 引擎點火升軌</button>
+            <button class="btn" id="bReset">↺ 重新開始</button>
+            <span class="note">空氣阻力會讓太空站慢慢往下掉。任務：撐過一整年，高度保持在 370～430 公里。</span>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="p-C" hidden>
+        <div class="cv"><canvas id="cC"></canvas><div class="ro" id="roC"></div></div>
+        <div class="dock">
+          <div class="row">
+            <label class="sl">當地時間<input id="tod" type="range" min="0" max="24" step="0.05" value="19.2"><b id="todV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">跳到</span>
+            <button class="btn" data-t="12">中午</button>
+            <button class="btn" data-t="18.33">日落後 20 分</button>
+            <button class="btn" data-t="19">日落後 1 小時</button>
+            <button class="btn" data-t="22">晚上 10 點</button>
+            <button class="btn" data-t="5">日出前 1 小時</button>
+          </div>
+          <div class="note">太空站每次都從西邊飛向東邊，飛過你頭頂。左邊是從太空看的剖面圖，右邊是你抬頭看到的天空。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>頭頂 400 公里的家</h1>
+    <p class="lede">國際太空站（ISS）是人類在太空中最大的建築物。從 2000 年 11 月開始，上面就一直住著太空人，至今沒有一天沒人。</p>
+
+    <div class="card">
+      <h2>太空站小檔案</h2>
+      <dl class="facts">
+        <dt>高度</dt><dd>約 400 公里</dd>
+        <dt>速度</dt><dd>每秒約 7.7 公里（時速約 27,600 公里）</dd>
+        <dt>繞地球一圈</dt><dd>約 92 分鐘，一天約 16 圈</dd>
+        <dt>大小</dt><dd>約一座足球場</dd>
+        <dt>重量</dt><dd>約 420 公噸</dd>
+        <dt>第一個艙</dt><dd>1998 年 11 月發射</dd>
+      </dl>
+      <p style="margin-top:8px">它是美國、俄羅斯、歐洲、日本和加拿大一起蓋的。日本的實驗艙叫「希望號」。</p>
+    </div>
+
+    <div class="card">
+      <h2>太空站裡沒有重力？</h2>
+      <p>其實有！在 400 公里高的地方，重力還有地面的大約 <b>89%</b>。</p>
+      <p>太空人會飄起來，是因為太空站和裡面的人一起在「往下掉」。只是它同時往前飛得非常快，地面彎下去的速度剛好和它掉下來的速度一樣，所以永遠掉不到地上。這就是「繞地球轉」。</p>
+      <div class="fx">要繞著轉而不掉下來 → 每秒約 7.7 公里</div>
+      <p>牛頓在 300 多年前就用「從高山上發射大砲」的想像實驗想通了這件事。</p>
+    </div>
+
+    <div class="card">
+      <h2>太空站也會往下掉</h2>
+      <p>400 公里高的地方還有非常稀薄的空氣，會一點一點拖慢太空站，讓它高度慢慢下降。</p>
+      <p>所以每隔一陣子，就要用貨運太空船或太空站自己的引擎點火，把它推回原來的高度，這叫做「升軌」。太陽活動強的時候，大氣會膨脹，下降得更快。</p>
+    </div>
+
+    <div class="card">
+      <h2>用眼睛就看得到</h2>
+      <p>太空站的太陽能板很大，會反射陽光。天氣好的時候，它是夜空中最亮的星星之一，像一顆不會閃的亮點，幾分鐘就劃過天空。</p>
+      <p>不過只有<b>日落後或日出前一、兩個小時</b>看得到：這時天空已經暗了，可是高空的太空站還照得到太陽。半夜它會躲進地球的影子裡，就看不到了。</p>
+    </div>
+
+    <div class="card">
+      <h2>太空站的未來</h2>
+      <p>國際太空站預計在 2030 年左右退休。屆時會用一艘專門的推進船把它推進大氣層，讓燒不完的碎片落在遠離陸地的南太平洋。</p>
+      <p>之後，人類會改用新的商業太空站，繼續在近地軌道上做實驗。</p>
+    </div>
+
+    <div class="card">
+      <h2>關於這個模擬</h2>
+      <p>② 的空氣阻力用的是簡化模型（400 公里時大約每月下降 3 公里，太陽風暴時更快），實際會隨太陽活動改變很多。③ 把太空站的軌道簡化成剛好通過你頭頂、和太陽在同一個平面上；真實的軌道是斜的，每次飛過的路線都不一樣。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{w:r.width,h:r.height,d};}
+function toast(id,msg,bad=false,ms=4200){const t=$(id);t.innerHTML=msg;t.classList.toggle('bad',bad);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+const fmt=(x,d=0)=>x.toLocaleString('zh-TW',{maximumFractionDigits:d,minimumFractionDigits:d});
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const GM=398600.4418,RE=6371;
+let TAB='A';
+const STARS=Array.from({length:220},()=>[Math.random(),Math.random(),Math.random()]);
+function stars(a,w,h,al=1){a.fillStyle='#fff';for(const s of STARS){a.globalAlpha=(0.12+0.5*s[2])*al;a.fillRect(s[0]*w,s[1]*h,1.2,1.2);}a.globalAlpha=1;}
+function earth(a,cx,cy,R,sunAng=0){// sun direction angle (radians, screen coords, 0 = from right)
+  const g=a.createRadialGradient(cx-R*0.3,cy-R*0.3,R*0.1,cx,cy,R);g.addColorStop(0,'#3d8fd6');g.addColorStop(0.7,'#1f5e9e');g.addColorStop(1,'#123a66');a.fillStyle=g;a.beginPath();a.arc(cx,cy,R,0,7);a.fill();
+  // simple continents
+  a.save();a.beginPath();a.arc(cx,cy,R,0,7);a.clip();a.fillStyle='rgba(90,150,90,.55)';
+  for(const[u,v,r]of[[-0.3,-0.35,0.35],[0.25,-0.1,0.28],[0.1,0.4,0.3],[-0.45,0.25,0.2],[0.5,0.45,0.18]]){a.beginPath();a.ellipse(cx+u*R,cy+v*R,r*R,r*R*0.7,u*2,0,7);a.fill();}
+  // night side
+  a.translate(cx,cy);a.rotate(sunAng);a.fillStyle='rgba(2,4,10,.62)';a.fillRect(-R*1.1,-R*1.1,R*1.1,R*2.2);a.restore();
+  const atm=a.createRadialGradient(cx,cy,R*0.98,cx,cy,R*1.06);atm.addColorStop(0,'rgba(120,190,255,.45)');atm.addColorStop(1,'rgba(120,190,255,0)');a.fillStyle=atm;a.beginPath();a.arc(cx,cy,R*1.06,0,7);a.fill();
+}
+function issIcon(a,x,y,s,ang=0,lit=true){a.save();a.translate(x,y);a.rotate(ang);a.globalAlpha=lit?1:0.35;
+  a.fillStyle='#d9dde6';a.fillRect(-s*0.18,-s*0.06,s*0.36,s*0.12);a.fillStyle=lit?'#e7b84a':'#6b5a2e';
+  for(const dx of[-0.9,-0.55,0.55,0.9]){a.fillRect(dx*s-s*0.15,-s*0.42,s*0.3,s*0.32);a.fillRect(dx*s-s*0.15,s*0.1,s*0.3,s*0.32);}
+  a.fillStyle='#aab1c0';a.fillRect(-s*1.08,-s*0.03,s*2.16,s*0.06);a.restore();}
+
+/* ================= A: Newton's cannon ================= */
+const A={v0:5,trail:[],st:null,res:null,simT:0,running:false};
+function syncA(){$('#v0V').textContent=`每秒 ${A.v0.toFixed(2)} 公里`;}
+$('#v0').oninput=e=>{A.v0=+e.target.value;syncA();};
+$$('[data-v]').forEach(b=>b.onclick=()=>{A.v0=+b.dataset.v;$('#v0').value=A.v0;syncA();fire();});
+$('#fire').onclick=fire;
+function fire(){const r0=RE+400;A.st={x:0,y:r0,vx:A.v0,vy:0};A.trail=[[0,r0]];A.simT=0;A.running=true;A.res=null;A.minR=r0;A.maxR=r0;A.ang=0;A.lap=false;roA();}
+function accel(x,y){const r=Math.hypot(x,y),k=-GM/(r*r*r);return[k*x,k*y];}
+function stepA(dt){// velocity Verlet
+  const s=A.st;let[ax,ay]=accel(s.x,s.y);s.x+=s.vx*dt+0.5*ax*dt*dt;s.y+=s.vy*dt+0.5*ay*dt*dt;const[bx,by]=accel(s.x,s.y);s.vx+=0.5*(ax+bx)*dt;s.vy+=0.5*(ay+by)*dt;A.simT+=dt;}
+function roA(){const v=A.v0,r0=RE+400,vc=Math.sqrt(GM/r0),ve=Math.sqrt(2)*vc;
+  let s=`<span class="big">每秒 ${v.toFixed(2)} 公里水平丟出</span>`;
+  if(!A.res&&!A.running)s+=`<span class="st">按「🚀 發射」看看會發生什麼事</span>`;
+  else if(A.running)s+=`<span class="st">飛了 <b>${fmt(A.simT/60,0)}</b> 分鐘・離地面 <b>${fmt(Math.hypot(A.st.x,A.st.y)-RE,0)}</b> 公里</span>`;
+  if(A.res)s+=`<span class="st ${A.res.ok?'ok':'no'}">${A.res.msg}</span>`;
+  s+=`<span class="st">在這個高度，重力還有地面的 <b>89%</b></span>`;
+  $('#roA').innerHTML=s;}
+function drawA(a,w,h,dtReal){
+  a.fillStyle='#03050a';a.fillRect(0,0,w,h);stars(a,w,h);
+  const top=$('#roA').offsetHeight+16,span=Math.max(RE+400,A.maxR||0)*1.08;
+  const S=Math.min(w/2,(h-top)/2)/span*0.98,cx=w/2,cy=top+(h-top)/2;
+  earth(a,cx,cy,RE*S,0.25);
+  // 400 km shell
+  a.strokeStyle='rgba(111,214,255,.25)';a.setLineDash([4,5]);a.beginPath();a.arc(cx,cy,(RE+400)*S,0,7);a.stroke();a.setLineDash([]);
+  // cannon tower on top
+  a.fillStyle='#c9ced9';a.fillRect(cx-3,cy-(RE+400)*S,6,400*S);a.fillStyle='#ffd76a';a.beginPath();a.arc(cx,cy-(RE+400)*S,4,0,7);a.fill();
+  a.fillStyle='#9aa6ba';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='bottom';a.fillText('400 公里高（像蘋果皮一樣薄）',cx+8,cy-(RE+400)*S-4);
+  if(A.running){const sub=Math.ceil(dtReal*900/10);for(let i=0;i<sub&&A.running;i++){stepA(10);const r=Math.hypot(A.st.x,A.st.y);A.minR=Math.min(A.minR,r);A.maxR=Math.max(A.maxR,r);
+      if(i%3===0)A.trail.push([A.st.x,A.st.y]);
+      const ang=Math.atan2(A.st.x,A.st.y);if(A.ang<0&&ang>=0&&A.simT>600)A.lap=true;A.ang=ang;
+      if(r<=RE){A.running=false;const dist=RE*Math.abs(Math.atan2(A.st.x,A.st.y));A.res={ok:false,msg:`💥 ${fmt(A.simT/60,0)} 分鐘後掉到地上，落在 ${fmt(dist<0?-dist:dist,0)} 公里外。`};
+        if(A.v0<7.6)setTimeout(()=>toast('#tA','丟得越快，掉得越遠。可是地球是圓的……如果夠快，地面彎下去的速度會跟上你掉下來的速度！'),300);}
+      else if(r>RE*8){A.running=false;A.res={ok:true,msg:'🚀 太快了！它脫離地球，一去不回（每秒約 10.9 公里以上）。'};}
+      else if(A.lap){A.running=false;const per=A.simT/60,peri=A.minR-RE,apo=A.maxR-RE;
+        A.res={ok:peri>120,msg:peri>120?`🛰️ 繞了一整圈！一圈 ${fmt(per,0)} 分鐘，最低 ${fmt(peri,0)} 公里、最高 ${fmt(apo,0)} 公里。${Math.abs(A.v0-7.67)<0.05?'這就是國際太空站！':''}`:`繞得太低，${fmt(peri,0)} 公里高的空氣會把它拖下來。`};
+        if(peri>120&&Math.abs(A.v0-7.67)<0.05)toast('#tA','剛剛好！每秒 7.67 公里，軌道變成一個圓，永遠掉不到地上。太空站就是這樣「一直往下掉，卻一直掉不到」。',false,6500);}}
+    roA();}
+  if(A.trail.length>1){a.strokeStyle=A.res&&!A.res.ok?'#ff7a6a':'#ffd76a';a.lineWidth=2;a.beginPath();A.trail.forEach(([x,y],i)=>{const X=cx+x*S,Y=cy-y*S;i?a.lineTo(X,Y):a.moveTo(X,Y);});a.stroke();}
+  if(A.st){const X=cx+A.st.x*S,Y=cy-A.st.y*S;if(Math.abs(A.v0-7.67)<0.05)issIcon(a,X,Y,9,Math.atan2(A.st.x,A.st.y));else{a.fillStyle='#fff';a.beginPath();a.arc(X,Y,4,0,7);a.fill();}}
+}
+
+/* ================= B: orbit + reboost ================= */
+const B={t:0,h:410,sp:60,pause:false,lap:0,rise:0,km:0,fuel:10,next:90,phase:0,lit:true,over:false,warned:false,won:false,lowest:410,storm:0,nextStorm:50};
+function periodS(h){const r=RE+h;return 2*Math.PI*Math.sqrt(r**3/GM);}
+function vel(h){return Math.sqrt(GM/(RE+h));}
+$$('[data-sp]').forEach(b=>b.onclick=()=>{B.sp=+b.dataset.sp;$$('[data-sp]').forEach(x=>x.classList.toggle('sel',x===b));});
+$('#bPause').onclick=()=>{B.pause=!B.pause;$('#bPause').textContent=B.pause?'▶ 繼續':'⏸ 暫停';};
+$('#burn').onclick=()=>{if(B.over)return;if(B.fuel<=0){toast('#tB','燃料用完了！等下一艘貨運太空船送燃料來。',true);return;}B.fuel--;B.h=Math.min(450,B.h+4);toast('#tB','🔥 點火！高度上升了約 4 公里。',false,1800);};
+$('#bReset').onclick=()=>{Object.assign(B,{t:0,h:410,lap:0,rise:0,km:0,fuel:10,next:90,phase:0,lit:true,over:false,warned:false,won:false,lowest:410,storm:0,nextStorm:50,hist:[]});B.pause=false;$('#bPause').textContent='⏸ 暫停';};
+function decayPerDay(h){return 0.1*Math.exp((400-h)/55)*(B.storm>B.t/86400?3:1);} // km/day: ~3 km/month at 400 km, ×3 during a solar storm
+function stepB(dt){if(B.pause||B.over)return;let left=dt*B.sp;
+  while(left>0){const d=Math.min(left,20);left-=d;B.t+=d;const P=periodS(B.h);B.phase+=d/P*2*Math.PI;B.km+=vel(B.h)*d;
+    if(B.phase>=2*Math.PI){B.phase-=2*Math.PI;B.lap++;}
+    const an=B.phase-Math.PI/2,rr=RE+B.h,lit=!(rr*Math.cos(an)<0&&Math.abs(rr*Math.sin(an))<RE); // sunlit unless inside Earth's shadow cylinder (sun from +x)
+    if(lit&&!B.lit)B.rise++;B.lit=lit;
+    B.h-=decayPerDay(B.h)*d/86400;B.lowest=Math.min(B.lowest,B.h);
+    const day=B.t/86400;
+    if(day>=B.nextStorm){B.nextStorm+=45+Math.random()*40;B.storm=day+10;toast('#tB','☀️ 太陽風暴！高層大氣受熱膨脹，接下來 10 天太空站會掉得特別快。',true,5000);}
+    if(day>=B.next){B.next+=90;B.fuel+=4;toast('#tB','📦 貨運太空船到了！送來新的燃料（＋4 次點火）。',false,3500);}
+    if(B.h<370&&!B.warned){B.warned=true;toast('#tB','⚠️ 高度低於 370 公里！空氣越來越濃，掉得會越來越快，快點火升軌！',true,5000);}
+    if(B.h>=375)B.warned=false;
+    if(B.h<300){B.over=true;toast('#tB','💥 太低了，太空站被大氣層拖下來了。按「重新開始」再試一次。',true,8000);break;}
+    if(day>=365&&!B.won){B.won=true;B.pause=true;$('#bPause').textContent='▶ 繼續';toast('#tB',B.lowest>=370?`🏆 撐過一整年，而且一直保持在安全高度（最低 ${fmt(B.lowest,0)} 公里）！真實的太空站每年也要升軌好幾次。`:`撐過一整年了，但最低掉到 ${fmt(B.lowest,0)} 公里，低於 370 公里的安全範圍。再挑戰一次，早一點點火！`,B.lowest<370,8000);}
+  }}
+function roB(){const P=periodS(B.h)/60,day=B.t/86400;
+  $('#roB').innerHTML=`<span class="big">第 ${fmt(day,day<10?2:0)} 天</span>`
+   +`<span class="st">高度 <b>${B.h.toFixed(1)}</b> 公里・一圈 <b>${P.toFixed(1)}</b> 分鐘</span>`
+   +`<span class="st">繞了 <b>${fmt(B.lap)}</b> 圈・看到 <b>${fmt(B.rise)}</b> 次日出</span>`
+   +`<span class="st">飛了 <b>${fmt(B.km,0)}</b> 公里（約 ${fmt(B.km/384400,1)} 趟到月球）</span>`
+   +`<span class="st">速度每秒 ${vel(B.h).toFixed(2)} 公里：台北到高雄只要約 ${Math.round(300/vel(B.h))} 秒</span>`
+   +`<span class="st">燃料：<b>${B.fuel}</b> 次點火・下一艘貨運船：第 ${B.next} 天</span>`;}
+function drawB(a,w,h,dt){
+  stepB(dt);roB();
+  a.fillStyle='#03050a';a.fillRect(0,0,w,h);stars(a,w,h);
+  const top=$('#roB').offsetHeight+14,wide=w>=640;
+  // orbit view (sun from the right)
+  const ow=wide?w*0.6:w,oh=wide?h-top:(h-top)*0.6,R=Math.min(ow,oh)*0.36,cx=ow/2,cy=top+oh/2,sc=R/RE;
+  // shadow cylinder
+  a.fillStyle='rgba(0,0,0,.45)';a.fillRect(cx-ow,cy-R,ow,2*R);
+  earth(a,cx,cy,R,0);
+  const ro=(RE+B.h)*sc*1;a.strokeStyle='rgba(111,214,255,.3)';a.beginPath();a.arc(cx,cy,ro,0,7);a.stroke();
+  const ang=B.phase-Math.PI/2,x=cx+Math.cos(ang)*ro,y=cy+Math.sin(ang)*ro;
+  issIcon(a,x,y,10,ang+Math.PI/2,B.lit);
+  a.fillStyle='#ffd76a';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='middle';a.fillText('陽光 ←',ow-6,top+14);
+  a.fillStyle='#9aa6ba';a.textAlign='center';a.fillText(B.lit?'☀️ 在陽光下':'🌑 在地球的影子裡',x,y+(y<cy?-18:20));
+  // altitude chart
+  const gx=wide?ow+6:12,gy=wide?top:top+oh+6,gw=wide?w-ow-18:w-24,gh=wide?h-top-12:h-gy-10;
+  a.fillStyle='#0f131b';a.strokeStyle='#283041';a.lineWidth=1;a.beginPath();a.roundRect(gx,gy,gw,gh,8);a.fill();a.stroke();
+  const H0=290,H1=460,Y=v=>gy+gh-14-(v-H0)/(H1-H0)*(gh-34);
+  a.fillStyle='rgba(111,211,143,.12)';a.fillRect(gx+1,Y(430),gw-2,Y(370)-Y(430));
+  a.fillStyle='rgba(255,122,106,.15)';a.fillRect(gx+1,Y(300),gw-2,Y(H0)-Y(300));
+  a.fillStyle='#9aa6ba';a.font='10.5px Lexend,sans-serif';a.textAlign='left';a.textBaseline='middle';for(const v of[300,370,400,430,450])a.fillText(v,gx+4,Y(v));
+  B.hist=B.hist||[];const day=B.t/86400;if(!B.hist.length||day-B.hist[B.hist.length-1][0]>0.5)B.hist.push([day,B.h]);if(B.t===0)B.hist=[[0,B.h]];
+  const dmax=Math.max(30,day*1.05),X=d=>gx+30+d/dmax*(gw-40);
+  a.strokeStyle='#6fd6ff';a.lineWidth=2;a.beginPath();B.hist.forEach(([d,v],i)=>i?a.lineTo(X(d),Y(v)):a.moveTo(X(d),Y(v)));a.lineTo(X(day),Y(B.h));a.stroke();
+  a.fillStyle='#ecf1f8';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('高度（公里）',gx+30,gy+5);
+  a.fillStyle='#9aa6ba';a.font='10.5px "Noto Sans TC",sans-serif';a.textAlign='right';a.textBaseline='bottom';a.fillText(`第 ${fmt(dmax,0)} 天`,gx+gw-8,gy+gh-2);
+}
+
+/* ================= C: when can I see it? ================= */
+const C={t:19.2,pass:0};
+function syncC(){const t=C.t,hh=Math.floor(t),mm=Math.round((t-hh)*60);$('#todV').textContent=`${String(hh%24).padStart(2,'0')}:${String(mm%60).padStart(2,'0')}`;}
+$('#tod').oninput=e=>{C.t=+e.target.value;syncC();};
+$$('[data-t]').forEach(b=>b.onclick=()=>{C.t=+b.dataset.t;$('#tod').value=C.t;syncC();});
+const HISS=400;
+function geom(t,u){// observer angle φ from the sub-solar point (noon=0); ISS angle φ+u, u in radians (−west … +east)
+  const phi=(t-12)/24*2*Math.PI,ox=RE*Math.cos(phi),oy=RE*Math.sin(phi),ri=RE+HISS,ix=ri*Math.cos(phi+u),iy=ri*Math.sin(phi+u);
+  const dx=ix-ox,dy=iy-oy,up=(dx*Math.cos(phi)+dy*Math.sin(phi))/Math.hypot(dx,dy),el=Math.asin(clamp(up,-1,1));
+  const east=-dx*Math.sin(phi)+dy*Math.cos(phi);
+  const lit=!(ix<0&&Math.abs(iy)<RE);
+  const sunEl=Math.asin(clamp(Math.cos(phi),-1,1));
+  return{phi,ox,oy,ix,iy,el,east,lit,sunEl};}
+function roC(){const g0=geom(C.t,0),sunEl=g0.sunEl*180/Math.PI;
+  let lit=0,vis=0,firstLit=null,lastLit=null;const N=60;for(let i=0;i<=N;i++){const u=(-0.36+0.72*i/N),g=geom(C.t,u);if(g.el>0.17){if(firstLit===null)firstLit=g.lit;lastLit=g.lit;if(g.lit)lit++;if(g.lit&&sunEl<-6)vis++;}}
+  const dark=sunEl<-6;
+  let verdict,why;
+  if(!dark&&sunEl>-0.5){verdict='<span class="no">看不到</span>';why='現在是白天，天空太亮了，太空站淹沒在藍天裡。';}
+  else if(!dark){verdict='<span class="no">很難看到</span>';why='太陽剛下山，天空還不夠暗。';}
+  else if(vis===0){verdict='<span class="no">看不到</span>';why='天空夠暗了，可是太空站整個躲在地球的影子裡，沒有陽光照到它。';}
+  else if(lit<Math.round(N*0.9)){verdict='<span class="ok">看得到一部分！</span>';why=firstLit?'它從西邊亮亮地飛過來，飛到一半會突然變暗消失，因為它飛進了地球的影子。':'一開始它躲在地球的影子裡看不到，飛到一半突然「亮起來」，因為它飛出影子、照到了太陽。';}
+  else{verdict='<span class="ok">看得到！</span>';why='天空已經暗了，可是太空站在 400 公里高的地方還照得到太陽，像一顆很亮的星星劃過天空。';}
+  $('#roC').innerHTML=`<span class="big">${$('#todV').textContent}：${verdict}</span><span class="st">${why}</span><span class="st">太陽高度 <b>${sunEl.toFixed(0)}°</b>${dark?'（天黑了）':sunEl>0?'（白天）':'（黃昏/黎明）'}</span>`;}
+function drawC(a,w,h,now){
+  syncC();roC();
+  a.fillStyle='#03050a';a.fillRect(0,0,w,h);
+  const top=$('#roC').offsetHeight+14,wide=w>=640;
+  // left: cross-section, sun from the right
+  const lw=wide?w*0.45:w,lh=wide?h-top:(h-top)*0.5,cx=lw/2,cy=top+lh/2,R=Math.min(lw,lh)*0.3,S=R/RE;
+  stars(a,lw,h,0.6);
+  a.fillStyle='rgba(0,0,0,.5)';a.fillRect(0,cy-R,cx,2*R);
+  earth(a,cx,cy,R,0);
+  const g0=geom(C.t,0);
+  // ISS pass arc
+  for(let i=0;i<=80;i++){const u=-0.36+0.72*i/80,g=geom(C.t,u);a.fillStyle=g.lit?'#ffd76a':'#444b5c';a.fillRect(cx+g.ix*S-1,cy-g.iy*S-1,2,2);}
+  // observer
+  const px=cx+g0.ox*S,py=cy-g0.oy*S;a.fillStyle='#ff7a6a';a.beginPath();a.arc(px,py,5,0,7);a.fill();
+  a.fillStyle='#ecf1f8';a.font='600 12px "Noto Sans TC",sans-serif';a.textAlign='center';a.textBaseline='middle';
+  const lx=cx+g0.ox*S*1.32,ly=cy-g0.oy*S*1.32;a.fillText('你',lx,ly);
+  a.fillStyle='#ffd76a';a.font='12px "Noto Sans TC",sans-serif';a.textAlign='right';a.fillText('陽光 ←',lw-8,top+12);
+  a.fillStyle='#9aa6ba';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='left';a.fillText('灰色帶＝地球的影子',8,cy+R+14);
+  // right: sky view
+  const sx=wide?lw+8:10,sy=wide?top:top+lh+8,sw=wide?w-lw-20:w-20,sh=wide?h-top-12:h-sy-10;
+  const sunEl=g0.sunEl*180/Math.PI,dk=clamp((-sunEl+0)/14,0,1);
+  const sky=a.createLinearGradient(0,sy,0,sy+sh);
+  const c1=dk<0.01?'#4f95d9':`rgb(${Math.round(79*(1-dk)+8*dk)},${Math.round(149*(1-dk)+12*dk)},${Math.round(217*(1-dk)+30*dk)})`;
+  sky.addColorStop(0,c1);sky.addColorStop(1,dk<1&&sunEl<4?`rgba(255,${150+80*(1-dk)|0},90,${0.9*(1-dk)})`:c1);
+  a.save();a.beginPath();a.roundRect(sx,sy,sw,sh,10);a.clip();a.fillStyle=sky;a.fillRect(sx,sy,sw,sh);
+  if(dk>0.5){a.save();a.translate(sx,sy);stars(a,sw,sh*0.85,(dk-0.5)*2);a.restore();}
+  const hy=sy+sh-30,dome=Math.min(sw*0.46,sh-50);
+  a.fillStyle='#0d1a12';a.fillRect(sx,hy,sw,sh);a.fillStyle='#16261b';for(let i=0;i<14;i++){const x=sx+i*sw/13;a.beginPath();a.ellipse(x,hy,sw/18,10+(i%3)*5,0,Math.PI,0);a.fill();}
+  // ISS track across the sky (west on the left, east on the right)
+  const N=120,pts=[];for(let i=0;i<=N;i++){const u=-0.36+0.72*i/N,g=geom(C.t,u);if(g.el<0)continue;const az=Math.atan2(g.east,1);
+    const zen=Math.PI/2-g.el,x=sx+sw/2+Math.sign(g.east)*zen/(Math.PI/2)*dome,y=hy-Math.sin(g.el)*(dome*0.95);pts.push([x,y,g.lit,u]);}
+  const visibleSky=sunEl<-6;
+  a.setLineDash([3,5]);a.strokeStyle='rgba(255,255,255,.18)';a.beginPath();pts.forEach(([x,y],i)=>i?a.lineTo(x,y):a.moveTo(x,y));a.stroke();a.setLineDash([]);
+  // moving ISS
+  const per=9000,f=(now%per)/per,u=-0.36+0.72*f,g=geom(C.t,u);
+  if(g.el>0){const zen=Math.PI/2-g.el,x=sx+sw/2+Math.sign(g.east)*zen/(Math.PI/2)*dome,y=hy-Math.sin(g.el)*(dome*0.95);
+    if(g.lit&&visibleSky){const gl=a.createRadialGradient(x,y,0,x,y,12);gl.addColorStop(0,'rgba(255,255,240,1)');gl.addColorStop(1,'rgba(255,255,220,0)');a.fillStyle=gl;a.beginPath();a.arc(x,y,12,0,7);a.fill();a.fillStyle='#fff';a.beginPath();a.arc(x,y,2.6,0,7);a.fill();}
+    else if(g.lit&&sunEl<0){a.fillStyle='rgba(255,255,255,.35)';a.beginPath();a.arc(x,y,2,0,7);a.fill();}
+  }
+  a.fillStyle='#ecf1f8';a.font='600 12px "Noto Sans TC",sans-serif';a.textBaseline='bottom';a.textAlign='left';a.fillText('西',sx+8,hy-4);a.textAlign='right';a.fillText('東',sx+sw-8,hy-4);
+  a.textAlign='center';a.fillStyle='rgba(236,241,248,.7)';a.fillText('你頭頂',sx+sw/2,hy-dome*0.95-4);
+  a.restore();
+  a.fillStyle='#9aa6ba';a.font='11px "Noto Sans TC",sans-serif';a.textAlign='left';a.textBaseline='top';a.fillText('抬頭看到的天空（虛線是太空站飛過的路線）',sx+4,sy+sh+2>h-12?sy+4:sy+sh+2);
+}
+
+/* ---------- tabs & loop ---------- */
+$$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==TAB);});
+let last=performance.now();
+function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;const cv=$('#c'+TAB),{w,h,d}=fit(cv),a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);
+  if(TAB==='A')drawA(a,w,h,dt);else if(TAB==='B')drawB(a,w,h,dt);else drawC(a,w,h,now);requestAnimationFrame(loop);}
+syncA();roA();syncC();requestAnimationFrame(loop);
+})();
+</script>

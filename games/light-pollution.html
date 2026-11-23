@@ -1,0 +1,422 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>被偷走的星空</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: night observatory — canvas panes with tabs left, explainer rail right; stacks on phones. Single dark look. */
+:root{
+  --void:#060914;
+  --panel:#0e1424;
+  --panel2:#151d33;
+  --rule:#26304d;
+  --ink:#e8ecf7;
+  --dim:#939cb6;
+  --star:#ffe7a3;
+  --warm:#ffb36b;
+  --ok:#5fd38d;
+  --bad:#ff6b6b;
+  --f-disp:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Lexend","Noto Sans TC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--star);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:12px 12px 0 0;padding:8px 16px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--star)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden;background:#000}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:300px}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ro{position:absolute;left:12px;top:10px;background:rgba(6,9,20,.78);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:13px;line-height:1.55;pointer-events:none;max-width:min(380px,calc(100% - 24px))}
+.ro b{font-family:var(--f-num);color:var(--star)}
+.ro .big{font-family:var(--f-disp);font-size:17px}
+.count{position:absolute;right:12px;top:10px;background:rgba(6,9,20,.78);border:1px solid var(--rule);border-radius:10px;padding:8px 14px;text-align:right;pointer-events:none}
+.count .n{font-family:var(--f-num);font-size:30px;font-weight:700;color:var(--star);line-height:1.1}
+.count small{display:block;color:var(--dim);font-size:12px}
+.toast{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--star);color:#1d1500;font-weight:700;border-radius:10px;padding:7px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;max-width:calc(100% - 24px);text-align:center}
+.toast.on{opacity:1}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row .lab{font-size:13px;color:var(--dim);min-width:3.2em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.pri{background:var(--star);border-color:var(--star);color:#1d1500;font-weight:700}
+.btn.sel{border-color:var(--star);color:var(--star);box-shadow:inset 0 0 0 1px var(--star);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 240px}
+.sl input{flex:1;accent-color:var(--star);min-width:80px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:6.5em;text-align:right}
+.chk{display:flex;align-items:center;gap:6px;font-size:13.5px;color:var(--dim)}
+.chk input{accent-color:var(--star);width:16px;height:16px}
+.seg{display:flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--panel2);flex-wrap:wrap}
+.seg button{background:transparent;border:0;padding:6px 11px;font-size:13.5px;color:var(--dim)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--star);color:#1d1500;font-weight:700}
+.charts{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.charts button{background:#000;border:2px solid var(--rule);border-radius:10px;padding:0;overflow:hidden;position:relative;aspect-ratio:1/1}
+.charts button canvas{width:100%;height:100%;display:block}
+.charts button span{position:absolute;left:0;right:0;bottom:0;background:rgba(6,9,20,.8);font-family:var(--f-num);font-size:12px;font-weight:700}
+.charts button.right{border-color:var(--ok)}
+.charts button.wrong{border-color:var(--bad)}
+.note{font-size:12.5px;color:var(--dim)}
+
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding:18px 18px 30px}
+.rail h1{font-family:var(--f-disp);font-size:24px;line-height:1.3;margin:0 0 4px}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-family:var(--f-disp);font-size:17px;margin:0 0 6px}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--void);border:1px solid var(--rule);border-radius:8px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0}
+.bt{width:100%;border-collapse:collapse;font-size:12.5px}
+.bt td{padding:3px 4px;border-top:1px dashed var(--rule)}
+.bt td:first-child{font-family:var(--f-num);font-weight:700;color:var(--star);width:2em}
+.bt td:last-child{text-align:right;font-family:var(--f-num);color:var(--dim)}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:56vh;min-height:360px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px;max-width:calc(100% - 150px)}
+  .count .n{font-size:22px}
+  .charts{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="sky" aria-pressed="true">星空模擬器<small>換個地方看星星</small></button>
+      <button data-tab="quiz" aria-pressed="false">當個公民科學家<small>用獵戶座量光害</small></button>
+      <button data-tab="town" aria-pressed="false">把星星找回來<small>改造一條街</small></button>
+    </nav>
+    <div class="view">
+      <!-- sky -->
+      <div class="pane" id="p-sky">
+        <div class="cv"><canvas id="cS"></canvas><div class="ro" id="roS"></div><div class="count" id="cntS"></div><div class="toast" id="tS"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">地點</span><span class="row" id="places"></span></div>
+          <div class="row">
+            <label class="sl">光害等級<input id="bortle" type="range" min="1" max="9" step="0.1" value="7"><b id="bortleV"></b></label>
+          </div>
+          <div class="row">
+            <span class="lab">眼睛</span>
+            <div class="seg" id="adapt"><button data-a="0" aria-pressed="false">剛看完手機</button><button data-a="1" aria-pressed="false">等了 5 分鐘</button><button data-a="2" aria-pressed="true">等了 20 分鐘</button></div>
+            <label class="chk"><input type="checkbox" id="moon">滿月</label>
+            <label class="chk"><input type="checkbox" id="lines" checked>星座連線</label>
+            <label class="chk"><input type="checkbox" id="names" checked>星名</label>
+          </div>
+        </div>
+      </div>
+      <!-- quiz -->
+      <div class="pane" id="p-quiz" hidden>
+        <div class="cv"><canvas id="cQ"></canvas><div class="ro" id="roQ"></div><div class="toast" id="tQ"></div></div>
+        <div class="dock">
+          <div class="note">哪一張星圖和上面的天空最像？（數字＝看得到的最暗星等，越大代表天空越暗、星星越多）</div>
+          <div class="charts" id="charts"></div>
+          <div class="row"><button class="btn pri" id="qNext">下一個地點 →</button><span class="note" id="qScore"></span></div>
+        </div>
+      </div>
+      <!-- town -->
+      <div class="pane" id="p-town" hidden>
+        <div class="cv"><canvas id="cT"></canvas><div class="ro" id="roT"></div><div class="count" id="cntT"></div></div>
+        <div class="dock">
+          <div class="row"><span class="lab">燈罩</span><div class="seg" id="shield"><button data-v="0" aria-pressed="true">沒有（球形燈）</button><button data-v="1" aria-pressed="false">一半</button><button data-v="2" aria-pressed="false">完全朝下</button></div></div>
+          <div class="row"><span class="lab">燈色</span><div class="seg" id="ctemp"><button data-v="0" aria-pressed="true">冷白光</button><button data-v="1" aria-pressed="false">暖黃光</button><button data-v="2" aria-pressed="false">琥珀色</button></div></div>
+          <div class="row">
+            <label class="sl">路燈亮度<input id="lum" type="range" min="30" max="150" value="120"><b id="lumV"></b></label>
+            <label class="chk"><input type="checkbox" id="signs" checked>超亮廣告招牌</label>
+            <label class="chk"><input type="checkbox" id="late">深夜關掉一半的燈</label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>被偷走的星空</h1>
+    <p class="lede">在很暗的山上，肉眼可以看到幾千顆星星；在城市裡，常常只剩下幾十到一百多顆。星星沒有消失，是被燈光「蓋」住了。</p>
+
+    <div class="card">
+      <h2>星等：數字越大越暗</h2>
+      <p>天文學家用「星等」表示星星有多亮。1 等星很亮，6 等星是在很暗的地方勉強看得到的星星。每差 1 等，亮度差約 2.5 倍。</p>
+      <p>暗的星星比亮的星星多很多：全天比 1 等亮的星只有十幾顆，比 6 等亮的大約有 5000 顆。所以只要天空變亮一點點，看到的星星就會<b>少一大堆</b>。</p>
+    </div>
+
+    <div class="card">
+      <h2>波特爾暗空等級</h2>
+      <table class="bt">
+        <tr><td>1</td><td>非常暗的荒野：銀河會投下影子</td><td>約 7.6 等</td></tr>
+        <tr><td>3</td><td>鄉下：銀河很清楚</td><td>約 6.8 等</td></tr>
+        <tr><td>5</td><td>郊區：銀河很淡</td><td>約 5.8 等</td></tr>
+        <tr><td>7</td><td>城市邊緣：看不到銀河</td><td>約 4.8 等</td></tr>
+        <tr><td>9</td><td>市中心：只剩最亮的星</td><td>約 3.5 等</td></tr>
+      </table>
+      <p style="margin-top:6px">右邊的數字是「肉眼能看到的最暗星等」。這個 1～9 級的分法，是美國業餘天文學家波特爾在 2001 年提出的。</p>
+    </div>
+
+    <div class="card">
+      <h2>光害從哪裡來？</h2>
+      <p>路燈、招牌、大樓的燈，有一部分直接往上照，或從地面反射上去。這些光被空氣中的分子和灰塵<b>散射</b>，讓整片天空發亮，叫做「天空輝光」。</p>
+      <p>藍白色的光比暖黃色的光更容易被空氣散射（就像天空是藍色的原因），所以冷白光的路燈對星空的影響更大。</p>
+    </div>
+
+    <div class="card">
+      <h2>不只是看不到星星</h2>
+      <p>• 剛孵化的海龜寶寶本來會朝較亮的海面爬，卻被岸上的燈光騙往陸地。</p>
+      <p>• 夜間遷徙的候鳥會被城市燈光吸引而迷路、撞上大樓；許多昆蟲繞著路燈飛到累死。</p>
+      <p>• 晚上太亮也可能影響人的睡眠和生理時鐘。</p>
+    </div>
+
+    <div class="card">
+      <h2>有多少人看不到銀河？</h2>
+      <p>2016 年發表的《世界人工夜空亮度地圖》估計：全世界約 <b>80%</b> 的人住在有光害的天空下，超過 <b>三分之一</b> 的人在家附近已經看不到銀河。</p>
+      <p>德國科學家整理全球民眾的觀測紀錄，發現 2011～2022 年間，天空平均每年變亮將近 10%。</p>
+    </div>
+
+    <div class="card">
+      <h2>台灣的暗空公園</h2>
+      <p>南投的<b>合歡山</b>在 2019 年獲得國際暗天協會認證，成為台灣第一座「國際暗空公園」。那裡的天空夠暗，天氣好時銀河清楚可見。</p>
+    </div>
+
+    <div class="card">
+      <h2>觀星小撇步</h2>
+      <p>• 眼睛需要約 <b>20～30 分鐘</b>才會完全適應黑暗，看一眼手機就要重新等。</p>
+      <p>• 用紅光手電筒，比較不會破壞暗適應。</p>
+      <p>• 你也可以參加「Globe at Night（夜空中的地球）」計畫：比對獵戶座看得到幾顆星，回報給科學家，就像第二個分頁的遊戲。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=s=>document.querySelector(s);
+const DPR=()=>Math.min(2,devicePixelRatio||1);
+function fit(cv){const r=cv.getBoundingClientRect(),d=DPR(),W=Math.round(r.width*d),H=Math.round(r.height*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}return{W,H,w:r.width,h:r.height,d};}
+function toast(id,msg,ms=3000){const t=$(id);t.innerHTML=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms);}
+let TAB='sky';
+
+/* ---------------- star data (winter sky around Orion) ---------------- */
+// [name, RA hours, Dec deg, mag, colour]
+const NS=[
+ ['參宿四',5.919,7.41,0.45,'#ffb27a'],['參宿七',5.242,-8.20,0.13,'#cfe0ff'],['參宿五',5.419,6.35,1.64,'#d8e4ff'],['參宿三',5.533,-0.30,2.23,'#d8e4ff'],
+ ['參宿二',5.604,-1.20,1.69,'#d8e4ff'],['參宿一',5.679,-1.94,1.77,'#d8e4ff'],['參宿六',5.796,-9.67,2.06,'#d8e4ff'],['觜宿一',5.585,9.93,3.39,'#e0e8ff'],
+ ['',4.830,6.96,3.19,'#fff4e0'],['',4.853,5.61,3.69,'#e8eeff'],['',4.904,2.44,3.72,'#e8eeff'],['',4.843,8.90,4.35,'#fff'],['',4.976,1.71,3.87,'#e8eeff'],['',4.910,10.15,4.6,'#fff'],
+ ['伐三',5.590,-5.91,2.77,'#d8e4ff'],['',5.588,-5.39,4.0,'#d8e4ff'],['',5.591,-4.84,4.6,'#d8e4ff'],['',5.408,-2.40,3.36,'#d8e4ff'],
+ ['天狼星',6.752,-16.72,-1.46,'#e6efff'],['軍市一',6.378,-17.96,1.98,'#d8e4ff'],['弧矢一',7.140,-26.39,1.83,'#fff6e0'],['弧矢七',6.977,-28.97,1.50,'#d8e4ff'],['弧矢二',7.402,-29.30,2.45,'#d8e4ff'],['',7.062,-15.63,4.1,'#fff'],
+ ['南河三',7.655,5.22,0.34,'#fffaf0'],['南河二',7.453,8.29,2.89,'#e8eeff'],
+ ['北河二',7.577,31.89,1.58,'#f0f4ff'],['北河三',7.755,28.03,1.14,'#ffd9a0'],['井宿三',6.629,16.40,1.93,'#f0f4ff'],['井宿五',6.732,25.13,2.98,'#ffe0a0'],['井宿一',6.383,22.51,2.87,'#ffc890'],['',6.248,22.51,3.3,'#ffc890'],['',7.335,21.98,3.53,'#fff4e0'],['',7.068,20.57,3.8,'#fff4e0'],['',6.755,12.90,3.36,'#fff'],
+ ['畢宿五',4.599,16.51,0.85,'#ffad70'],['五車五',5.438,28.61,1.65,'#e0e8ff'],['天關',5.627,21.14,3.0,'#e0e8ff'],['',4.330,15.63,3.65,'#ffe0a0'],['',4.382,17.54,3.76,'#ffe0a0'],['',4.477,19.18,3.53,'#ffe0a0'],['',4.478,15.87,3.4,'#fff'],['',4.011,12.49,3.4,'#e8eeff'],
+ ['昴宿六',3.791,24.11,2.87,'#d8e4ff'],['',3.819,24.05,3.62,'#d8e4ff'],['',3.749,24.11,3.70,'#d8e4ff'],['',3.766,24.37,3.87,'#d8e4ff'],['',3.772,23.95,4.18,'#d8e4ff'],['',3.754,24.47,4.30,'#d8e4ff'],['',3.819,24.14,5.05,'#d8e4ff'],['',3.748,24.29,5.45,'#d8e4ff'],['',3.755,24.55,5.76,'#d8e4ff'],
+ ['五車二',5.278,46.00,0.08,'#fff2c0'],['五車三',5.992,44.95,1.90,'#f0f4ff'],['',5.995,37.21,2.62,'#f0f4ff'],['',4.950,33.17,2.69,'#ffc890'],['',5.033,43.82,3.0,'#fff4e0'],['',5.041,41.08,3.75,'#ffc890'],['',5.109,41.23,3.17,'#e8eeff'],
+ ['',5.546,-17.82,2.58,'#fff4e0'],['',5.471,-20.76,2.84,'#ffe0a0'],['',5.091,-22.37,3.19,'#ffc890'],['',5.216,-16.21,3.29,'#e8eeff'],['',5.131,-5.09,2.79,'#f0f4ff']
+];
+const idx=n=>NS.findIndex(s=>s[0]===n);
+const L=(a,b)=>[a,b];
+const LINES=[ // by index
+ [0,7],[7,2],[0,5],[2,3],[3,4],[4,5],[5,6],[3,1],[2,8],[13,11],[11,8],[8,9],[9,10],[10,12],[4,15],[15,14],
+ [18,19],[18,23],[18,20],[20,21],[20,22],[24,25],
+ [26,29],[29,30],[30,31],[27,32],[32,33],[33,28],[26,27],[33,34],
+ [35,41],[41,38],[38,39],[39,40],[38,42],[40,36],[35,37],
+ [52,53],[53,54],[54,36],[36,55],[55,52],[52,56],[52,57],
+ [59,60],[60,61],[61,62],[62,59]
+];
+const TRI=[0,18,24]; // winter triangle
+// synthetic faint stars: cumulative whole-sky counts N(<m)
+const CUM=[[-1,2],[0,4],[1,15],[2,48],[3,171],[4,513],[5,1602],[6,4800],[7,14000],[8,41000]];
+function cumCount(m){if(m<=CUM[0][0])return CUM[0][1];for(let i=1;i<CUM.length;i++)if(m<=CUM[i][0]){const [m0,n0]=CUM[i-1],[m1,n1]=CUM[i],t=(m-m0)/(m1-m0);return Math.pow(10,Math.log10(n0)+(Math.log10(n1)-Math.log10(n0))*t);}return CUM[CUM.length-1][1];}
+const RA0=5.75,DEC0=8,SPAN_RA=130,SPAN_DEC=110; // degrees across the view
+let seed=7;const srnd=()=>{seed=(seed*16807)%2147483647;return(seed-1)/2147483646;};
+const FAINT=[];
+(function(){
+  // area of the field as a fraction of the whole sky (approx)
+  const frac=(SPAN_RA*SPAN_DEC*Math.cos(10*Math.PI/180))/41253;
+  const total=Math.round((cumCount(7.6)-cumCount(3.6))*frac);
+  for(let i=0;i<total;i++){
+    // magnitude from the cumulative curve between 3.6 and 7.6
+    const u=srnd(),lo=cumCount(3.6),hi=cumCount(7.6),target=lo+(hi-lo)*u; // sample in proportion to real star counts
+    let a=3.6,b=7.6;for(let k=0;k<30;k++){const m=(a+b)/2;cumCount(m)<target?a=m:b=m;}
+    let ra,dec;
+    // pull ~35% toward the Milky Way band (Auriga → Gemini/Orion → Monoceros → Puppis)
+    if(srnd()<0.2){const t=srnd();ra=5.3+t*2.3+(srnd()-0.5)*1.5;dec=48-t*78+(srnd()-0.5)*22;}
+    else{ra=RA0+(srnd()-0.5)*SPAN_RA/15/Math.cos(10*Math.PI/180)*1.05;dec=DEC0+(srnd()-0.5)*SPAN_DEC;}
+    const c=srnd();FAINT.push([ra,dec,(a+b)/2,c<0.15?'#ffd2a0':c<0.35?'#dfe8ff':'#ffffff']);
+  }
+})();
+
+/* ---------------- sky model ---------------- */
+const NELM_B=[0,7.7,7.3,6.8,6.3,5.8,5.3,4.8,4.2,3.5];
+function nelmOf(b,adapt,moon){
+  const i=Math.floor(b),f=b-i,base=i>=9?NELM_B[9]:NELM_B[i]+(NELM_B[Math.min(9,i+1)]-NELM_B[i])*f;
+  const ad=[-1.3,-0.5,0][adapt];const mn=moon?-Math.max(0.25,1.6-0.17*(b-1)):0;return base+ad+mn;}
+function skyColors(b,moon){ // zenith and horizon colours for a Bortle level
+  const t=(b-1)/8,m=moon?0.25:0;
+  const z=[6+30*t+18*m,9+28*t+22*m,22+38*t+34*m],hz=[10+120*t+20*m,14+80*t+26*m,30+45*t+40*m];
+  return{z:`rgb(${z.map(Math.round)})`,h:`rgb(${hz.map(Math.round)})`};}
+function drawSky(cv,o){ // o: {bortle,nelm,lines,names,moon,horizon,crop}
+  const gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,b=o.bortle,nelm=o.nelm;
+  const sc=o.crop?{ra:5.55,dec:0.5}:{ra:5.75,dec:8};
+  const sScale=o.crop?Math.min(w,h)/30:Math.min(w/72,h*0.86/80); // px per degree
+  const P=(ra,dec)=>[w/2-(ra-sc.ra)*15*Math.cos(dec*Math.PI/180)*sScale,(o.crop?h/2:h*0.44)-(dec-sc.dec)*sScale];
+  const col=skyColors(b,o.moon);
+  const g=a.createLinearGradient(0,0,0,h);g.addColorStop(0,col.z);g.addColorStop(o.crop?1:0.75,col.z);g.addColorStop(1,o.crop?col.z:col.h);a.fillStyle=g;a.fillRect(0,0,w,h);
+  // Milky Way glow
+  const mw=Math.max(0,Math.min(1,(nelm-5.4)/1.8));
+  if(mw>0){a.save();a.globalAlpha=0.16*mw;
+    for(let k=0;k<26;k++){const t=k/25,ra=5.3+t*2.3,dec=48-t*78,p=P(ra,dec),r=sScale*(7+4*Math.sin(t*9));const gg=a.createRadialGradient(p[0],p[1],0,p[0],p[1],r);gg.addColorStop(0,'rgba(200,210,255,.9)');gg.addColorStop(1,'rgba(200,210,255,0)');a.fillStyle=gg;a.beginPath();a.arc(p[0],p[1],r,0,7);a.fill();}
+    a.restore();}
+  let seen=0;
+  const star=(ra,dec,m,c)=>{if(m>nelm)return;const p=P(ra,dec);if(p[0]<-5||p[0]>w+5||p[1]<-5||p[1]>h+5)return;
+    // stars near the horizon are dimmed by thicker, brighter air
+    const hz=o.crop?0:Math.max(0,(p[1]/h-0.6)/0.4),eff=nelm-hz*(1+0.15*b);if(m>eff)return;seen++;
+    const k=Math.min(1,(eff-m)/1.5),r=Math.min(o.crop?4.6:3.8,0.45+(o.crop?0.5:0.3)*(eff-m)+(m<1.5?0.8:0));
+    a.globalAlpha=0.2+0.8*k;a.fillStyle=c;a.beginPath();a.arc(p[0],p[1],r,0,7);a.fill();
+    if(m<1.5&&k>0.6){a.globalAlpha=0.18*k;a.beginPath();a.arc(p[0],p[1],r*3,0,7);a.fill();}
+    a.globalAlpha=1;};
+  for(const s of FAINT)star(s[0],s[1],s[2],s[3]);
+  for(const s of NS)star(s[1],s[2],s[3],s[4]);
+  // constellation lines
+  if(o.lines){a.strokeStyle='rgba(140,180,255,.35)';a.lineWidth=1;
+    for(const [i,j] of LINES){const A=NS[i],B=NS[j];if(!A||!B)continue;const p=P(A[1],A[2]),q=P(B[1],B[2]);a.beginPath();a.moveTo(p[0],p[1]);a.lineTo(q[0],q[1]);a.stroke();}
+    a.strokeStyle='rgba(255,215,120,.35)';a.setLineDash([5,6]);a.beginPath();TRI.forEach((i,k)=>{const p=P(NS[i][1],NS[i][2]);k?a.lineTo(p[0],p[1]):a.moveTo(p[0],p[1]);});a.closePath();a.stroke();a.setLineDash([]);}
+  if(o.names){a.font='12px "Noto Sans TC",sans-serif';a.fillStyle='rgba(220,230,255,.75)';
+    for(const s of NS){if(!s[0]||s[3]>2.0)continue;const p=P(s[1],s[2]);if(s[3]<=nelm)a.fillText(s[0],p[0]+7,p[1]-6);}
+    a.fillStyle='rgba(255,215,120,.6)';a.font='700 13px "Noto Sans TC",sans-serif';
+    const lab=(t,ra,dec)=>{const p=P(ra,dec);a.fillText(t,p[0],p[1]);};lab('獵戶座',5.2,-13);lab('大犬座',7.6,-23);lab('雙子座',7.0,33);lab('金牛座',4.6,23);lab('御夫座',4.6,47);lab('昴宿星團',3.55,27);}
+  // moon
+  if(o.moon&&!o.crop){const p=[w*0.86,h*0.2];const gg=a.createRadialGradient(p[0],p[1],4,p[0],p[1],90);gg.addColorStop(0,'rgba(255,255,240,.45)');gg.addColorStop(1,'rgba(255,255,240,0)');a.fillStyle=gg;a.beginPath();a.arc(p[0],p[1],90,0,7);a.fill();
+    a.fillStyle='#fffbe8';a.beginPath();a.arc(p[0],p[1],14,0,7);a.fill();}
+  if(o.horizon)drawHorizon(a,w,h,b);
+  return seen;
+}
+function drawHorizon(a,w,h,b){
+  const base=h*0.9;
+  if(b<=3.5){ // mountains
+    a.fillStyle='#03050a';a.beginPath();a.moveTo(0,h);for(let x=0;x<=w;x+=8){a.lineTo(x,base-20-28*Math.abs(Math.sin(x*0.007))-14*Math.sin(x*0.023));}a.lineTo(w,h);a.closePath();a.fill();
+  }else{ // town / city skyline
+    const city=Math.min(1,(b-3.5)/5.5);
+    a.fillStyle='#05060b';a.beginPath();a.moveTo(0,h);let x=0;let s=3;
+    while(x<w){s=(s*9301+49297)%233280;const bw=24+s%40,bh=Math.min(h*0.13,(10+(s%90)*city)*(0.5+city));a.lineTo(x,base-bh);a.lineTo(x+bw,base-bh);x+=bw;}
+    a.lineTo(w,h);a.closePath();a.fill();
+    // windows
+    a.fillStyle=`rgba(255,200,120,${0.25+0.5*city})`;s=11;for(let i=0;i<Math.round(60*city);i++){s=(s*9301+49297)%233280;a.fillRect(s%Math.max(1,Math.round(w)),base-6-(s%Math.max(1,Math.round(70*city))),2,2);}
+  }
+  a.fillStyle='#020306';a.fillRect(0,base,w,h-base);
+}
+
+/* ======================= 1. SKY SIMULATOR ======================= */
+const PLACES=[{n:'合歡山',b:1.6},{n:'清境農場',b:3},{n:'鄉下田邊',b:4},{n:'台中郊區',b:5.5},{n:'台中市區',b:7.5},{n:'台北市中心',b:8.8}];
+const SK={b:7,adapt:2};
+function bortleName(b){return b<2?'非常暗的荒野':b<3.5?'鄉下':b<5?'郊外':b<6.5?'郊區':b<8?'城市':'市中心';}
+function buildPlaces(){const r=$('#places');r.innerHTML='';for(const p of PLACES){const bt=document.createElement('button');bt.className='btn'+(Math.abs(p.b-SK.b)<0.05?' sel':'');bt.textContent=p.n;bt.onclick=()=>{SK.b=p.b;$('#bortle').value=p.b;syncSky();};r.appendChild(bt);}}
+function syncSky(){SK.b=+$('#bortle').value;$('#bortleV').textContent=`第 ${SK.b.toFixed(1)} 級（${bortleName(SK.b)}）`;buildPlaces();drawSkyTab();}
+$('#bortle').oninput=syncSky;
+document.querySelectorAll('#adapt button').forEach(b=>b.onclick=()=>{SK.adapt=+b.dataset.a;document.querySelectorAll('#adapt button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawSkyTab();if(SK.adapt===0)toast('#tS','剛看完亮亮的手機，瞳孔還沒放大，暗的星星都看不到！');});
+['moon','lines','names'].forEach(id=>$('#'+id).onchange=drawSkyTab);
+function drawSkyTab(){
+  const nelm=nelmOf(SK.b,SK.adapt,$('#moon').checked);
+  const seen=drawSky($('#cS'),{bortle:SK.b,nelm,lines:$('#lines').checked,names:$('#names').checked,moon:$('#moon').checked,horizon:true});
+  const whole=Math.round(cumCount(nelm)/2*0.6); // above the horizon, minus extinction near it
+  $('#cntS').innerHTML=`<div class="n">${whole.toLocaleString()}</div><small>整片天空大約看得到的星星</small><small>這個畫面裡：${seen.toLocaleString()} 顆</small>`;
+  $('#roS').innerHTML=`<div class="big">11 月深夜，往南方看冬季星空</div><div>肉眼能看到的最暗星：<b>${nelm.toFixed(1)} 等</b></div><div style="color:var(--dim)">${nelm>6.2?'銀河清楚可見！暗的小星星多到數不完。':nelm>5.4?'銀河很淡，只有在最暗的地方才看得出來。':nelm>4.4?'看不到銀河了，只剩下比較亮的星。':'只剩下最亮的幾顆星，連獵戶座都不完整。'}</div>`;
+}
+new ResizeObserver(()=>{if(TAB==='sky')drawSkyTab();}).observe($('#cS'));
+
+/* ======================= 2. CITIZEN SCIENCE QUIZ ======================= */
+const QZ={b:5,ans:null,score:0,n:0,done:false};
+function newQuiz(){QZ.b=1.5+Math.random()*7.3;QZ.ans=null;QZ.done=false;QZ.n++;drawQuizSky();buildCharts();$('#roQ').innerHTML=`<div class="big">第 ${QZ.n} 個神祕地點</div><div>看看獵戶座周圍有幾顆星，再從下面選出最像的星圖。</div>`;}
+function quizNelm(){return nelmOf(QZ.b,2,false);}
+function drawQuizSky(){drawSky($('#cQ'),{bortle:QZ.b,nelm:quizNelm(),lines:false,names:false,moon:false,horizon:false,crop:true});}
+function buildCharts(){const box=$('#charts');box.innerHTML='';
+  for(let m=1;m<=7;m++){const bt=document.createElement('button');bt.innerHTML=`<canvas></canvas><span>${m} 等</span>`;box.appendChild(bt);
+    requestAnimationFrame(()=>{drawSky(bt.querySelector('canvas'),{bortle:1,nelm:m+0.25,lines:false,names:false,moon:false,horizon:false,crop:true});});
+    bt.onclick=()=>{if(QZ.done)return;QZ.done=true;const truth=quizNelm(),ok=Math.abs(m+0.25-truth)<0.8;if(ok)QZ.score++;
+      bt.classList.add(ok?'right':'wrong');const best=Math.max(1,Math.min(7,Math.round(truth-0.25)));box.children[best-1].classList.add('right');
+      toast('#tQ',`${ok?'答對了！':'差一點！'}這裡最暗看得到 ${truth.toFixed(1)} 等星，大約是光害第 ${QZ.b.toFixed(0)} 級（${bortleName(QZ.b)}）。`,3800);
+      $('#qScore').textContent=`得分 ${QZ.score} / ${QZ.n}`;};}
+}
+$('#qNext').onclick=newQuiz;
+new ResizeObserver(()=>{if(TAB==='quiz')drawQuizSky();}).observe($('#cQ'));
+
+/* ======================= 3. FIX THE TOWN ======================= */
+const TW={shield:0,ctemp:0};
+function townSky(){
+  const lum=+$('#lum').value/100,late=$('#late').checked?0.55:1;
+  const up=[0.32,0.12,0.0][TW.shield],refl=0.08; // fraction of light going up directly / reflected from the ground
+  const col=[1.45,1.0,0.72][TW.ctemp];
+  const lamps=6*lum*late*(up+refl)*col;
+  const signs=$('#signs').checked?1.1*late*col:0;
+  const U=lamps+signs+0.05;
+  // map the sky-glow index onto the Bortle scale (log)
+  const b=Math.max(1.5,Math.min(9,2+6.2*Math.log10(U/0.12)/Math.log10(3.8/0.12)));
+  return{U,b,waste:(up+refl)/(1)};}
+function drawTown(){
+  const cv=$('#cT'),gm=fit(cv),a=cv.getContext('2d'),d=gm.d;a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,gm.W,gm.H);a.setTransform(d,0,0,d,0,0);
+  const w=gm.w,h=gm.h,T=townSky(),nelm=nelmOf(T.b,2,false);
+  // sky part (top 58%)
+  const skyH=h*0.6;
+  a.save();a.beginPath();a.rect(0,0,w,skyH);a.clip();
+  a.restore();
+  const col=skyColors(T.b,false);const g=a.createLinearGradient(0,0,0,h);g.addColorStop(0,col.z);g.addColorStop(0.55,col.h);g.addColorStop(1,'#0a0a12');a.fillStyle=g;a.fillRect(0,0,w,h);
+  // stars in the sky band
+  let seen=0;seed=99;
+  for(let i=0;i<2600;i++){const u=srnd(),lo=cumCount(-0.5),hi=cumCount(7.5),target=lo+(hi-lo)*u;let A=-0.5,B=7.5;for(let k=0;k<24;k++){const m=(A+B)/2;cumCount(m)<target?A=m:B=m;}const m=(A+B)/2;
+    const x=srnd()*w,y=srnd()*skyH*0.95;if(m>nelm-(y/skyH)*0.8)continue;seen++;const k=Math.min(1,(nelm-m)/1.2);a.globalAlpha=0.3+0.7*k;a.fillStyle='#fff';a.beginPath();a.arc(x,y,Math.max(0.5,Math.min(2.6,0.9+(nelm-m)*0.4)),0,7);a.fill();}
+  a.globalAlpha=1;
+  // street
+  const ground=h*0.86,lamp=[0.32,0.12,0][TW.shield],lum=+$('#lum').value/100,late=$('#late').checked;
+  const lc=['rgba(220,235,255,','rgba(255,214,150,','rgba(255,170,80,'][TW.ctemp];
+  // buildings
+  a.fillStyle='#0b0d16';for(let i=0;i<9;i++){const bx=i*w/9,bh=h*(0.12+0.08*((i*37)%5)/5);a.fillRect(bx+4,ground-bh,w/9-8,bh);}
+  if($('#signs').checked){a.fillStyle=late?'rgba(255,60,140,.55)':'rgba(255,60,140,.95)';a.fillRect(w*0.12,ground-h*0.2,w*0.12,h*0.05);a.fillStyle=late?'rgba(80,200,255,.55)':'rgba(80,200,255,.95)';a.fillRect(w*0.66,ground-h*0.23,w*0.14,h*0.05);
+    a.fillStyle='rgba(255,255,255,.08)';a.beginPath();a.moveTo(w*0.12,ground-h*0.2);a.lineTo(w*0.04,0);a.lineTo(w*0.32,0);a.lineTo(w*0.24,ground-h*0.2);a.closePath();a.fill();}
+  a.fillStyle='#14161f';a.fillRect(0,ground,w,h-ground);
+  for(let i=0;i<6;i++){
+    const x=w*(0.1+i*0.16),top=ground-h*0.17,on=!(late&&i%2===1);
+    a.strokeStyle='#3b4152';a.lineWidth=3;a.beginPath();a.moveTo(x,ground);a.lineTo(x,top);a.stroke();
+    if(!on){a.fillStyle='#2a2e3a';a.beginPath();a.arc(x,top,6,0,7);a.fill();continue;}
+    const I=lum;
+    // downward cone
+    const gd=a.createRadialGradient(x,top,2,x,top,h*0.22*I+20);gd.addColorStop(0,lc+(0.55*I)+')');gd.addColorStop(1,lc+'0)');
+    a.fillStyle=gd;a.beginPath();a.moveTo(x,top);a.lineTo(x-w*0.09*(1+I*0.3),ground);a.lineTo(x+w*0.09*(1+I*0.3),ground);a.closePath();a.fill();
+    // upward spill
+    if(lamp>0){const gu=a.createRadialGradient(x,top,2,x,top,h*0.35*I*lamp*3);gu.addColorStop(0,lc+(0.45*I)+')');gu.addColorStop(1,lc+'0)');a.fillStyle=gu;a.beginPath();a.arc(x,top,h*0.35*I*lamp*3,Math.PI,0);a.fill();}
+    // lamp head
+    a.fillStyle=lc+'1)';
+    if(TW.shield===0){a.beginPath();a.arc(x,top,7,0,7);a.fill();}
+    else{a.fillStyle='#4a5266';a.beginPath();a.moveTo(x-12,top-4);a.lineTo(x+12,top-4);a.lineTo(x+8,top+(TW.shield===2?2:-1));a.lineTo(x-8,top+(TW.shield===2?2:-1));a.closePath();a.fill();a.fillStyle=lc+'1)';a.fillRect(x-7,top+(TW.shield===2?1:-3),14,3);}
+  }
+  const whole=Math.round(cumCount(nelm)/2*0.6);
+  $('#cntT').innerHTML=`<div class="n">${whole.toLocaleString()}</div><small>這條街的上空大約看得到的星星</small><small>光害第 ${T.b.toFixed(1)} 級（${bortleName(T.b)}）</small>`;
+  $('#roT').innerHTML=`<div class="big">改造這條街，把星星找回來！</div><div>直接往上照的光：<b>${Math.round(lamp*100)}%</b>　燈光散射程度：<b>${['高（藍光多）','中','低'][TW.ctemp]}</b></div><div style="color:var(--dim)">試試：全遮罩燈罩＋暖色燈＋關掉招牌，馬路一樣亮，星星卻變多了。</div>`;
+}
+document.querySelectorAll('#shield button').forEach(b=>b.onclick=()=>{TW.shield=+b.dataset.v;document.querySelectorAll('#shield button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawTown();});
+document.querySelectorAll('#ctemp button').forEach(b=>b.onclick=()=>{TW.ctemp=+b.dataset.v;document.querySelectorAll('#ctemp button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawTown();});
+$('#lum').oninput=()=>{$('#lumV').textContent=$('#lum').value+'%';drawTown();};['signs','late'].forEach(id=>$('#'+id).onchange=drawTown);
+new ResizeObserver(()=>{if(TAB==='town')drawTown();}).observe($('#cT'));
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  for(const t of ['sky','quiz','town'])$('#p-'+t).hidden=t!==TAB;
+  requestAnimationFrame(()=>{if(TAB==='sky')drawSkyTab();else if(TAB==='quiz'){if(!QZ.n)newQuiz();else{drawQuizSky();buildCharts();}}else drawTown();});});
+$('#lumV').textContent=$('#lum').value+'%';
+syncSky();
+
+})();
+</script>
