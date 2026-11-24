@@ -29,6 +29,7 @@ window.SITE_ITEMS = [
   },
 
   /* ↓ 新內容加在這一行下面 ↓ */
-  { type:'video', title:'七十二歲的第一次', desc:'七十二歲那年，第一次騎上腳踏車的故事。完整版短片，6 分 16 秒。', youtube:'kjX64R1BCMw', topic:'短片', isNew:true, date:'2026-11-23' },
+  { type:'video', title:'宇宙的量尺：勒維特的故事', desc:'勒維特從造父變星的明暗變化裡，找到量測宇宙距離的方法。4 分 52 秒。', youtube:'4Z8ORDTJ9O0', topic:'天文', isNew:true, date:'2026-11-24' },
+  { type:'video', title:'七十二歲的第一次', desc:'七十二歲那年，第一次騎上腳踏車的故事。完整版短片，6 分 16 秒。', youtube:'kjX64R1BCMw', topic:'短片', date:'2026-11-23' },
 
 ];
