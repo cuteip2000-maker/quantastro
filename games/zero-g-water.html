@@ -575,3 +575,5 @@ requestAnimationFrame(frame);
 window.__zg = {stats(){let mx=0,my=0,mz=0;for(let i=0;i<n;i++){mx+=px[i];my+=py[i];mz+=pz[i];}mx/=n;my/=n;mz/=n;let r=0,m=0;for(let i=0;i<n;i++){const d=Math.hypot(px[i]-mx,py[i]-my,pz[i]-mz);r+=d;m=Math.max(m,d);}return [n,Math.round(r/n),Math.round(m)];}, PRE, step, setG, get blobs(){return blobs}, analyse, updateSurface, mc, render(){renderer.render(scene,camera);}};
 })();
 </script>
+
+<script src="../qa.js" defer></script>

@@ -336,3 +336,5 @@ $$('.tabs button').forEach(b=>b.onclick=()=>{TAB=b.dataset.tab;$$('.tabs button'
 function loop(now){requestAnimationFrame(loop);const cv=$('#c'+TAB),{w,h,d}=fit(cv);if(w<10||h<10)return;const a=cv.getContext('2d');a.setTransform(d,0,0,d,0,0);if(TAB==='A')drawA(a,w,h,now);else if(TAB==='B')drawB(a,w,h,now);else drawC(a,w,h,now);}
 $('#serV').textContent='8 支';loadA(0);setN(6,false);setTh(2.1);requestAnimationFrame(loop);})();
 </script>
+
+<script src="../qa.js" defer></script>

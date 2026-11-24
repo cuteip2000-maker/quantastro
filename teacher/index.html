@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>老師後台 · Quantastro</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0d1430">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d1430'/%3E%3Cpath d='M16 4l2.6 9.4L28 16l-9.4 2.6L16 28l-2.6-9.4L4 16l9.4-2.6z' fill='%23ffd166'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../assets/app.css">
+<style>
+.bar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:12px}
+.ccard{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer}
+.ccard:hover{border-color:var(--accent)}
+.ccard h3{margin:0 0 4px;font-size:20px}.ccard .code{font:700 15px var(--latin);letter-spacing:.12em;color:var(--accent)}
+.bigcode{font:700 clamp(28px,5vw,40px)/1.1 var(--latin);letter-spacing:.14em;color:var(--accent)}
+.headline{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:18px}
+.pin{font-family:var(--latin);letter-spacing:.1em}
+.mini{display:flex;align-items:center;gap:8px;min-width:120px}.mini .bar{flex:1}
+tr.detail td{background:var(--bg);padding:12px 14px}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.gstat{display:grid;grid-template-columns:minmax(0,1fr) 110px 48px;gap:10px;align-items:center;padding:5px 0;font-size:15px}
+.gstat .bar{height:7px}
+.inline{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.inline label.f{margin:0;flex:1 1 140px}
+#print{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  body>*:not(#print){display:none!important}
+  #print{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .slip{border:1px dashed #999;padding:14px 18px;break-inside:avoid;font:14px/1.6 "Noto Sans TC",sans-serif}
+  .slip b{font:700 20px Lexend,sans-serif;letter-spacing:.1em}
+  .slip .h{font-weight:700;font-size:15px;margin-bottom:4px}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.8 8.2L23 12l-8.2 2.8L12 23l-2.8-8.2L1 12l8.2-2.8z"/></svg>Quantastro</a>
+  <span class="who" id="who"></span>
+</div></header>
+
+<main>
+  <!-- 登入 / 開通 -->
+  <div class="wrap narrow" id="authView" hidden>
+    <h1>老師後台</h1>
+    <p class="lead">建立班級、發登入卡，查看學生在好奇島的學習歷程。</p>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabLogin" aria-selected="true">登入</button>
+      <button class="tab" role="tab" id="tabSetup" aria-selected="false">第一次開通</button>
+    </div>
+    <form class="card" id="loginForm" novalidate>
+      <label class="f"><span>帳號</span><input class="i" id="lu" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+      <label class="f"><span>密碼</span><input class="i" id="lp" type="password" autocomplete="current-password" required></label>
+      <button class="btn main wide">登入</button>
+      <p class="msg" id="loginMsg" role="alert"></p>
+    </form>
+    <form class="card" id="setupForm" novalidate hidden>
+      <label class="f"><span>開通碼</span><input class="i" id="sc" autocomplete="off" spellcheck="false" required><small>網站管理者提供的開通碼</small></label>
+      <label class="f"><span>自訂帳號</span><input class="i" id="su" autocomplete="username" autocapitalize="off" spellcheck="false" required><small>3 到 32 個英文字母、數字或 _ . -</small></label>
+      <label class="f"><span>自訂密碼</span><input class="i" id="sp" type="password" autocomplete="new-password" required><small>至少 8 個字元</small></label>
+      <label class="f"><span>再輸入一次密碼</span><input class="i" id="sp2" type="password" autocomplete="new-password" required></label>
+      <button class="btn main wide">建立老師帳號</button>
+      <p class="msg" id="setupMsg" role="alert"></p>
+    </form>
+  </div>
+
+  <!-- 班級列表 -->
+  <div class="wrap" id="listView" hidden>
+    <div class="headline"><div><h1>我的班級</h1><p class="lead" style="margin:0">學生用「班級代碼＋座號＋4 位數密碼」登入，不需要 email。</p></div>
+      <div class="bar-row"><button class="btn sm" id="pwBtn">變更密碼</button><button class="btn sm" id="logoutBtn">登出</button></div></div>
+    <form class="card" id="pwForm" hidden novalidate style="margin-bottom:16px">
+      <h2>變更密碼</h2>
+      <div class="row"><label class="f"><span>目前的密碼</span><input class="i" id="pwOld" type="password" autocomplete="current-password"></label>
+      <label class="f"><span>新密碼（至少 8 個字元）</span><input class="i" id="pwNew" type="password" autocomplete="new-password"></label></div>
+      <button class="btn main">更新密碼</button><p class="msg" id="pwMsg" role="alert"></p>
+    </form>
+    <div class="classes" id="classes"></div>
+    <form class="card" id="newClass" novalidate style="margin-top:16px">
+      <h2>建立新班級</h2>
+      <div class="inline">
+        <label class="f"><span>班級名稱</span><input class="i" id="ncName" maxlength="30" placeholder="例如 802"></label>
+        <label class="f" style="flex:0 1 120px"><span>人數</span><input class="i num" id="ncSeats" inputmode="numeric" maxlength="2" value="30"></label>
+        <button class="btn main" style="min-height:46px">建立並產生密碼</button>
+      </div>
+      <p class="msg" id="ncMsg" role="alert"></p>
+    </form>
+  </div>
+
+  <!-- 單一班級 -->
+  <div class="wrap" id="classView" hidden>
+    <p style="margin:0 0 10px"><a href="#" id="backBtn" class="small muted">← 所有班級</a></p>
+    <div class="headline">
+      <div><h1 id="cName"></h1><div class="small muted">班級代碼</div><div class="bigcode" id="cCode"></div></div>
+      <div class="bar-row">
+        <button class="btn main" id="printBtn">列印登入卡</button>
+        <button class="btn" id="csvBtn">匯出 CSV</button>
+        <button class="btn" id="pinToggle">顯示密碼</button>
+      </div>
+    </div>
+    <div class="stats" id="cStats"></div>
+    <section class="block">
+      <h2>學生</h2>
+      <div class="tablebox"><table><thead><tr><th>座號</th><th>密碼</th><th>玩過的遊戲</th><th>最近登入</th><th>操作</th></tr></thead><tbody id="sBody"></tbody></table></div>
+      <p class="msg" id="cMsg" role="alert"></p>
+    </section>
+    <section class="card block" style="margin-top:20px">
+      <h2>各遊戲有幾位同學玩過</h2>
+      <div id="gStats"></div>
+    </section>
+    <section class="card block" style="margin-top:20px">
+      <h2>班級設定</h2>
+      <form class="inline" id="seatForm" novalidate style="margin-bottom:14px">
+        <label class="f" style="flex:0 1 160px"><span>新增座號（人數）</span><input class="i num" id="addN" inputmode="numeric" maxlength="2" value="1"></label>
+        <button class="btn" style="min-height:46px">新增</button>
+      </form>
+      <form class="inline" id="renameForm" novalidate style="margin-bottom:14px">
+        <label class="f"><span>班級名稱</span><input class="i" id="rename" maxlength="30"></label>
+        <button class="btn" style="min-height:46px">改名</button>
+      </form>
+      <button class="btn danger" id="delClass">刪除這個班級與全部學生紀錄</button>
+      <p class="msg" id="setMsg" role="alert"></p>
+    </section>
+  </div>
+</main>
+<div id="print"></div>
+
+<script src="../qa.js"></script>
+<script src="../data/island-games.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ZONES=window.ISLAND_ZONES||[];
+const GAMES={};ZONES.forEach(z=>z.games.forEach(g=>{GAMES[g.url.replace(/^games\/|\.html$/g,'')]={...g,zone:z};}));
+const TOTAL=Object.keys(GAMES).length;
+const fmt=t=>t?new Date(t*1000).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+const api=(p,m,b)=>QA.call(p,m?{method:m,body:b}:{});
+let cur=null,showPins=false,openRow=null;
+
+function view(v){['authView','listView','classView'].forEach(x=>$(x).hidden=x!==v);scrollTo(0,0);}
+function setTab(setup){$('tabLogin').setAttribute('aria-selected',!setup);$('tabSetup').setAttribute('aria-selected',setup);$('loginForm').hidden=setup;$('setupForm').hidden=!setup;}
+$('tabLogin').onclick=()=>setTab(false);$('tabSetup').onclick=()=>setTab(true);
+
+function busy(form,on){form.querySelectorAll('button').forEach(b=>b.disabled=on);}
+$('loginForm').addEventListener('submit',async e=>{e.preventDefault();busy(e.target,true);$('loginMsg').textContent='';
+  try{const u=await QA.loginTeacher($('lu').value.trim(),$('lp').value);$('lp').value='';enter(u);}catch(err){$('loginMsg').textContent=err.message;}finally{busy(e.target,false);}});
+$('setupForm').addEventListener('submit',async e=>{e.preventDefault();$('setupMsg').textContent='';
+  if($('sp').value!==$('sp2').value){$('setupMsg').textContent='兩次輸入的密碼不一樣';return;}
+  busy(e.target,true);
+  try{const u=await QA.setupTeacher($('sc').value.trim(),$('su').value.trim(),$('sp').value);['sc','sp','sp2'].forEach(id=>$(id).value='');enter(u);}catch(err){$('setupMsg').textContent=err.message;}finally{busy(e.target,false);}});
+$('logoutBtn').onclick=async()=>{await QA.logout();$('who').textContent='';history.replaceState(null,'',location.pathname);view('authView');};
+$('pwBtn').onclick=()=>{$('pwForm').hidden=!$('pwForm').hidden;};
+$('pwForm').addEventListener('submit',async e=>{e.preventDefault();busy(e.target,true);const m=$('pwMsg');m.className='msg';m.textContent='';
+  try{await api('/api/teacher/password','POST',{old:$('pwOld').value,password:$('pwNew').value});$('pwOld').value=$('pwNew').value='';m.className='msg ok';m.textContent='密碼已更新，其他裝置上的老師登入已登出。';}
+  catch(err){m.textContent=err.message;}finally{busy(e.target,false);}});
+
+function enter(u){$('who').textContent='老師 '+u.username;route();}
+async function route(){const m=location.hash.match(/^#class-(\d+)$/);if(m)await openClass(+m[1]);else await listClasses();}
+addEventListener('hashchange',()=>{if(!$('authView').hidden)return;route();});
+
+async function listClasses(){
+  view('listView');let d;
+  try{d=await api('/api/teacher/classes');}catch(e){return handle(e,$('ncMsg'));}
+  $('classes').innerHTML=d.classes.length?d.classes.map(c=>`<button class="ccard" data-id="${c.id}"><h3>${esc(c.name)}</h3><div class="code">${esc(c.code)}</div><div class="small muted">${c.students} 位學生 · 7 天內登入 ${c.active7d} 位</div></button>`).join('')
+    :'<div class="empty">還沒有班級。在下面輸入班級名稱和人數，系統會產生班級代碼和每個座號的密碼。</div>';
+  $('classes').querySelectorAll('.ccard').forEach(b=>b.onclick=()=>{location.hash='class-'+b.dataset.id;});
+}
+$('newClass').addEventListener('submit',async e=>{e.preventDefault();$('ncMsg').textContent='';busy(e.target,true);
+  try{const d=await api('/api/teacher/classes','POST',{name:$('ncName').value.trim(),seats:Number($('ncSeats').value)});$('ncName').value='';location.hash='class-'+d.class.id;}
+  catch(err){handle(err,$('ncMsg'));}finally{busy(e.target,false);}});
+
+function handle(err,el){if(err.status===401){view('authView');setTab(false);$('loginMsg').textContent='登入已過期，請重新登入';return;}if(el){el.className='msg';el.textContent=err.message;}}
+
+async function openClass(id){
+  let d;try{d=await api('/api/teacher/classes/'+id);}catch(e){if(e.status===404){location.hash='';return;}return handle(e,$('ncMsg'));}
+  cur=d;view('classView');render();
+}
+function byStudent(){const m={};cur.students.forEach(s=>m[s.id]={...s,games:[],ach:[]});
+  cur.progress.forEach(p=>{if(m[p.student_id]&&GAMES[p.game])m[p.student_id].games.push(p);});
+  cur.achievements.forEach(a=>{if(m[a.student_id])m[a.student_id].ach.push(a);});return Object.values(m).sort((a,b)=>a.seat-b.seat);}
+function render(){
+  const c=cur.class,list=byStudent();
+  $('cName').textContent=c.name;$('cCode').textContent=c.code;$('rename').value=c.name;
+  const wk=Date.now()/1000-7*86400,active=list.filter(s=>s.last_login&&s.last_login>wk).length;
+  const logged=list.filter(s=>s.last_login).length,avg=list.length?(list.reduce((n,s)=>n+s.games.length,0)/list.length):0;
+  $('cStats').innerHTML=[[list.length,'位學生'],[logged,'位登入過'],[active,'位 7 天內登入'],[avg.toFixed(1),'平均玩過的遊戲']].map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+  $('pinToggle').textContent=showPins?'隱藏密碼':'顯示密碼';
+  $('sBody').innerHTML=list.map(s=>{const n=s.games.length;
+    const row=`<tr><td class="num"><b>${s.seat}</b></td><td class="pin">${showPins?esc(s.pin):'••••'}</td>
+      <td><div class="mini"><div class="bar"><i style="width:${(100*n/TOTAL).toFixed(1)}%"></i></div><span class="num small">${n}/${TOTAL}</span></div></td>
+      <td class="num small">${fmt(s.last_login)}</td>
+      <td><div class="acts"><button class="btn sm" data-act="detail" data-id="${s.id}">${openRow===s.id?'收合':'詳細'}</button><button class="btn sm" data-act="pin" data-id="${s.id}">重設密碼</button><button class="btn sm" data-act="clear" data-id="${s.id}">清除紀錄</button><button class="btn sm danger" data-act="del" data-id="${s.id}">刪除座號</button></div></td></tr>`;
+    if(openRow!==s.id)return row;
+    const games=[...s.games].sort((a,b)=>b.last_at-a.last_at);
+    return row+`<tr class="detail"><td colspan="5">${games.length?`<div class="small muted" style="margin-bottom:6px">${s.seat} 號玩過 ${games.length} 個遊戲</div><table><thead><tr><th>遊戲</th><th>第一次</th><th>最近一次</th><th>次數</th></tr></thead><tbody>${games.map(p=>{const g=GAMES[p.game];return `<tr><td><span class="dot" style="--c:${esc(g.zone.color)}"></span>${esc(g.title)}</td><td class="num small">${fmt(p.first_at)}</td><td class="num small">${fmt(p.last_at)}</td><td class="num">${p.visits}</td></tr>`;}).join('')}</tbody></table>`:'<span class="muted">還沒有紀錄</span>'}</td></tr>`;
+  }).join('');
+  const count={};list.forEach(s=>s.games.forEach(p=>count[p.game]=(count[p.game]||0)+1));
+  $('gStats').innerHTML=ZONES.map(z=>`<div style="margin:10px 0 4px;font-weight:700;color:${esc(z.color)}">${esc(z.name)}</div>`+z.games.map(g=>{const k=g.url.replace(/^games\/|\.html$/g,''),n=count[k]||0;
+    return `<div class="gstat"><span>${esc(g.title)}</span><div class="bar" style="--c:${esc(z.color)}"><i style="width:${list.length?(100*n/list.length).toFixed(1):0}%"></i></div><span class="num small">${n} 人</span></div>`;}).join('')).join('');
+}
+$('sBody').addEventListener('click',async e=>{const b=e.target.closest('[data-act]');if(!b)return;const id=+b.dataset.id,s=cur.students.find(x=>x.id===id),msg=$('cMsg');msg.className='msg';msg.textContent='';
+  try{
+    if(b.dataset.act==='detail'){openRow=openRow===id?null:id;render();return;}
+    if(b.dataset.act==='pin'){if(!confirm(`要重設 ${s.seat} 號的密碼嗎？舊密碼會立刻失效。`))return;const d=await api(`/api/teacher/students/${id}/pin`,'POST',{});s.pin=d.pin;msg.className='msg ok';msg.textContent=`${s.seat} 號的新密碼是 ${d.pin}`;render();return;}
+    if(b.dataset.act==='clear'){if(!confirm(`要清除 ${s.seat} 號的所有學習紀錄嗎？這個動作無法復原。`))return;await api(`/api/teacher/students/${id}/progress`,'DELETE');msg.className='msg ok';msg.textContent=`已清除 ${s.seat} 號的紀錄`;return openClass(cur.class.id);}
+    if(b.dataset.act==='del'){if(!confirm(`要刪除 ${s.seat} 號和他的所有紀錄嗎？這個動作無法復原。`))return;await api(`/api/teacher/students/${id}`,'DELETE');msg.className='msg ok';msg.textContent=`已刪除 ${s.seat} 號`;return openClass(cur.class.id);}
+  }catch(err){handle(err,msg);}});
+$('pinToggle').onclick=()=>{showPins=!showPins;render();};
+$('backBtn').onclick=e=>{e.preventDefault();location.hash='';};
+$('seatForm').addEventListener('submit',async e=>{e.preventDefault();busy(e.target,true);$('setMsg').textContent='';
+  try{await api(`/api/teacher/classes/${cur.class.id}/seats`,'POST',{count:Number($('addN').value)});await openClass(cur.class.id);$('setMsg').className='msg ok';$('setMsg').textContent='已新增座號';}catch(err){handle(err,$('setMsg'));}finally{busy(e.target,false);}});
+$('renameForm').addEventListener('submit',async e=>{e.preventDefault();busy(e.target,true);$('setMsg').textContent='';
+  try{await api(`/api/teacher/classes/${cur.class.id}`,'PATCH',{name:$('rename').value.trim()});await openClass(cur.class.id);$('setMsg').className='msg ok';$('setMsg').textContent='已改名';}catch(err){handle(err,$('setMsg'));}finally{busy(e.target,false);}});
+$('delClass').onclick=async()=>{const c=cur.class;if(!confirm(`要刪除「${c.name}」嗎？\n全部 ${cur.students.length} 位學生的帳號與學習紀錄都會永久刪除，無法復原。`))return;
+  try{await api(`/api/teacher/classes/${c.id}`,'DELETE');location.hash='';}catch(err){handle(err,$('setMsg'));}};
+
+$('printBtn').onclick=()=>{const c=cur.class,site=location.origin+location.pathname.replace(/teacher\/.*$/,'')+'account/';
+  $('print').innerHTML=cur.students.map(s=>`<div class="slip"><div class="h">Quantastro 學生登入卡 · ${esc(c.name)}</div>網址：${esc(site.replace(/^https?:\/\//,''))}<br>班級代碼：<b>${esc(c.code)}</b>　座號：<b>${s.seat}</b><br>密碼：<b>${esc(s.pin)}</b>　<span style="color:#666">（請收好，不要給別人看）</span></div>`).join('');
+  print();};
+$('csvBtn').onclick=()=>{const list=byStudent(),keys=Object.keys(GAMES);
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`,day=t=>t?new Date(t*1000).toLocaleString('zh-TW',{hour12:false}):'';
+  const rows=[['座號','玩過的遊戲數','最近登入',...keys.map(k=>GAMES[k].title)].map(q).join(',')];
+  list.forEach(s=>{const m={};s.games.forEach(p=>m[p.game]=p);rows.push([s.seat,s.games.length,day(s.last_login),...keys.map(k=>m[k]?day(m[k].first_at):'')].map(q).join(','));});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('\r\n')],{type:'text/csv'}));a.download=`${cur.class.name}-學習歷程.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+
+QA.me().then(u=>{if(u&&u.kind==='teacher')enter(u);else{view('authView');if(u)$('loginMsg').textContent='目前是學生帳號，請先登出或改用老師帳號登入。';}});
+</script>
+</body>
+</html>

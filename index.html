@@ -29,6 +29,7 @@ a{color:inherit}button,input{font:inherit;color:inherit}
 .brand svg{width:20px;height:20px;fill:var(--accent)}
 .nav{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}.nav::-webkit-scrollbar{display:none}
 .nav a{padding:6px 11px;border-radius:7px;color:var(--muted);font-size:15px;font-weight:500;text-decoration:none;white-space:nowrap}
+.acct{flex:none;padding:5px 12px;border-radius:8px;border:1px solid var(--line);font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap}.acct:hover{background:var(--panel2)}
 .nav a:hover{color:var(--text);background:var(--panel2)}
 
 .hero .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:32px;align-items:center;padding-block:44px 28px}
@@ -104,6 +105,7 @@ dialog::backdrop{background:rgba(5,8,22,.86)}
   <nav class="nav" aria-label="內容分類">
     <a href="#game">遊戲</a><a href="#video">影片</a><a href="#resource">教學資源</a><a href="#product">作品</a>
   </nav>
+  <a class="acct" id="acct" href="account/">登入</a>
 </div></header>
 
 <main>
@@ -146,6 +148,7 @@ dialog::backdrop{background:rgba(5,8,22,.86)}
   <div class="vid" id="vid"></div>
 </dialog>
 
+<script src="qa.js"></script>
 <script src="data/island-games.js"></script>
 <script src="data/catalog.js"></script>
 <script>
@@ -210,6 +213,7 @@ $('q').addEventListener('input',e=>{state.q=e.target.value;state.shown=PAGE;rend
 $('more').onclick=()=>{state.shown+=PAGE;render();};
 addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(TYPE_NAME[t])setType(t,true);});
 $('yr').textContent=new Date().getFullYear();
+QA.me().then(u=>{if(!u)return;const a=$('acct');if(u.kind==='teacher'){a.textContent='老師後台';a.href='teacher/';}else{a.textContent=`${u.className} · ${u.seat} 號`;a.href='account/';}});
 stats();sky();features();const h0=location.hash.slice(1);if(TYPE_NAME[h0])setType(h0,true);else render();
 </script>
 </body>
