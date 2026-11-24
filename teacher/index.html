@@ -99,6 +99,7 @@ tr.detail td{background:var(--bg);padding:12px 14px}
       <div><h1 id="cName"></h1><div class="small muted">班級代碼</div><div class="bigcode" id="cCode"></div></div>
       <div class="bar-row">
         <button class="btn main" id="printBtn">列印登入卡</button>
+        <button class="btn" id="cardsBtn">匯出登入卡資料</button>
         <button class="btn" id="csvBtn">匯出 CSV</button>
         <button class="btn" id="pinToggle">顯示密碼</button>
       </div>
@@ -222,8 +223,12 @@ $('delClass').onclick=async()=>{const c=cur.class;if(!confirm(`要刪除「${c.n
 $('printBtn').onclick=()=>{const c=cur.class,site=location.origin+location.pathname.replace(/teacher\/.*$/,'')+'account/';
   $('print').innerHTML=cur.students.map(s=>`<div class="slip"><div class="h">Quantastro 學生登入卡 · ${esc(c.name)}</div>網址：${esc(site.replace(/^https?:\/\//,''))}<br>班級代碼：<b>${esc(c.code)}</b>　座號：<b>${s.seat}</b><br>密碼：<b>${esc(s.pin)}</b>　<span style="color:#666">（請收好，不要給別人看）</span></div>`).join('');
   print();};
+const csvCell=v=>`"${String(v).replace(/"/g,'""')}"`;
+function downloadCsv(rows,name){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.map(r=>r.map(csvCell).join(',')).join('\r\n')],{type:'text/csv'}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+$('cardsBtn').onclick=()=>{const c=cur.class,site=location.origin+location.pathname.replace(/teacher\/.*$/,'')+'account/';
+  downloadCsv([['班級','班級代碼','座號','密碼','登入網址'],...cur.students.map(s=>[c.name,c.code,s.seat,s.pin,site])],`${c.name}-登入卡.csv`);};
 $('csvBtn').onclick=()=>{const list=byStudent(),keys=Object.keys(GAMES);
-  const q=v=>`"${String(v).replace(/"/g,'""')}"`,day=t=>t?new Date(t*1000).toLocaleString('zh-TW',{hour12:false}):'';
+  const q=csvCell,day=t=>t?new Date(t*1000).toLocaleString('zh-TW',{hour12:false}):'';
   const rows=[['座號','玩過的遊戲數','最近登入',...keys.map(k=>GAMES[k].title)].map(q).join(',')];
   list.forEach(s=>{const m={};s.games.forEach(p=>m[p.game]=p);rows.push([s.seat,s.games.length,day(s.last_login),...keys.map(k=>m[k]?day(m[k].first_at):'')].map(q).join(','));});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+rows.join('\r\n')],{type:'text/csv'}));a.download=`${cur.class.name}-學習歷程.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
