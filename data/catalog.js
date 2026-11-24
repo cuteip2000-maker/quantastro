@@ -29,7 +29,8 @@ window.SITE_ITEMS = [
   },
 
   /* ↓ 新內容加在這一行下面 ↓ */
-  { type:'video', title:'星艦第 15 次試飛', desc:'老師當主播，34 秒快速看完星艦第 15 次試飛。', youtube:'9O79g_kDOUs', topic:'太空', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'巴塞爾問題：歐拉與 π 的驚喜', desc:'1＋¼＋⅑＋… 一直加下去會等於多少？歐拉算出答案竟然是 π²/6。4 分 55 秒。', youtube:'aAYRdRgP3FY', topic:'數學', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'星艦第 15 次試飛', desc:'老師當主播，34 秒快速看完星艦第 15 次試飛。', youtube:'9O79g_kDOUs', topic:'太空', date:'2026-11-25' },
   { type:'video', title:'宇宙的量尺：勒維特的故事', desc:'勒維特從造父變星的明暗變化裡，找到量測宇宙距離的方法。4 分 52 秒。', youtube:'4Z8ORDTJ9O0', topic:'天文', date:'2026-11-24' },
   { type:'video', title:'七十二歲的第一次', desc:'七十二歲那年，第一次騎上腳踏車的故事。完整版短片，6 分 16 秒。', youtube:'kjX64R1BCMw', topic:'短片', date:'2026-11-23' },
 
