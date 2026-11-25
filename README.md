@@ -50,7 +50,7 @@
 { type:'product', title:'產品名稱', desc:'一句話介紹', url:'https://example.com', image:'images/product.jpg', date:'2026-12-01' },
 ```
 
-可選欄位：`image` 是封面圖，`featured:true` 會放進主打作品，`isNew:true` 會顯示 NEW 並排到前面。
+可選欄位：`series` 是系列名稱（例如 `series:'科學家故事'`，同系列會自動出現分類按鈕，也能用 `quantastro.org/#series=科學家故事` 直接分享整個系列），`image` 是封面圖，`featured:true` 會放進主打作品，`isNew:true` 會顯示 NEW 並排到前面。
 
 注意：每一筆結尾要有逗號，文字要用單引號包起來。
 

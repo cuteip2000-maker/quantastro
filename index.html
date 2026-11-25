@@ -162,7 +162,7 @@ const ZONES=window.ISLAND_ZONES||[];
 const ITEMS=[...(window.SITE_ITEMS||[]).filter(i=>i&&TYPE_NAME[i.type]&&i.title),
  ...ZONES.flatMap(z=>z.games.map(g=>({...g,type:'game',topic:z.name,zone:z.id,color:z.color})))];
 const ORDER=i=>(i.isNew?0:1);
-const state={type:'all',zone:'',q:'',shown:PAGE};
+const state={type:'all',zone:'',series:'',q:'',shown:PAGE};
 
 function stats(){const n=t=>ITEMS.filter(i=>i.type===t).length;const a=[[n('game'),'個互動遊戲'],[ZONES.length,'個主題區']];
  if(n('video'))a.push([n('video'),'部影片']);if(n('resource'))a.push([n('resource'),'份教學資源']);
@@ -185,36 +185,42 @@ function features(){const f=ITEMS.filter(i=>i.featured);$('featured').hidden=!f.
   const body=`<div class="fart">${art}</div><div class="fbody"><span class="kind">${esc(TYPE_NAME[i.type])}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p><span class="go">${v?'播放影片':'開始探索'} →</span></div>`;
   return v?`<button class="feature" style="width:100%;padding:0;text-align:left;cursor:pointer" data-v="${v}" data-t="${esc(i.title)}">${body}</button>`:`<a class="feature" href="${esc(safe(i.url))}" target="_blank" rel="noopener">${body}</a>`;}).join('');}
 
-function match(i){if(state.type!=='all'&&i.type!==state.type)return false;if(state.zone&&i.zone!==state.zone)return false;
- const q=state.q.trim().toLowerCase();return !q||[i.title,i.desc,i.topic].join(' ').toLowerCase().includes(q);}
+function match(i){if(state.type!=='all'&&i.type!==state.type)return false;if(state.zone&&i.zone!==state.zone)return false;if(state.series&&i.series!==state.series)return false;
+ const q=state.q.trim().toLowerCase();return !q||[i.title,i.desc,i.topic,i.series].join(' ').toLowerCase().includes(q);}
 
 function card(i){const v=ytId(i.youtube),style=i.color?` style="--c:${esc(i.color)}"`:'',thumb=v?`<div class="thumb"><img src="https://i.ytimg.com/vi/${v}/hqdefault.jpg" alt="" loading="lazy" onload="if(this.naturalWidth<=120)this.remove()"><span class="play"><svg viewBox="0 0 16 16"><path d="M2 1l13 7-13 7z"/></svg></span></div>`:i.image?`<div class="thumb"><img src="${esc(safe(i.image))}" alt="" loading="lazy"></div>`:'';
- const inner=`${thumb}<span class="kind"><span>${esc(i.topic||TYPE_NAME[i.type])}</span>${i.isNew?'<span class="new">NEW</span>':''}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p>`;
+ const inner=`${thumb}<span class="kind"><span>${i.series?esc(i.series)+' · ':''}${esc(i.topic||TYPE_NAME[i.type])}</span>${i.isNew?'<span class="new">NEW</span>':''}</span><h3>${esc(i.title)}</h3><p>${esc(i.desc)}</p>`;
  return v?`<button class="card"${style} data-v="${v}" data-t="${esc(i.title)}">${inner}</button>`:`<a class="card"${style} href="${esc(safe(i.url))}" target="_blank" rel="noopener">${inner}</a>`;}
 
 function render(){
  $('types').innerHTML=TYPES.map(([k,l])=>{const n=k==='all'?ITEMS.length:ITEMS.filter(i=>i.type===k).length;return `<button class="chip" data-type="${k}" aria-pressed="${state.type===k}">${l}<small>${n}</small></button>`;}).join('');
- const showZ=state.type==='game';$('zones').hidden=!showZ;
- if(showZ)$('zones').innerHTML=`<button class="chip" data-zone="" aria-pressed="${!state.zone}">全部主題</button>`+ZONES.map(z=>`<button class="chip" style="--c:${esc(z.color)}" data-zone="${z.id}" aria-pressed="${state.zone===z.id}">${esc(z.name)}</button>`).join('');
+ const seriesList=state.type==='all'||state.type==='game'?[]:[...new Set(ITEMS.filter(i=>i.type===state.type&&i.series).map(i=>i.series))];
+ const showZ=state.type==='game'||seriesList.length>0;$('zones').hidden=!showZ;
+ if(seriesList.length)$('zones').innerHTML=`<button class="chip" data-series="" aria-pressed="${!state.series}">全部${esc(TYPE_NAME[state.type])}</button>`+seriesList.map(x=>`<button class="chip" data-series="${esc(x)}" aria-pressed="${state.series===x}">${esc(x)}<small>${ITEMS.filter(i=>i.series===x).length}</small></button>`).join('');
+ if(state.type==='game')$('zones').innerHTML=`<button class="chip" data-zone="" aria-pressed="${!state.zone}">全部主題</button>`+ZONES.map(z=>`<button class="chip" style="--c:${esc(z.color)}" data-zone="${z.id}" aria-pressed="${state.zone===z.id}">${esc(z.name)}</button>`).join('');
  const list=ITEMS.filter(match).map((x,n)=>[x,n]).sort((a,b)=>ORDER(a[0])-ORDER(b[0])||a[1]-b[1]).map(a=>a[0]);
  $('grid').innerHTML=list.slice(0,state.shown).map(card).join('');
  $('count').textContent=`共 ${list.length} 項`;$('more').hidden=list.length<=state.shown;$('more').textContent=`顯示更多（還有 ${Math.max(0,list.length-state.shown)} 項）`;
  $('empty').hidden=list.length>0;if(!list.length)$('empty').textContent=state.q?`找不到「${state.q}」，換個關鍵字試試。`:(EMPTY[state.type]||'這裡還沒有內容。');
 }
-function setType(t,scroll){state.type=TYPE_NAME[t]?t:'all';state.zone='';state.shown=PAGE;render();if(scroll)$('library').scrollIntoView();}
+function setType(t,scroll){state.type=TYPE_NAME[t]?t:'all';state.zone='';state.series='';state.shown=PAGE;render();if(scroll)$('library').scrollIntoView();}
 
 function openVideo(id,title){$('dt').textContent=title;$('vid').innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="${esc(title)}" allow="autoplay;encrypted-media;picture-in-picture;fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;$('dlg').showModal();}
 const closeVideo=()=>{$('vid').innerHTML='';if($('dlg').open)$('dlg').close();};$('dx').onclick=closeVideo;$('dlg').addEventListener('close',()=>$('vid').innerHTML='');$('dlg').addEventListener('cancel',()=>$('vid').innerHTML='');
 $('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))closeVideo();});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)openVideo(b.dataset.v,b.dataset.t);});
 $('types').addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(b){history.replaceState(null,'',b.dataset.type==='all'?location.pathname:'#'+b.dataset.type);setType(b.dataset.type);}});
-$('zones').addEventListener('click',e=>{const b=e.target.closest('[data-zone]');if(b){state.zone=b.dataset.zone;state.shown=PAGE;render();}});
+$('zones').addEventListener('click',e=>{const b=e.target.closest('[data-zone]');if(b){state.zone=b.dataset.zone;state.shown=PAGE;render();return;}
+ const c=e.target.closest('[data-series]');if(c){state.series=c.dataset.series;state.shown=PAGE;history.replaceState(null,'',state.series?'#series='+encodeURIComponent(state.series):'#'+state.type);render();}});
 $('q').addEventListener('input',e=>{state.q=e.target.value;state.shown=PAGE;render();});
 $('more').onclick=()=>{state.shown+=PAGE;render();};
-addEventListener('hashchange',()=>{const t=location.hash.slice(1);if(TYPE_NAME[t])setType(t,true);});
+function fromHash(){let h='';try{h=decodeURIComponent(location.hash.slice(1));}catch(e){}
+ if(h.startsWith('series=')){const x=h.slice(7),it=ITEMS.find(i=>i.series===x);if(it){setType(it.type,true);state.series=x;render();return true;}}
+ if(TYPE_NAME[h]){setType(h,true);return true;}return false;}
+addEventListener('hashchange',fromHash);
 $('yr').textContent=new Date().getFullYear();
 QA.me().then(u=>{if(!u)return;const a=$('acct');if(u.kind==='teacher'){a.textContent='老師後台';a.href='teacher/';}else{a.textContent=`${u.className} · ${u.seat} 號`;a.href='account/';}});
-stats();sky();features();const h0=location.hash.slice(1);if(TYPE_NAME[h0])setType(h0,true);else render();
+stats();sky();features();if(!fromHash())render();
 </script>
 </body>
 </html>
