@@ -30,7 +30,8 @@ window.SITE_ITEMS = [
   },
 
   /* ↓ 新內容加在這一行下面 ↓ */
-  { type:'video', title:'一封改變命運的信：拉馬努金', desc:'沒受過正規數學訓練的印度青年拉馬努金，寫信給劍橋的哈代，信裡滿是驚人的公式，從此改變了他的一生。4 分 45 秒。', youtube:'IzS0fSMpmmE', series:'科學家故事', topic:'數學', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'等不到的約定：哈雷彗星', desc:'哈雷算出一顆彗星每 76 年回來一次，預言它 1758 年再現。他沒能等到那一天，但彗星準時赴約。4 分 53 秒。', youtube:'2WljIF89jNs', series:'科學家故事', topic:'天文', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'一封改變命運的信：拉馬努金', desc:'沒受過正規數學訓練的印度青年拉馬努金，寫信給劍橋的哈代，信裡滿是驚人的公式，從此改變了他的一生。4 分 45 秒。', youtube:'IzS0fSMpmmE', series:'科學家故事', topic:'數學', date:'2026-11-25' },
   { type:'video', title:'影子量地球：埃拉托斯特尼', desc:'兩千多年前，埃拉托斯特尼比較兩座城市正午的影子，只差約 7 度，就算出了地球的周長。4 分 50 秒。', youtube:'-EscfnM_VFg', series:'科學家故事', topic:'地球科學', date:'2026-11-25' },
   { type:'video', title:'筆尖下的行星：海王星', desc:'勒維耶只靠紙筆計算天王星軌道的偏差，就預言了海王星的位置，望遠鏡一看果然在那裡。4 分 53 秒。', youtube:'C-RvpcTQZtI', series:'科學家故事', topic:'天文', date:'2026-11-25' },
   { type:'video', title:'發光的元素：居禮夫人', desc:'居禮夫人從成噸的礦石裡提煉出會發光的鐳，成為第一位兩度獲得諾貝爾獎的人。4 分 50 秒。', youtube:'Hzd2q2MzC20', series:'科學家故事', topic:'化學', date:'2026-11-25' },
