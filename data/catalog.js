@@ -30,7 +30,8 @@ window.SITE_ITEMS = [
   },
 
   /* ↓ 新內容加在這一行下面 ↓ */
-  { type:'video', title:'筆尖下的行星：海王星', desc:'勒維耶只靠紙筆計算天王星軌道的偏差，就預言了海王星的位置，望遠鏡一看果然在那裡。4 分 53 秒。', youtube:'C-RvpcTQZtI', series:'科學家故事', topic:'天文', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'影子量地球：埃拉托斯特尼', desc:'兩千多年前，埃拉托斯特尼比較兩座城市正午的影子，只差約 7 度，就算出了地球的周長。4 分 50 秒。', youtube:'-EscfnM_VFg', series:'科學家故事', topic:'地球科學', isNew:true, date:'2026-11-25' },
+  { type:'video', title:'筆尖下的行星：海王星', desc:'勒維耶只靠紙筆計算天王星軌道的偏差，就預言了海王星的位置，望遠鏡一看果然在那裡。4 分 53 秒。', youtube:'C-RvpcTQZtI', series:'科學家故事', topic:'天文', date:'2026-11-25' },
   { type:'video', title:'發光的元素：居禮夫人', desc:'居禮夫人從成噸的礦石裡提煉出會發光的鐳，成為第一位兩度獲得諾貝爾獎的人。4 分 50 秒。', youtube:'Hzd2q2MzC20', series:'科學家故事', topic:'化學', date:'2026-11-25' },
   { type:'video', title:'化名的數學家：索菲・熱爾曼', desc:'女性不能進大學的年代，熱爾曼化名「勒布朗先生」自學數學，還在費馬最後定理留下重要成果。5 分 05 秒。', youtube:'mfH9f2pxfAI', series:'科學家故事', topic:'數學', date:'2026-11-25' },
   { type:'video', title:'巴塞爾問題：歐拉與 π 的驚喜', desc:'1＋¼＋⅑＋… 一直加下去會等於多少？歐拉算出答案竟然是 π²/6。4 分 55 秒。', youtube:'aAYRdRgP3FY', topic:'數學', date:'2026-11-25' },
