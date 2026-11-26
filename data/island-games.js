@@ -137,6 +137,12 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "無人機足球訓練場",
+    "desc": "推力平衡、慣性煞車，再到 3D 場地穿環射門",
+    "url": "games/drone-soccer.html",
+    "isNew": true
+   },
+   {
     "title": "完全彈性碰撞",
     "desc": "鋼球、橡膠、黏土對撞，再把疊球彈到 100 公尺",
     "url": "games/elastic-collision.html",
@@ -220,7 +226,7 @@ window.ISLAND_ZONES=[
     "title": "只有五種正多面體",
     "desc": "在一個頂點拼多邊形，親手證明為什麼只有 5 種",
     "url": "games/platonic-solids.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "黎曼猜想",

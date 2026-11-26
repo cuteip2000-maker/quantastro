@@ -1,0 +1,666 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>無人機足球訓練場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: night arena training console — netted field canvas with mode tabs left, coaching rail right; stacks on phones. Single dark look. */
+:root{
+  --bg:#0a1322;
+  --panel:#111d31;
+  --panel2:#182841;
+  --rule:#2a3f60;
+  --ink:#eef3fb;
+  --dim:#9fb0c8;
+  --lime:#c8f05a;
+  --gold:#ffc94d;
+  --cyan:#5cc8ff;
+  --red:#ff6b6b;
+  --f-disp:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"Chakra Petch","Noto Sans TC",ui-monospace,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 370px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--lime)}
+.view{position:relative;flex:1;min-height:0;border-top:1px solid var(--rule);overflow:hidden}
+.pane{position:absolute;inset:0;display:flex;flex-direction:column}
+.cv{position:relative;flex:1;min-height:320px;overflow:hidden}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.ro{position:absolute;left:12px;top:10px;background:rgba(8,16,30,.88);border:1px solid var(--rule);border-radius:8px;padding:6px 12px;font-size:13px;line-height:1.6;pointer-events:none;max-width:min(300px,calc(100% - 24px))}
+.ro b{color:var(--lime);font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.ro .big{font-weight:900;font-size:15px;display:block}
+.ro .st{display:block;color:var(--dim)}
+.ro i{font-style:normal;display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--lime);color:#1b2600;font-weight:700;border-radius:8px;padding:8px 14px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .3s;width:max-content;max-width:min(560px,calc(100% - 24px));text-align:center;line-height:1.5;z-index:6}
+.toast.on{opacity:1}
+.toast.warn{background:var(--gold);color:#2b2000}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lab{font-size:13px;color:var(--dim);min-width:3em}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:6px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.42;cursor:default}
+.btn.pri{background:var(--lime);border-color:var(--lime);color:#1b2600;font-weight:700}
+.btn.sel{border-color:var(--lime);color:var(--lime);box-shadow:inset 0 0 0 1px var(--lime);font-weight:700}
+.btn.done{border-color:var(--lime);color:var(--lime)}
+.btn.done::before{content:"✓ "}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);flex:1 1 220px;min-width:0}
+.sl input{flex:1;accent-color:var(--lime);min-width:70px}
+.sl b{font-family:var(--f-num);color:var(--ink);min-width:4.4em;text-align:right;font-variant-numeric:tabular-nums}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-family:var(--f-disp);font-weight:900;font-size:24px;line-height:1.3;margin:0 0 4px;text-wrap:balance;letter-spacing:.02em}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#1d2d18;border-color:#4f6b2a}
+.card h2{font-size:16.5px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.card ul{margin:0;padding-left:1.2em;font-size:14px}
+.fx{font-family:var(--f-num);background:var(--bg);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:14px;text-align:center;margin:6px 0;overflow-x:auto}
+kbd{font-family:var(--f-num);font-size:12px;background:var(--bg);border:1px solid var(--rule);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+/* mode 3 */
+#c3wrap{background:#0a1322}
+.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,12,24,.78);z-index:5;padding:16px}
+.ovbox{background:var(--panel);border:1px solid var(--rule);border-radius:14px;padding:18px 20px;max-width:520px;width:100%;max-height:100%;overflow-y:auto}
+.ovbox h2{margin:0 0 4px;font-size:21px;font-weight:900}
+.ovbox p{margin:0 0 10px;font-size:14px;color:var(--dim)}
+.ovbox .row{margin-bottom:10px}
+.ovbox .res{font-family:var(--f-num);font-size:40px;color:var(--lime);line-height:1.1;margin:4px 0 6px}
+.lv{display:flex;flex-direction:column;align-items:flex-start;text-align:left;flex:1 1 140px}
+.lv small{font-size:12px;color:var(--dim);font-weight:400}
+.count{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--f-num);font-size:84px;color:var(--lime);text-shadow:0 0 24px rgba(200,240,90,.5);pointer-events:none;z-index:4}
+.stick{position:absolute;bottom:14px;width:116px;height:116px;border-radius:50%;border:2px solid rgba(200,240,90,.35);background:rgba(10,20,36,.35);touch-action:none;z-index:3}
+.stick i{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(200,240,90,.45);border:2px solid var(--lime)}
+.stick span{position:absolute;left:0;right:0;top:-20px;text-align:center;font-size:11px;color:var(--dim);pointer-events:none}
+#stL{left:max(14px,env(safe-area-inset-left,0px))}
+#stR{right:max(14px,env(safe-area-inset-right,0px))}
+.thr{position:absolute;right:12px;top:10px;width:28px;height:150px;border:1px solid var(--rule);border-radius:6px;background:rgba(8,16,30,.85);z-index:3;pointer-events:none}
+.thr b{position:absolute;left:3px;right:3px;bottom:3px;background:var(--gold);border-radius:3px}
+.thr em{position:absolute;left:-4px;right:-4px;height:2px;background:var(--lime);bottom:50%}
+.thr span{position:absolute;top:-1px;right:34px;font-size:11px;color:var(--dim);white-space:nowrap}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .view{flex:none;height:auto}
+  .pane{position:relative}
+  .cv{flex:none;height:60vh;min-height:440px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .ro{font-size:12px}
+  .tabs button{padding:6px 10px;font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 推力天平<small>停在空中的祕密</small></button>
+      <button data-tab="B" aria-pressed="false">② 慣性煞車<small>停下來比出發難</small></button>
+      <button data-tab="C" aria-pressed="false">③ 射門訓練<small>3D 過關遊戲</small></button>
+    </nav>
+    <div class="view">
+      <!-- A -->
+      <div class="pane" id="p-A">
+        <div class="cv"><canvas id="cA"></canvas><div class="ro" id="roA"></div><div class="toast" id="tA"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">任務</span>
+            <button class="btn sel" data-task="free">自由飛</button>
+            <button class="btn" data-task="hover">1 懸停 3 秒</button>
+            <button class="btn" data-task="cruise">2 斜飛不掉高度</button>
+            <button class="btn" data-task="heavy">3 載重懸停</button>
+          </div>
+          <div class="row">
+            <label class="sl">油門推力<input id="thrA" type="range" min="0" max="20" step="0.1" value="0"><b id="thrAV"></b></label>
+            <button class="btn" id="thrDn" aria-label="推力減 0.1">−0.1</button>
+            <button class="btn" id="thrUp" aria-label="推力加 0.1">＋0.1</button>
+          </div>
+          <div class="row">
+            <label class="sl">傾斜角度<input id="tiltA" type="range" min="-30" max="30" step="1" value="0"><b id="tiltAV"></b></label>
+            <button class="btn" id="tilt0">擺正</button>
+          </div>
+          <div class="row">
+            <span class="lab">質量</span>
+            <button class="btn" data-m="0.8">輕量 0.8 kg</button>
+            <button class="btn sel" data-m="1">標準 1.0 kg</button>
+            <button class="btn" data-m="1.5">載重 1.5 kg</button>
+            <button class="btn" id="partsA">分力：顯示</button>
+            <button class="btn" id="resetA">放回地面</button>
+          </div>
+          <div class="note">鍵盤：<kbd>↑</kbd><kbd>↓</kbd> 調推力，<kbd>←</kbd><kbd>→</kbd> 調傾斜。</div>
+        </div>
+      </div>
+      <!-- B -->
+      <div class="pane" id="p-B" hidden>
+        <div class="cv"><canvas id="cB"></canvas><div class="ro" id="roB"></div><div class="toast" id="tB"></div></div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">質量</span>
+            <button class="btn" data-mb="0.6">輕 0.6 kg</button>
+            <button class="btn sel" data-mb="1">標準 1.0 kg</button>
+            <button class="btn" data-mb="1.6">重 1.6 kg</button>
+          </div>
+          <div class="row">
+            <span class="lab">空氣</span>
+            <button class="btn" data-k="0">沒有阻力</button>
+            <button class="btn sel" data-k="0.6">一般</button>
+            <button class="btn" data-k="1.6">很黏的空氣</button>
+            <button class="btn sel" id="predB">煞車點預測：開</button>
+            <button class="btn pri" id="resetB">重新開始</button>
+          </div>
+          <div class="note">在畫面上按住拖曳當搖桿，或用 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向鍵。把無人機停進發光的停機坪（速度要夠慢）。</div>
+        </div>
+      </div>
+      <!-- C -->
+      <div class="pane" id="p-C" hidden>
+        <div class="cv" id="c3wrap">
+          <div class="ro" id="roC"></div>
+          <div class="thr" id="thrC" hidden><span>油門</span><em></em><b></b></div>
+          <div class="count" id="cnt" hidden></div>
+          <div class="stick" id="stL"><span>升降・轉向</span><i></i></div>
+          <div class="stick" id="stR"><span>前後・左右</span><i></i></div>
+          <div class="toast" id="tC"></div>
+          <div class="ov" id="ov3">
+            <div class="ovbox" id="ovbox"></div>
+          </div>
+        </div>
+        <div class="dock">
+          <div class="row">
+            <span class="lab">飛行</span>
+            <button class="btn sel" data-fm="assist">定高輔助</button>
+            <button class="btn" data-fm="manual">手動油門</button>
+            <button class="btn" id="menu3">選關卡</button>
+          </div>
+          <div class="note"><kbd>W</kbd><kbd>S</kbd> 前後、<kbd>A</kbd><kbd>D</kbd> 左右平移、<kbd>←</kbd><kbd>→</kbd> 轉向、<kbd>↑</kbd><kbd>↓</kbd> 上升下降（手動模式是加減油門）。手機用畫面下方兩個搖桿。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>無人機足球訓練場</h1>
+    <p class="lede">把無人機裝進球形保護籠，它就變成一顆會自己飛的「球」。射手要從空中穿過對方的圓環球門才能得分。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>這是什麼運動？</h2>
+      <p>無人機足球大約十年前在韓國發明，現在台灣很多學校也有隊伍。每隊有好幾架無人機，但只有一架是「射手」，只有它穿過圓環才算分；其他隊友負責擋路和卡位。</p>
+      <p>球門是一個立在空中的圓環。射手每進一球，要先飛回自己的半場，才能再射門。這個遊戲的第 ③ 模式也用這條規則。</p>
+    </div>
+    <div class="card">
+      <h2>四顆螺旋槳，四種動作</h2>
+      <ul>
+        <li><b>油門</b>：四顆一起轉快，推力變大，往上升。</li>
+        <li><b>前後傾（俯仰）</b>：前面兩顆慢、後面兩顆快，機身往前倒，就往前飛。</li>
+        <li><b>左右傾（橫滾）</b>：左右兩邊轉速不同，往側邊飛。</li>
+        <li><b>轉向（偏航）</b>：對角的兩顆轉快一點。螺旋槳轉動時會反推機身，兩對的反推不一樣大，機身就原地轉圈。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>懸停：力平衡</h2>
+      <p>推力和重力一樣大時，合力是 0，無人機會維持原本的狀態：本來停著就繼續停在空中（牛頓第一運動定律）。</p>
+      <div class="fx">推力 = 重力 = 質量 × 9.8</div>
+      <p>1 kg 的無人機要 9.8 牛頓的推力才浮得住；裝了更重的電池，就要更大的推力。</p>
+    </div>
+    <div class="card">
+      <h2>為什麼傾斜會掉高度？</h2>
+      <p>推力永遠垂直於機身。機身一傾斜，推力就分成「往上的部分」和「往旁邊的部分」。往旁邊的部分讓它前進，但往上的部分變小了，撐不住重力，就會往下掉。</p>
+      <p>所以飛手要前進時，一邊推桿傾斜，一邊多給一點油門。</p>
+    </div>
+    <div class="card">
+      <h2>慣性與煞車</h2>
+      <p>放開搖桿，無人機不會馬上停，它會靠慣性繼續滑。要停下來，得往反方向傾斜，產生跟速度相反的力。</p>
+      <div class="fx">加速度 = 力 ÷ 質量</div>
+      <p>同樣的力推越重的無人機，加速度越小，出發和煞車都比較慢。空氣阻力會慢慢消耗速度，沒有空氣的話，它會一直滑下去。</p>
+    </div>
+    <div class="card">
+      <h2>球籠的用途</h2>
+      <p>比賽時無人機會互相衝撞。球籠讓螺旋槳不會打到別人，撞到時整顆彈開，就像兩顆球相撞。真的練習時，一定要在網子圍起來的場地裡飛，並戴上護目鏡。</p>
+    </div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const G=9.8, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=(v,d=1)=>(Math.abs(v)<0.5*Math.pow(10,-d)?0:v).toFixed(d);
+function fit(cv){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);return{c,w:r.width,h:r.height}}
+function toast(id,msg,warn,ms=2400){const t=$(id);t.textContent=msg;t.classList.toggle('warn',!!warn);t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),ms)}
+function selGroup(attr,btn){$$(`[${attr}]`).forEach(b=>b.classList.toggle('sel',b===btn))}
+function arrow(c,x,y,dx,dy,col,lw=3,dash){const L=Math.hypot(dx,dy);if(L<2)return;c.save();c.strokeStyle=col;c.fillStyle=col;c.lineWidth=lw;if(dash)c.setLineDash([5,4]);c.beginPath();c.moveTo(x,y);c.lineTo(x+dx,y+dy);c.stroke();c.setLineDash([]);const ux=dx/L,uy=dy/L,h=Math.min(11,L*.5);c.beginPath();c.moveTo(x+dx,y+dy);c.lineTo(x+dx-ux*h-uy*h*.55,y+dy-uy*h+ux*h*.55);c.lineTo(x+dx-ux*h+uy*h*.55,y+dy-uy*h-ux*h*.55);c.closePath();c.fill();c.restore()}
+let audio=null;
+function beep(f=660,d=.12,type='sine',v=.12){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+function chime(){beep(660,.15);setTimeout(()=>beep(880,.15),120);setTimeout(()=>beep(1175,.3),240)}
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- tabs ---------- */
+const CARDS={
+ A:'<h2>① 推力天平</h2><p>從側面看一架無人機。拉油門讓推力等於重力，它就會停在空中。依序完成三個任務：懸停、斜著飛但不掉高度、載重懸停。</p><p class="note">金色箭頭是推力，紅色是重力，綠色是合力。</p>',
+ B:'<h2>② 慣性煞車</h2><p>從上往下看。用搖桿推動無人機，把它停進 5 個發光的停機坪，越快越好。</p><p>提示：快到的時候要先往反方向推，才停得下來。換成「沒有阻力」或「重」的無人機試試看。</p>',
+ C:'<h2>③ 射門訓練</h2><p>你是金色的射手。穿過對面的綠色圓環就得分。每次得分後，要先飛回中線後面，才能再射門。</p><p>「手動油門」模式要自己控制推力，才是真正的飛行手感。</p>'};
+let tab='A';
+function setTab(t){tab=t;$$('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===t));['A','B','C'].forEach(k=>$('#p-'+k).hidden=k!==t);$('#modeCard').innerHTML=CARDS[t];keys.clear();if(t==='C')init3();store.set('dsoc-tab',t)}
+$$('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+const keys=new Set();
+addEventListener('keydown',e=>{
+  const tag=(document.activeElement||{}).tagName;
+  if(tab==='A'){ if(tag==='INPUT')return;
+    if(e.key==='ArrowUp'){setT(A.T+0.1);e.preventDefault()}
+    else if(e.key==='ArrowDown'){setT(A.T-0.1);e.preventDefault()}
+    else if(e.key==='ArrowRight'){setTilt(A.tilt+1);e.preventDefault()}
+    else if(e.key==='ArrowLeft'){setTilt(A.tilt-1);e.preventDefault()}
+    return}
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)&&tag!=='INPUT')e.preventDefault();
+  keys.add(e.code)});
+addEventListener('keyup',e=>keys.delete(e.code));
+addEventListener('blur',()=>keys.clear());
+const k=c=>keys.has(c)?1:0;
+
+/* =========================================================
+   A：推力天平（側視）
+   ========================================================= */
+const AW=8,AH=4,AR=0.25,AK=0.6;
+const A={x:1,y:AR,vx:0,vy:0,T:0,tilt:0,th:0,m:1,mSel:1,parts:true,task:'free',hold:0,phase:'',done:store.get('dsoc-doneA',{}),ground:true};
+const cA=$('#cA');
+function setT(v){A.T=clamp(Math.round(v*10)/10,0,20);$('#thrA').value=A.T;$('#thrAV').textContent=A.T.toFixed(1)+' N'}
+function setTilt(v){A.tilt=clamp(Math.round(v),-30,30);$('#tiltA').value=A.tilt;$('#tiltAV').textContent=A.tilt+'°'}
+$('#thrA').oninput=e=>setT(+e.target.value);$('#tiltA').oninput=e=>setTilt(+e.target.value);
+$('#thrUp').onclick=()=>setT(A.T+0.1);$('#thrDn').onclick=()=>setT(A.T-0.1);$('#tilt0').onclick=()=>setTilt(0);
+$('#partsA').onclick=e=>{A.parts=!A.parts;e.target.textContent='分力：'+(A.parts?'顯示':'隱藏');e.target.classList.toggle('sel',A.parts)};
+$('#partsA').classList.add('sel');
+function resetA(){Object.assign(A,{x:1,y:AR,vx:0,vy:0,hold:0,phase:'',th:0});setT(0);setTilt(0)}
+$('#resetA').onclick=resetA;
+$$('[data-m]').forEach(b=>b.onclick=()=>{if(A.task==='heavy'){toast('#tA','任務 3 固定用 1.5 kg，先切回其他任務再換質量',true);return}A.mSel=A.m=+b.dataset.m;selGroup('data-m',b)});
+const TASKS={
+ free:'自由飛：隨意調推力和角度，看看箭頭怎麼變。',
+ hover:'任務 1：把無人機停在綠色帶子裡（1.35～1.65 公尺），維持 3 秒。',
+ cruise:'任務 2：從左邊旗子出發，傾斜往右飛，全程留在 1～2 公尺的帶子裡，碰到右邊旗子。',
+ heavy:'任務 3：換上 1.5 kg 的大電池，再懸停 3 秒。推力要多少？'};
+function markTasks(){$$('[data-task]').forEach(b=>b.classList.toggle('done',!!A.done[b.dataset.task]))}
+$$('[data-task]').forEach(b=>b.onclick=()=>{A.task=b.dataset.task;selGroup('data-task',b);A.hold=0;A.phase='';
+  if(A.task==='heavy'){A.m=1.5;selGroup('data-m',$('[data-m="1.5"]'))}else{A.m=A.mSel;selGroup('data-m',$(`[data-m="${A.mSel}"]`))}
+  if(A.task==='cruise'){Object.assign(A,{x:0.9,vx:0})}
+  toast('#tA',TASKS[A.task],false,4200)});
+function winA(t,msg){if(!A.done[t]){A.done[t]=true;store.set('dsoc-doneA',A.done);markTasks()}chime();toast('#tA',msg,false,4500)}
+function stepA(dt){
+  A.th+= (A.tilt*Math.PI/180-A.th)*Math.min(1,dt*8);
+  const s=Math.sin(A.th),c=Math.cos(A.th);
+  let fx=A.T*s-AK*A.vx, fy=A.T*c-A.m*G-AK*A.vy;
+  if(A.y<=AR+1e-4 && A.T*c<=A.m*G){A.vy=0;A.vx*=Math.max(0,1-dt*6);fy=0;fx=A.T*s>0.01||A.T*s<-0.01?fx:0;A.ground=true}else A.ground=false;
+  A.vx+=fx/A.m*dt;A.vy+=fy/A.m*dt;A.x+=A.vx*dt;A.y+=A.vy*dt;
+  if(A.y<AR){A.y=AR;if(A.vy<-1.5)beep(120,.08,'square',.06);A.vy=Math.max(0,-A.vy*0.25)}
+  if(A.y>AH-AR){A.y=AH-AR;A.vy=-Math.abs(A.vy)*0.4}
+  if(A.x<AR){A.x=AR;A.vx=Math.abs(A.vx)*0.5}
+  if(A.x>AW-AR){A.x=AW-AR;A.vx=-Math.abs(A.vx)*0.5}
+  // tasks
+  if(A.task==='hover'||A.task==='heavy'){
+    const ok=A.y>1.35&&A.y<1.65&&Math.abs(A.vy)<0.2;
+    A.hold=ok?A.hold+dt:0;
+    if(A.hold>=3){A.hold=0;winA(A.task,A.task==='hover'?`懸停成功！推力 ${A.T.toFixed(1)} N ≈ 重力 ${(A.m*G).toFixed(1)} N`:`載重懸停成功！1.5 kg 要 ${(1.5*G).toFixed(1)} N 才撐得住，比 1 kg 多了一半`)}
+  } else if(A.task==='cruise'){
+    const inB=A.y>=1&&A.y<=2;
+    if(A.phase===''){ if(inB&&A.x<1.6){A.phase='go';toast('#tA','出發！保持在帶子裡往右飛',false,1800)} }
+    else if(A.phase==='go'){
+      if(!inB){A.phase='fail';toast('#tA','掉出高度帶了。傾斜時要多給一點推力，飛回左邊旗子重來',true,3500)}
+      else if(A.x>=7){A.phase='win';winA('cruise',`成功！傾斜 ${Math.abs(A.tilt)}° 時，推力要 ${A.T.toFixed(1)} N 才不會掉高度，比懸停時大`)}
+    } else if(A.phase==='fail'||A.phase==='win'){ if(A.x<1.6&&inB&&A.phase==='fail')A.phase='go'; if(A.phase==='win'&&A.x<1.6)A.phase='' }
+  }
+}
+function drawA(){
+  const {c,w,h}=fit(cA);c.clearRect(0,0,w,h);
+  const pad=26,s=Math.min((w-pad*2)/AW,(h-pad*2-10)/AH),ox=(w-AW*s)/2,oy=h-pad;
+  const X=x=>ox+x*s,Y=y=>oy-y*s;
+  // sky gradient
+  const gr=c.createLinearGradient(0,Y(AH),0,oy);gr.addColorStop(0,'#0e1b30');gr.addColorStop(1,'#13253f');c.fillStyle=gr;c.fillRect(X(0),Y(AH),AW*s,AH*s);
+  // net grid
+  c.strokeStyle='rgba(120,160,210,.12)';c.lineWidth=1;
+  for(let x=0;x<=AW;x+=0.5){c.beginPath();c.moveTo(X(x),Y(0));c.lineTo(X(x),Y(AH));c.stroke()}
+  for(let y=0;y<=AH;y+=0.5){c.beginPath();c.moveTo(X(0),Y(y));c.lineTo(X(AW),Y(y));c.stroke()}
+  // bands
+  const band=(a,b,col)=>{c.fillStyle=col;c.fillRect(X(0),Y(b),AW*s,(b-a)*s)};
+  if(A.task==='hover'||A.task==='heavy')band(1.35,1.65,'rgba(200,240,90,.16)');
+  if(A.task==='cruise'){band(1,2,A.phase==='fail'?'rgba(255,107,107,.14)':'rgba(200,240,90,.12)');
+    [[1.6,'#9fb0c8'],[7,'#c8f05a']].forEach(([x,col])=>{c.strokeStyle=col;c.lineWidth=2;c.beginPath();c.moveTo(X(x),Y(0));c.lineTo(X(x),Y(2.4));c.stroke();c.fillStyle=col;c.beginPath();c.moveTo(X(x),Y(2.4));c.lineTo(X(x)+18,Y(2.3));c.lineTo(X(x),Y(2.2));c.fill()})}
+  // floor
+  c.fillStyle='#1d3326';c.fillRect(X(0),oy,AW*s,6);
+  c.strokeStyle='#2a3f60';c.lineWidth=1.5;c.strokeRect(X(0),Y(AH),AW*s,AH*s);
+  // height scale
+  c.fillStyle='#9fb0c8';c.font='11px "Chakra Petch",monospace';c.textAlign='right';
+  for(let y=0;y<=AH;y++){c.fillText(y+' m',X(0)-4,Y(y)+4)}
+  // drone
+  const px=X(A.x),py=Y(A.y),r=AR*s;
+  // shadow
+  c.fillStyle=`rgba(0,0,0,${0.35*Math.max(0,1-A.y/3)})`;c.beginPath();c.ellipse(px,oy+2,r*1.1,4,0,0,7);c.fill();
+  c.save();c.translate(px,py);c.rotate(A.th);
+  c.strokeStyle='rgba(255,201,77,.85)';c.lineWidth=2;c.beginPath();c.arc(0,0,r,0,7);c.stroke();
+  c.beginPath();c.ellipse(0,0,r,r*.35,0,0,7);c.stroke();
+  c.fillStyle='#2b3b55';c.fillRect(-r*.75,-3,r*1.5,6);
+  c.fillStyle='#ffc94d';c.fillRect(-r*.25,-7,r*.5,10);
+  const spin=performance.now()/30;
+  [-1,1].forEach(sd=>{c.fillStyle='rgba(220,235,255,.5)';c.fillRect(sd*r*.62-r*.28*Math.abs(Math.cos(spin+sd)),-6,r*.56*Math.abs(Math.cos(spin+sd))+2,2)});
+  c.restore();
+  // forces
+  const aS=s*0.085, sn=Math.sin(A.th), cs=Math.cos(A.th);
+  arrow(c,px,py,0,A.m*G*aS,'#ff6b6b',3);
+  if(A.T>0.05){arrow(c,px,py,A.T*sn*aS,-A.T*cs*aS,'#ffc94d',3.5);
+    if(A.parts&&Math.abs(A.th)>0.02){arrow(c,px,py,A.T*sn*aS,0,'rgba(255,201,77,.7)',2,true);arrow(c,px,py,0,-A.T*cs*aS,'rgba(255,201,77,.7)',2,true)}}
+  const nfx=A.T*sn, nfy=A.ground?0:A.T*cs-A.m*G;
+  if(Math.hypot(nfx,nfy)>0.08)arrow(c,px+r+8,py,nfx*aS*1.6,-nfy*aS*1.6,'#c8f05a',3);
+  // readout
+  if((fr%5)===0){
+    const up=A.T*cs, net=A.ground&&up<=A.m*G?0:up-A.m*G;
+    let st='';
+    if(A.task==='hover'||A.task==='heavy')st=`懸停計時 <b>${A.hold.toFixed(1)}</b> / 3 秒`;
+    else if(A.task==='cruise')st={'':'先飛進帶子、停在左邊旗子附近',go:'飛行中…',fail:'失敗，回左邊旗子重來',win:'完成！'}[A.phase];
+    else st=A.ground?(A.T<=0.05?'停在地上':'推力不夠，飛不起來'):(Math.abs(net)<0.05&&Math.abs(A.vy)<0.05?'懸停中':(A.vy>0?'上升中':'下降中'));
+    $('#roA').innerHTML=`<span class="big">${st}</span>
+<i style="background:#ffc94d"></i>推力 <b>${A.T.toFixed(1)}</b> N
+<span class="st"><i style="background:#ff6b6b"></i>重力 <b>${(A.m*G).toFixed(1)}</b> N（${A.m} kg × 9.8）</span>
+<span class="st">往上的部分 <b>${up.toFixed(1)}</b> N・往旁的部分 <b>${fmt(A.T*sn)}</b> N</span>
+<span class="st"><i style="background:#c8f05a"></i>上下合力 <b>${fmt(net)}</b> N</span>
+<span class="st">高度 <b>${A.y.toFixed(2)}</b> m・升降 <b>${fmt(A.vy,2)}</b> m/s</span>`}
+}
+setT(0);setTilt(0);markTasks();
+
+/* =========================================================
+   B：慣性煞車（俯視）
+   ========================================================= */
+const BW=12,BH=8,BR=0.3,FMAX=3;
+const PADS=[[3.2,2],[9.6,6],[10.2,1.8],[2.2,6.2],[6,4]];
+const B={x:1.2,y:4,vx:0,vy:0,m:1,k:0.6,pred:true,pad:0,hold:0,t:0,run:false,fin:false,bumps:0,trail:[],sx:0,sy:0,ptr:null,fx:0,fy:0};
+const cB=$('#cB');
+function resetB(){Object.assign(B,{x:1.2,y:4,vx:0,vy:0,pad:0,hold:0,t:0,run:false,fin:false,bumps:0,trail:[]})}
+$('#resetB').onclick=resetB;
+$$('[data-mb]').forEach(b=>b.onclick=()=>{B.m=+b.dataset.mb;selGroup('data-mb',b);resetB()});
+$$('[data-k]').forEach(b=>b.onclick=()=>{B.k=+b.dataset.k;selGroup('data-k',b);resetB();if(B.k===0)toast('#tB','沒有空氣阻力：放開搖桿，它會一直滑下去',true,3500)});
+$('#predB').onclick=e=>{B.pred=!B.pred;e.target.textContent='煞車點預測：'+(B.pred?'開':'關');e.target.classList.toggle('sel',B.pred)};
+cB.addEventListener('pointerdown',e=>{cB.setPointerCapture(e.pointerId);B.ptr={id:e.pointerId,x0:e.offsetX,y0:e.offsetY,x:e.offsetX,y:e.offsetY}});
+cB.addEventListener('pointermove',e=>{if(B.ptr&&B.ptr.id===e.pointerId){B.ptr.x=e.offsetX;B.ptr.y=e.offsetY}});
+const endP=e=>{if(B.ptr&&B.ptr.id===e.pointerId)B.ptr=null};
+cB.addEventListener('pointerup',endP);cB.addEventListener('pointercancel',endP);
+const bestKey=()=>`dsoc-bestB-${B.m}-${B.k}`;
+function stepB(dt){
+  let sx=k('KeyD')+k('ArrowRight')-k('KeyA')-k('ArrowLeft'), sy=k('KeyS')+k('ArrowDown')-k('KeyW')-k('ArrowUp');
+  if(B.ptr){const dx=(B.ptr.x-B.ptr.x0)/60,dy=(B.ptr.y-B.ptr.y0)/60;sx+=dx;sy+=dy}
+  const L=Math.hypot(sx,sy);if(L>1){sx/=L;sy/=L}
+  B.sx=sx;B.sy=sy;
+  if(!B.run&&!B.fin&&L>0.05)B.run=true;
+  B.fx=FMAX*sx;B.fy=FMAX*sy;
+  const ax=(B.fx-B.k*B.vx)/B.m, ay=(B.fy-B.k*B.vy)/B.m;
+  B.vx+=ax*dt;B.vy+=ay*dt;B.x+=B.vx*dt;B.y+=B.vy*dt;
+  let hit=false;
+  if(B.x<BR){B.x=BR;B.vx=Math.abs(B.vx)*.6;hit=true}if(B.x>BW-BR){B.x=BW-BR;B.vx=-Math.abs(B.vx)*.6;hit=true}
+  if(B.y<BR){B.y=BR;B.vy=Math.abs(B.vy)*.6;hit=true}if(B.y>BH-BR){B.y=BH-BR;B.vy=-Math.abs(B.vy)*.6;hit=true}
+  if(hit&&Math.hypot(B.vx,B.vy)>0.6&&B.run){B.bumps++;beep(140,.08,'square',.07)}
+  if(B.run&&!B.fin){B.t+=dt;
+    const [px,py]=PADS[B.pad],sp=Math.hypot(B.vx,B.vy);
+    if(Math.hypot(B.x-px,B.y-py)<0.5&&sp<0.35){B.hold+=dt;if(B.hold>=0.8){B.hold=0;B.pad++;beep(880,.12);
+      if(B.pad>=PADS.length){B.fin=true;B.run=false;const best=store.get(bestKey(),null);const nb=best==null||B.t<best;if(nb)store.set(bestKey(),B.t);chime();
+        toast('#tB',`完成！${B.t.toFixed(1)} 秒，撞網 ${B.bumps} 次${nb?'・新紀錄':`・紀錄 ${best.toFixed(1)} 秒`}`,false,5000)}}}
+    else B.hold=0}
+  if(fr%3===0){B.trail.push([B.x,B.y]);if(B.trail.length>90)B.trail.shift()}
+}
+function drawB(){
+  const {c,w,h}=fit(cB);c.clearRect(0,0,w,h);
+  const pad=18,s=Math.min((w-pad*2)/BW,(h-pad*2)/BH),ox=(w-BW*s)/2,oy=(h-BH*s)/2;
+  const X=x=>ox+x*s,Y=y=>oy+y*s;
+  c.fillStyle='#132a2a';c.fillRect(ox,oy,BW*s,BH*s);
+  c.strokeStyle='rgba(140,200,190,.10)';c.lineWidth=1;
+  for(let x=0;x<=BW;x++){c.beginPath();c.moveTo(X(x),oy);c.lineTo(X(x),Y(BH));c.stroke()}
+  for(let y=0;y<=BH;y++){c.beginPath();c.moveTo(ox,Y(y));c.lineTo(X(BW),Y(y));c.stroke()}
+  c.strokeStyle='#3d6a66';c.lineWidth=2;c.strokeRect(ox,oy,BW*s,BH*s);
+  c.fillStyle='#7fa8a0';c.font='11px "Chakra Petch",monospace';c.textAlign='left';c.fillText('每格 1 m',ox+6,Y(BH)-6);
+  // pads
+  PADS.forEach(([px,py],i)=>{if(i<B.pad)return;const cur=i===B.pad;c.beginPath();c.arc(X(px),Y(py),0.5*s,0,7);
+    c.fillStyle=cur?`rgba(200,240,90,${0.18+0.1*Math.sin(performance.now()/250)})`:'rgba(160,180,200,.06)';c.fill();
+    c.strokeStyle=cur?'#c8f05a':'rgba(160,180,200,.3)';c.lineWidth=cur?2.5:1;c.stroke();
+    c.fillStyle=cur?'#c8f05a':'rgba(160,180,200,.5)';c.font='bold 13px "Chakra Petch",monospace';c.textAlign='center';c.fillText(i+1,X(px),Y(py)+5);
+    if(cur&&B.hold>0){c.strokeStyle='#ffc94d';c.lineWidth=4;c.beginPath();c.arc(X(px),Y(py),0.5*s+5,-Math.PI/2,-Math.PI/2+B.hold/0.8*Math.PI*2);c.stroke()}});
+  // trail
+  B.trail.forEach(([x,y],i)=>{c.fillStyle=`rgba(92,200,255,${i/B.trail.length*.5})`;c.fillRect(X(x)-1.5,Y(y)-1.5,3,3)});
+  // prediction
+  const sp=Math.hypot(B.vx,B.vy);
+  if(B.pred&&sp>0.15){
+    if(B.k>0){const d=B.m*sp/B.k;const gx=B.x+B.vx/sp*d,gy=B.y+B.vy/sp*d;
+      c.setLineDash([4,5]);c.strokeStyle='rgba(255,201,77,.6)';c.lineWidth=1.5;c.beginPath();c.moveTo(X(B.x),Y(B.y));c.lineTo(X(gx),Y(gy));c.stroke();c.setLineDash([]);
+      c.beginPath();c.arc(X(gx),Y(gy),BR*s,0,7);c.stroke();c.fillStyle='rgba(255,201,77,.8)';c.font='11px "Noto Sans TC",sans-serif';c.textAlign='center';c.fillText('放開會停在這',X(gx),Y(gy)-BR*s-5)}
+    else{c.fillStyle='rgba(255,201,77,.85)';c.font='12px "Noto Sans TC",sans-serif';c.textAlign='center';c.fillText('放開也不會停！',X(B.x),Y(B.y)-BR*s-10)}}
+  // drone top view
+  const px=X(B.x),py=Y(B.y),r=BR*s;
+  c.strokeStyle='rgba(255,201,77,.9)';c.lineWidth=2;c.beginPath();c.arc(px,py,r,0,7);c.stroke();
+  c.strokeStyle='#3a4d6b';c.lineWidth=3;c.beginPath();c.moveTo(px-r*.6,py-r*.6);c.lineTo(px+r*.6,py+r*.6);c.moveTo(px+r*.6,py-r*.6);c.lineTo(px-r*.6,py+r*.6);c.stroke();
+  [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>{c.fillStyle='rgba(220,235,255,.35)';c.beginPath();c.arc(px+a*r*.55,py+b*r*.55,r*.3,0,7);c.fill()});
+  c.fillStyle='#ffc94d';c.fillRect(px-4,py-4,8,8);
+  const aS=s*0.35;
+  if(sp>0.03)arrow(c,px,py,B.vx*s*0.5,B.vy*s*0.5,'#5cc8ff',3);
+  if(Math.hypot(B.fx,B.fy)>0.05)arrow(c,px,py,B.fx*aS/FMAX*1.2,B.fy*aS/FMAX*1.2,'#ffc94d',3);
+  // joystick
+  if(B.ptr){c.strokeStyle='rgba(200,240,90,.5)';c.lineWidth=2;c.beginPath();c.arc(B.ptr.x0,B.ptr.y0,60,0,7);c.stroke();
+    c.fillStyle='rgba(200,240,90,.5)';c.beginPath();c.arc(B.ptr.x0+B.sx*60,B.ptr.y0+B.sy*60,16,0,7);c.fill()}
+  if(fr%5===0){const F=Math.hypot(B.fx,B.fy),best=store.get(bestKey(),null);
+    $('#roB').innerHTML=`<span class="big">停機坪 <b>${Math.min(B.pad+1,5)}</b> / 5${B.fin?'・完成':''}</span>
+<span class="st">時間 <b>${B.t.toFixed(1)}</b> s・撞網 <b>${B.bumps}</b> 次${best!=null?`・紀錄 <b>${best.toFixed(1)}</b> s`:''}</span>
+<span class="st"><i style="background:#ffc94d"></i>推力（水平）<b>${F.toFixed(1)}</b> N</span>
+<span class="st">加速度 = ${F.toFixed(1)} ÷ ${B.m} = <b>${(F/B.m).toFixed(1)}</b> m/s²</span>
+<span class="st"><i style="background:#5cc8ff"></i>速度 <b>${sp.toFixed(2)}</b> m/s${sp<0.35?'（夠慢，可以停）':''}</span>`}
+}
+
+/* =========================================================
+   C：3D 射門訓練
+   ========================================================= */
+const FX=8,FZ=4,FY=5,R3=0.35,GX=7,GY=2.2,RR=0.9,TUBE=0.07,MAXT=25*Math.PI/180,K3=0.8;
+const LEVELS=[
+ {name:'熱身',sub:'沒有防守，60 秒',time:60,def:[]},
+ {name:'守門員',sub:'1 架防守，90 秒',time:90,def:['keeper']},
+ {name:'正式對抗',sub:'3 架防守，120 秒',time:120,def:['keeper','block','chase']}];
+let T3=null, fmode='assist', lv=0;
+$$('[data-fm]').forEach(b=>b.onclick=()=>{fmode=b.dataset.fm;selGroup('data-fm',b);$('#thrC').hidden=fmode!=='manual';if(T3&&T3.P)T3.P.tau=0.5;b.blur()});
+$('#menu3').onclick=()=>{if(T3)showMenu()};
+function stick(el){const s={x:0,y:0,id:null},kn=el.querySelector('i');
+  const mv=e=>{const r=el.getBoundingClientRect();let dx=(e.clientX-r.left-r.width/2)/(r.width/2),dy=(e.clientY-r.top-r.height/2)/(r.height/2);const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L}s.x=dx;s.y=-dy;kn.style.transform=`translate(${dx*r.width*.34}px,${dy*r.height*.34}px)`};
+  el.addEventListener('pointerdown',e=>{s.id=e.pointerId;el.setPointerCapture(e.pointerId);mv(e);e.preventDefault()});
+  el.addEventListener('pointermove',e=>{if(e.pointerId===s.id)mv(e)});
+  const up=e=>{if(e.pointerId===s.id){s.id=null;s.x=s.y=0;kn.style.transform=''}};
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);return s}
+const SL=stick($('#stL')),SR=stick($('#stR'));
+function makeDrone(col){
+  const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);
+  const cage=new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(R3,1)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:.85}));
+  inner.add(cage);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(R3,0.018,6,40),new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.35}));ring.rotation.x=Math.PI/2;inner.add(ring);
+  const dark=new THREE.MeshStandardMaterial({color:0x2b3b55,roughness:.6});
+  const arm1=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.03,0.04),dark);arm1.rotation.y=Math.PI/4;inner.add(arm1);
+  const arm2=arm1.clone();arm2.rotation.y=-Math.PI/4;inner.add(arm2);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.07,0.1),new THREE.MeshStandardMaterial({color:col,roughness:.4}));inner.add(body);
+  const nose=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.03,0.05),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.6}));nose.position.set(0.09,0,0);inner.add(nose);
+  const rotors=[];const rm=new THREE.MeshBasicMaterial({color:0xdde8ff,transparent:true,opacity:.35,side:THREE.DoubleSide});
+  [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>{const r=new THREE.Mesh(new THREE.CircleGeometry(0.09,16),rm);r.rotation.x=-Math.PI/2;r.position.set(a*0.163,0.03,b*0.163);inner.add(r);rotors.push(r)});
+  return {g,inner,rotors,cage}}
+function init3(){
+  if(T3)return;
+  const wrap=$('#c3wrap');
+  if(!window.THREE){T3={fail:true};$('#ovbox').innerHTML='<h2>3D 畫面載入失敗</h2><p>這個模式需要網路下載 3D 繪圖程式。請確認網路後重新整理頁面。① ② 模式不受影響。</p>';return}
+  const ren=new THREE.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(2,devicePixelRatio||1));
+  ren.domElement.style.cssText='position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none';
+  wrap.prepend(ren.domElement);
+  const scene=new THREE.Scene();scene.background=new THREE.Color(0x0a1322);scene.fog=new THREE.Fog(0x0a1322,14,32);
+  const cam=new THREE.PerspectiveCamera(62,1,0.05,80);
+  scene.add(new THREE.HemisphereLight(0xcfe0ff,0x1a2a3a,0.9));
+  const dl=new THREE.DirectionalLight(0xffffff,0.7);dl.position.set(4,10,6);scene.add(dl);
+  // floor texture
+  const tc=document.createElement('canvas');tc.width=1024;tc.height=512;const t=tc.getContext('2d');
+  t.fillStyle='#14283f';t.fillRect(0,0,1024,512);
+  t.strokeStyle='rgba(120,170,230,.10)';t.lineWidth=2;for(let i=0;i<=16;i++){t.beginPath();t.moveTo(i*64,0);t.lineTo(i*64,512);t.stroke()}for(let i=0;i<=8;i++){t.beginPath();t.moveTo(0,i*64);t.lineTo(1024,i*64);t.stroke()}
+  t.strokeStyle='#e8f1ff';t.lineWidth=6;t.strokeRect(6,6,1012,500);t.beginPath();t.moveTo(512,0);t.lineTo(512,512);t.stroke();t.beginPath();t.arc(512,256,80,0,7);t.stroke();
+  t.strokeStyle='#c8f05a';t.beginPath();t.arc(960,256,96,Math.PI/2,Math.PI*1.5);t.stroke();
+  t.strokeStyle='#ff6b6b';t.beginPath();t.arc(64,256,96,-Math.PI/2,Math.PI/2);t.stroke();
+  const tex=new THREE.CanvasTexture(tc);tex.anisotropy=4;
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(FX*2,FZ*2),new THREE.MeshStandardMaterial({map:tex,roughness:.9}));floor.rotation.x=-Math.PI/2;scene.add(floor);
+  // nets
+  const netM=new THREE.LineBasicMaterial({color:0x7fa6d8,transparent:true,opacity:.16});
+  const pts=[];const st=0.5;
+  for(let x=-FX;x<=FX+1e-6;x+=st){[-FZ,FZ].forEach(z=>pts.push(x,0,z,x,FY,z));pts.push(x,FY,-FZ,x,FY,FZ)}
+  for(let y=0;y<=FY+1e-6;y+=st){[-FZ,FZ].forEach(z=>pts.push(-FX,y,z,FX,y,z));[-FX,FX].forEach(x=>pts.push(x,y,-FZ,x,y,FZ))}
+  for(let z=-FZ;z<=FZ+1e-6;z+=st){[-FX,FX].forEach(x=>pts.push(x,0,z,x,FY,z));pts.push(-FX,FY,z,FX,FY,z)}
+  const ng=new THREE.BufferGeometry();ng.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));scene.add(new THREE.LineSegments(ng,netM));
+  const frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(FX*2,FY,FZ*2)),new THREE.LineBasicMaterial({color:0x5e86bd}));frame.position.y=FY/2;scene.add(frame);
+  // goals
+  function goal(x,col,face){const gg=new THREE.Group();
+    const ringM=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.55,roughness:.4});
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(RR,TUBE,14,60),ringM);ring.rotation.y=Math.PI/2;ring.position.set(0,GY,0);gg.add(ring);
+    const disc=new THREE.Mesh(new THREE.CircleGeometry(RR-TUBE,48),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.07,side:THREE.DoubleSide}));disc.rotation.y=Math.PI/2;disc.position.set(0,GY,0);gg.add(disc);
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,GY-RR),new THREE.MeshStandardMaterial({color:0x9fb0c8}));pole.position.y=(GY-RR)/2;gg.add(pole);
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.4,0.06,24),new THREE.MeshStandardMaterial({color:0x2a3f60}));base.position.y=0.03;gg.add(base);
+    gg.position.x=x;scene.add(gg);return{ringM,disc}}
+  const G1=goal(GX,0xc8f05a),G0=goal(-GX,0xff6b6b);
+  // player and defenders
+  const shM=()=>new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.35,depthWrite:false});
+  function body(col){const d=makeDrone(col);scene.add(d.g);const sh=new THREE.Mesh(new THREE.CircleGeometry(R3,24),shM());sh.rotation.x=-Math.PI/2;sh.position.y=0.01;scene.add(sh);
+    return{...d,sh,p:{x:0,y:1,z:0},v:{x:0,y:0,z:0},yaw:0,pt:0,rl:0}}
+  const P=body(0xffc94d);P.tau=0.5;
+  const D=[body(0x5cc8ff),body(0x5cc8ff),body(0x5cc8ff)];
+  T3={ren,scene,cam,P,D,G1,G0,state:'menu',t:0,goals:0,armed:true,camYaw:0,flash:0,count:0,shake:0};
+  addEventListener('resize',size3);size3();
+  showMenu();
+}
+function size3(){if(!T3||T3.fail)return;const w=$('#c3wrap'),W=w.clientWidth||1,H=w.clientHeight||1;T3.ren.setSize(W,H,false);T3.cam.aspect=W/H;T3.cam.updateProjectionMatrix()}
+function showMenu(){
+  T3.state='menu';$('#ov3').hidden=false;
+  const best=i=>store.get('dsoc-best3-'+i,null);
+  $('#ovbox').innerHTML=`<h2>射門訓練</h2><p>穿過綠色圓環得分（要從正面穿過去）。每進一球，要先飛回中線後面才能再射門。被藍色防守機撞到會彈開。</p>
+<div class="row">${LEVELS.map((L,i)=>`<button class="btn lv${i===lv?' sel':''}" data-lv="${i}">${L.name}<small>${L.sub}${best(i)!=null?`・最佳 ${best(i)} 球`:''}</small></button>`).join('')}</div>
+<p>目前是「${fmode==='assist'?'定高輔助：放開升降鍵就會停在原本的高度':'手動油門：要自己把油門維持在推力＝重力'}」，可以在下方切換。</p>
+<div class="row"><button class="btn pri" id="go3">開始</button></div>`;
+  $$('[data-lv]').forEach(b=>b.onclick=()=>{lv=+b.dataset.lv;selGroup('data-lv',b)});
+  $('#go3').onclick=start3;
+}
+function placeAll(){
+  const {P,D}=T3;Object.assign(P.p,{x:-5.5,y:1.3,z:0});Object.assign(P.v,{x:0,y:0,z:0});P.yaw=0;P.tau=0.5;T3.camYaw=0;
+  const L=LEVELS[lv];
+  D.forEach((d,i)=>{const role=L.def[i];d.role=role;d.g.visible=d.sh.visible=!!role;
+    Object.assign(d.p,role==='keeper'?{x:GX-1.3,y:GY,z:0}:role==='block'?{x:3.5,y:1.8,z:1.5}:{x:1,y:1.5,z:-2});Object.assign(d.v,{x:0,y:0,z:0});d.yaw=Math.PI;d.ph=Math.random()*6});
+}
+function start3(){$('#ov3').hidden=true;T3.goals=0;T3.armed=true;T3.t=LEVELS[lv].time;placeAll();T3.state='count';T3.count=3;beep(440,.12)}
+function end3(){
+  T3.state='end';const g=T3.goals,key='dsoc-best3-'+lv,best=store.get(key,null),nb=best==null||g>best;if(nb)store.set(key,g);
+  try{window.QA&&QA.achieve&&QA.achieve('drone-soccer','level'+(lv+1),g)}catch(e){}
+  chime();$('#ov3').hidden=false;
+  $('#ovbox').innerHTML=`<h2>時間到！${LEVELS[lv].name}</h2><div class="res">${g} 球</div><p>${nb&&g>0?'新紀錄！':best!=null?`最佳紀錄 ${best} 球。`:''}${g===0?'試著先飛到圓環正前方、對準高度，再往前推。':lv<2?'可以挑戰下一關了。':'防守機會擋在你和球門之間，試著從側面繞過去。'}</p>
+<div class="row"><button class="btn pri" id="again3">再玩一次</button><button class="btn" id="menuB3">選關卡</button></div>`;
+  $('#again3').onclick=start3;$('#menuB3').onclick=showMenu;
+}
+function bounds(b){const p=b.p,v=b.v;let hit=0;
+  if(p.x<-FX+R3){p.x=-FX+R3;if(v.x<0){hit=-v.x;v.x*=-.5}} if(p.x>FX-R3){p.x=FX-R3;if(v.x>0){hit=v.x;v.x*=-.5}}
+  if(p.z<-FZ+R3){p.z=-FZ+R3;if(v.z<0){hit=-v.z;v.z*=-.5}} if(p.z>FZ-R3){p.z=FZ-R3;if(v.z>0){hit=v.z;v.z*=-.5}}
+  if(p.y>FY-R3){p.y=FY-R3;if(v.y>0){hit=v.y;v.y*=-.4}} if(p.y<R3){p.y=R3;if(v.y<0){v.y*=-.25}v.x*=.97;v.z*=.97}
+  // goal rings and poles
+  [GX,-GX].forEach(gx=>{
+    const dy=p.y-GY,dz=p.z;let rl=Math.hypot(dy,dz);let uy=rl>1e-6?dy/rl:1,uz=rl>1e-6?dz/rl:0;
+    const qx=gx,qy=GY+uy*RR,qz=uz*RR;let nx=p.x-qx,ny=p.y-qy,nz=p.z-qz;const d=Math.hypot(nx,ny,nz),md=R3+TUBE;
+    if(d<md&&d>1e-6){nx/=d;ny/=d;nz/=d;p.x=qx+nx*md;p.y=qy+ny*md;p.z=qz+nz*md;const vn=v.x*nx+v.y*ny+v.z*nz;if(vn<0){v.x-=1.6*vn*nx;v.y-=1.6*vn*ny;v.z-=1.6*vn*nz;hit=Math.max(hit,-vn)}}
+    const px=p.x-gx,pz=p.z,pr=Math.hypot(px,pz);
+    if(p.y<GY-RR&&pr<R3+0.05&&pr>1e-6){const ux=px/pr,uz2=pz/pr;p.x=gx+ux*(R3+0.05);p.z=uz2*(R3+0.05);const vn=v.x*ux+v.z*uz2;if(vn<0){v.x-=1.6*vn*ux;v.z-=1.6*vn*uz2}}
+  });
+  return hit}
+function defAI(d,dt){
+  const P=T3.P.p;let tx,ty,tz,vmax;
+  const gx=GX,dx=P.x-gx,dy=P.y-GY,dz=P.z,dl=Math.hypot(dx,dy,dz)||1;
+  if(d.role==='keeper'){const r=1.25;tx=gx+dx/dl*r;ty=GY+dy/dl*r;tz=dz/dl*r;tx=Math.min(tx,gx-0.75);vmax=lv===2?3.0:2.6}
+  else if(d.role==='block'){const r=Math.min(3.2,dl*0.55);tx=gx+dx/dl*r;ty=GY+dy/dl*r;tz=dz/dl*r;tx=Math.min(tx,gx-1.8);vmax=2.6}
+  else{const V=T3.P.v;tx=P.x+V.x*0.7;ty=P.y+V.y*0.5;tz=P.z+V.z*0.7;tx=Math.max(tx,-2);vmax=2.2}
+  ty=clamp(ty+Math.sin(T3.t*1.7+d.ph)*0.12,0.6,FY-0.6);
+  let vx=(tx-d.p.x)*1.8,vy=(ty-d.p.y)*1.8,vz=(tz-d.p.z)*1.8;const vl=Math.hypot(vx,vy,vz);if(vl>vmax){vx*=vmax/vl;vy*=vmax/vl;vz*=vmax/vl}
+  const ax=clamp((vx-d.v.x)*3,-5,5),ay=clamp((vy-d.v.y)*3,-5,5),az=clamp((vz-d.v.z)*3,-5,5);
+  d.v.x+=ax*dt;d.v.y+=ay*dt;d.v.z+=az*dt;
+  const want=Math.atan2(-(P.z-d.p.z),P.x-d.p.x);let dd=want-d.yaw;dd=Math.atan2(Math.sin(dd),Math.cos(dd));d.yaw+=dd*Math.min(1,dt*3);
+  // visual tilt from accel in local frame
+  const fx=Math.cos(d.yaw),fz=-Math.sin(d.yaw),rx=Math.sin(d.yaw),rz=Math.cos(d.yaw);
+  d.pt+=(clamp((ax*fx+az*fz)/9.8,-.45,.45)-d.pt)*Math.min(1,dt*6);d.rl+=(clamp((ax*rx+az*rz)/9.8,-.45,.45)-d.rl)*Math.min(1,dt*6);
+}
+function step3(dt){
+  const S=T3,P=S.P;if(S.fail)return;
+  if(S.state==='count'){S.count-=dt;const n=Math.ceil(S.count);const el=$('#cnt');el.hidden=false;el.textContent=n>0?n:'GO!';if(n!==S._ln){S._ln=n;if(n>0)beep(440,.1);else beep(880,.2)}if(S.count<=-0.5){el.hidden=true;S.state='play'}}
+  const live=S.state==='play'||S.state==='count';
+  let fwd=0,str=0,yawIn=0,cl=0;
+  if(S.state==='play'){fwd=clamp(k('KeyW')-k('KeyS')+SR.y,-1,1);str=clamp(k('KeyD')-k('KeyA')+SR.x,-1,1);yawIn=clamp(k('ArrowLeft')-k('ArrowRight')+k('KeyQ')-k('KeyE')-SL.x,-1,1);cl=clamp(k('ArrowUp')-k('ArrowDown')+k('Space')-k('ShiftLeft')-k('ShiftRight')+SL.y,-1,1)}
+  let mag=Math.hypot(fwd,str);if(mag>1){fwd/=mag;str/=mag;mag=1}
+  const tilt=mag*MAXT,m=1;P.yaw+=yawIn*2.2*dt;
+  const fx=Math.cos(P.yaw),fz=-Math.sin(P.yaw),rx=Math.sin(P.yaw),rz=Math.cos(P.yaw);
+  let hx=fx*fwd+rx*str,hz=fz*fwd+rz*str;const hl=Math.hypot(hx,hz);if(hl>1e-6){hx/=hl;hz/=hl}
+  let T;
+  if(fmode==='assist'||S.state!=='play'){const vyT=cl*2.2;let Tv=clamp(m*(G+3.5*(vyT-P.v.y)),0,2.2*m*G);T=Math.min(Tv/Math.cos(tilt),2.4*m*G)}
+  else{P.tau=clamp(P.tau+cl*0.4*dt,0,1);T=P.tau*2*m*G}
+  const Tv=T*Math.cos(tilt),Fh=T*Math.sin(tilt);
+  P.T=T;
+  if(live){
+    P.v.x+=(Fh*hx-K3*P.v.x)/m*dt;P.v.y+=(Tv-m*G-K3*P.v.y)/m*dt;P.v.z+=(Fh*hz-K3*P.v.z)/m*dt;
+    const px0=P.p.x;P.p.x+=P.v.x*dt;P.p.y+=P.v.y*dt;P.p.z+=P.v.z*dt;
+    if(P.p.y<=R3+1e-3&&Tv<m*G){P.v.y=Math.max(0,P.v.y)}
+    // goal check
+    if(S.state==='play'&&px0<GX&&P.p.x>=GX){const rr=Math.hypot(P.p.y-GY,P.p.z);
+      if(rr<RR-TUBE){if(S.armed){S.goals++;S.armed=false;S.flash=1;chime();toast('#tC',`得分！第 ${S.goals} 球。飛回中線後面才能再射門`,false,2600)}else toast('#tC','還不能得分：要先飛回中線後面（紅色那半場）',true,2600)}}
+    if(!S.armed&&P.p.x<0){S.armed=true;beep(660,.1);toast('#tC','可以再射門了！',false,1400)}
+    S.D.forEach(d=>{if(!d.role)return;defAI(d,dt);d.p.x+=d.v.x*dt;d.p.y+=d.v.y*dt;d.p.z+=d.v.z*dt});
+    // collisions
+    const all=[P,...S.D.filter(d=>d.role)];
+    for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const a=all[i],b=all[j];let nx=b.p.x-a.p.x,ny=b.p.y-a.p.y,nz=b.p.z-a.p.z;const d=Math.hypot(nx,ny,nz);
+      if(d<2*R3&&d>1e-6){nx/=d;ny/=d;nz/=d;const o=(2*R3-d)/2;a.p.x-=nx*o;a.p.y-=ny*o;a.p.z-=nz*o;b.p.x+=nx*o;b.p.y+=ny*o;b.p.z+=nz*o;
+        const vn=(b.v.x-a.v.x)*nx+(b.v.y-a.v.y)*ny+(b.v.z-a.v.z)*nz;if(vn<0){const J=0.9*vn;a.v.x+=J*nx;a.v.y+=J*ny;a.v.z+=J*nz;b.v.x-=J*nx;b.v.y-=J*ny;b.v.z-=J*nz;
+          if(i===0&&-vn>0.6){beep(160,.09,'square',.08);S.shake=Math.min(.25,-vn*.06)}}}}
+    all.forEach(b=>{const h=bounds(b);if(b===P&&h>1.2){beep(130,.07,'square',.06);S.shake=Math.min(.2,h*.04)}});
+    if(S.state==='play'){S.t-=dt;if(S.t<=0){S.t=0;end3()}}
+  }
+  // visual
+  P.pt+=(fwd*MAXT-P.pt)*Math.min(1,dt*7);P.rl+=(str*MAXT-P.rl)*Math.min(1,dt*7);
+  [P,...S.D].forEach(b=>{b.g.position.set(b.p.x,b.p.y,b.p.z);b.g.rotation.y=b.yaw;b.inner.rotation.set(b.rl,0,-b.pt);
+    b.rotors.forEach((r,i)=>r.rotation.z+=dt*(30+i));b.sh.position.set(b.p.x,0.012,b.p.z);const hh=Math.max(0.2,1-b.p.y/FY);b.sh.scale.setScalar(0.7+0.8*(1-hh));b.sh.material.opacity=0.45*hh});
+  S.flash=Math.max(0,S.flash-dt*1.2);S.G1.ringM.emissiveIntensity=0.55+S.flash*1.8;S.G1.disc.material.opacity=0.07+S.flash*0.35;
+  S.G1.ringM.color.setHex(S.armed?0xc8f05a:0x6f7f5a);S.G1.ringM.emissive.setHex(S.armed?0xc8f05a:0x3a4430);
+  // camera
+  let dy=P.yaw-S.camYaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));S.camYaw+=dy*Math.min(1,dt*3.2);
+  const cfx=Math.cos(S.camYaw),cfz=-Math.sin(S.camYaw);
+  const tx=P.p.x-cfx*3.3,ty=P.p.y+1.25,tz=P.p.z-cfz*3.3;
+  const c=S.cam;c.position.x+=(tx-c.position.x)*Math.min(1,dt*5);c.position.y+=(Math.max(0.35,ty)-c.position.y)*Math.min(1,dt*5);c.position.z+=(tz-c.position.z)*Math.min(1,dt*5);
+  S.shake=Math.max(0,S.shake-dt);const sk=S.shake;
+  c.lookAt(P.p.x+cfx*1.2+(Math.random()-.5)*sk,P.p.y+0.25+(Math.random()-.5)*sk,P.p.z+cfz*1.2);
+  S.ren.render(S.scene,c);
+  if(fr%5===0){
+    const sp=Math.hypot(P.v.x,P.v.y,P.v.z);
+    $('#roC').innerHTML=`<span class="big">得分 <b>${S.goals}</b>・剩 <b>${Math.ceil(S.t)}</b> 秒</span>
+<span class="st">${S.armed?'<b>可以射門</b>':'先飛回中線後面'}</span>
+<span class="st">高度 <b>${P.p.y.toFixed(1)}</b> m（圓環中心 ${GY} m）</span>
+<span class="st">速度 <b>${sp.toFixed(1)}</b> m/s・推力 <b>${P.T.toFixed(1)}</b> N</span>`;
+    if(fmode==='manual'){$('#thrC b').style.height=(P.tau*144)+'px';$('#thrC em').title='推力＝重力'}
+  }
+}
+
+/* ---------- loop ---------- */
+let fr=0,last=performance.now();
+function loop(now){
+  let dt=Math.min(0.05,(now-last)/1000);last=now;fr++;
+  if(tab==='A'){const n=4;for(let i=0;i<n;i++)stepA(dt/n);drawA()}
+  else if(tab==='B'){const n=3;for(let i=0;i<n;i++)stepB(dt/n);drawB()}
+  else if(tab==='C'&&T3&&!T3.fail){if(fr%30===0)size3();step3(dt)}
+  requestAnimationFrame(loop)}
+const savedTab=store.get('dsoc-tab','A');
+setTab(['A','B','C'].includes(savedTab)?savedTab:'A');
+requestAnimationFrame(loop);
+})();
+</script>
+
+<script src="../qa.js" defer></script>
