@@ -1,0 +1,482 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>無人機程式飛行</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: flight-planning bench — blueprint field on the left, block program column beside it, coaching rail right; stacks on phones. Single light look. */
+:root{
+  --paper:#eaf1f5;
+  --sheet:#f7fafc;
+  --panel:#ffffff;
+  --rule:#c8d6e0;
+  --grid:#d7e3ea;
+  --ink:#16263a;
+  --dim:#56697d;
+  --accent:#1f6fd1;
+  --fly:#1f6fd1;
+  --move:#1d9a6c;
+  --turn:#8a4fd6;
+  --loop:#e07b12;
+  --bad:#d64545;
+  --gold:#e8a200;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--sheet);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;border-top:1px solid var(--rule);background:var(--panel)}
+.field{display:flex;flex-direction:column;min-width:0;min-height:0}
+.lvbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:12px;border-bottom:1px solid var(--rule)}
+.lvbar .goal{flex:1 1 100%;font-size:14px;color:var(--ink)}
+.cv{position:relative;flex:1;min-height:330px;background:var(--sheet)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#fff}
+.msg.on{opacity:1}
+.msg.ok{background:var(--move)}
+.msg.bad{background:var(--bad)}
+.runbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:12px;border-top:1px solid var(--rule);background:var(--panel)}
+.btn{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn .st{color:var(--gold);letter-spacing:-1px;margin-left:3px}
+.note{font-size:12.5px;color:var(--dim)}
+.code{border-left:1px solid var(--rule);display:flex;flex-direction:column;min-height:0;background:var(--sheet)}
+.code h3{margin:0;font-size:13px;color:var(--dim);font-weight:700;letter-spacing:.04em;padding:8px 12px 4px}
+.pal{display:flex;flex-wrap:wrap;gap:5px;padding:0 12px 8px;border-bottom:1px solid var(--rule)}
+.pal button{border:0;border-radius:6px;padding:4px 9px;font-size:13px;font-weight:700;color:#fff}
+.c-fly{background:var(--fly)}.c-move{background:var(--move)}.c-turn{background:var(--turn)}.c-loop{background:var(--loop)}
+.prog{flex:1;min-height:160px;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:4px;counter-reset:ln}
+.blk{display:flex;align-items:center;gap:6px;border-radius:7px;padding:3px 4px 3px 9px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;border:2px solid transparent;min-height:34px}
+.blk.sel{border-color:var(--ink);box-shadow:0 0 0 2px #fff inset}
+.blk.run{outline:3px solid var(--gold);outline-offset:1px}
+.blk.err{outline:3px solid var(--bad);outline-offset:1px}
+.blk .lbl{flex:1;min-width:0}
+.blk select{background:rgba(255,255,255,.92);color:var(--ink);border:0;border-radius:5px;padding:1px 3px;font-size:13px;font-weight:700}
+.blk .ic{background:rgba(255,255,255,.2);border:0;border-radius:5px;color:#fff;width:24px;height:24px;padding:0;font-size:12px;line-height:24px}
+.empty{color:var(--dim);font-size:13px;padding:10px 4px}
+.py{margin:0;border-top:1px solid var(--rule);padding:8px 12px;font-family:var(--f-code);font-size:12px;line-height:1.55;max-height:190px;overflow:auto;background:#10202f;color:#cfe6ff;white-space:pre}
+.py .kw{color:#ffb86b}.py .fn{color:#8be9b0}.py .nm{color:#ffd76b}.py .cm{color:#7f95ab}
+.rules{padding:8px 12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1}
+.rule{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 9px;font-size:14px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.rule.hit{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.rule b{color:var(--loop)}
+.rule select{border:1px solid var(--rule);border-radius:5px;background:var(--sheet);padding:2px 4px;font-size:13.5px}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#e6f0fb;border-color:#a9c7ec}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-code);background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:13px;margin:6px 0;overflow-x:auto;white-space:pre}
+@media (max-width:1100px){.app{grid-template-columns:minmax(0,1fr) 300px}.work{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;height:auto}
+  .work{grid-template-columns:1fr}
+  .cv{flex:none;height:56vh;min-height:360px}
+  .code{border-left:0;border-top:1px solid var(--rule)}
+  .prog{max-height:340px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 指令航線<small>一步一步排順序</small></button>
+      <button data-tab="B" aria-pressed="false">② 迴圈畫圖形<small>用重複飛出多邊形</small></button>
+      <button data-tab="C" aria-pressed="false">③ 感測器迷宮<small>如果…就…</small></button>
+    </nav>
+    <div class="work">
+      <div class="field">
+        <div class="lvbar" id="lvbar"></div>
+        <div class="cv"><canvas id="cv"></canvas><div class="msg" id="msg"></div></div>
+        <div class="runbar">
+          <button class="btn pri" id="run">▶ 執行</button>
+          <button class="btn" id="step">單步</button>
+          <button class="btn" id="stop">■ 重設</button>
+          <span class="note">速度</span>
+          <button class="btn" data-sp="0.5">慢</button>
+          <button class="btn sel" data-sp="1">中</button>
+          <button class="btn" data-sp="3">快</button>
+        </div>
+      </div>
+      <div class="code" id="codeCol">
+        <div id="blockUI">
+          <h3>指令積木（點一下加到選取的積木後面）</h3>
+          <div class="pal" id="pal"></div>
+        </div>
+        <div class="prog" id="prog"></div>
+        <div class="rules" id="rules" hidden></div>
+        <pre class="py" id="py" aria-label="對照的 Python 程式碼"></pre>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>無人機程式飛行</h1>
+    <p class="lede">教育用無人機可以用程式控制：先把指令排好，按下執行，它就照著順序飛。排錯一步，它就會撞牆或降落在錯的地方。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>程式就是「照順序做事」</h2>
+      <p>無人機不會猜你想做什麼，只會從第一行做到最後一行。忘了「起飛」，它不會動；忘了「降落」，程式結束時它還懸在空中。</p>
+      <p>「前進」是往機頭的方向飛。轉向之後，前方就變了，這是最常排錯的地方。</p>
+    </div>
+    <div class="card">
+      <h2>迴圈：重複的事交給電腦</h2>
+      <p>正方形要「前進、右轉」做 4 次。寫 8 行也可以，但用迴圈只要 3 塊積木：</p>
+      <div class="fx">重複 4 次
+  前進 100 cm
+  右轉 90°</div>
+      <p>繞一圈回到原點，總共轉了 360°。所以正 n 邊形每次轉的角度是：</p>
+      <div class="fx">轉角 = 360° ÷ 邊數</div>
+      <p>五角星每次轉 144°，五次加起來 720°，也就是繞了兩圈。</p>
+    </div>
+    <div class="card">
+      <h2>感測器與條件判斷</h2>
+      <p>迷宮事先不知道長怎樣，就要靠感測器：飛行中隨時量前方、左邊、右邊有沒有牆，再用「如果…就…」決定下一步。</p>
+      <p>規則由上往下檢查，只做第一條成立的。順序不同，飛出來的路線就不同。</p>
+      <p>有個經典方法叫「沿牆走」：一直讓左手（或右手）貼著牆走，沒有迴圈的迷宮一定走得出去。</p>
+    </div>
+    <div class="card">
+      <h2>右邊那段程式碼是什麼？</h2>
+      <p>積木和真正的程式是一樣的意思。右邊會把你的積木翻成 Python 寫法，很多教育無人機（例如可以用電腦控制的小型四軸機）都能用類似的程式飛行。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+let audio=null;
+function beep(f=660,d=.1,type='sine',v=.1){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch(e){}}
+const chime=()=>{beep(660,.14);setTimeout(()=>beep(880,.14),110);setTimeout(()=>beep(1175,.28),220)};
+function fit(cv){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h}const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);return{c,w:r.width,h:r.height}}
+function say(t,kind,ms=3200){const m=$('#msg');m.textContent=t;m.className='msg on'+(kind?' '+kind:'');clearTimeout(m._h);if(ms)m._h=setTimeout(()=>m.classList.remove('on'),ms)}
+
+/* ---------- blocks ---------- */
+const OPS={
+ takeoff:{t:'起飛',cat:'fly',py:()=>'drone.takeoff()'},
+ land:{t:'降落',cat:'fly',py:()=>'drone.land()'},
+ up:{t:'上升',cat:'fly',u:'cm',py:v=>`drone.up(${v})`},
+ down:{t:'下降',cat:'fly',u:'cm',py:v=>`drone.down(${v})`},
+ fwd:{t:'前進',cat:'move',u:'cm',py:v=>`drone.forward(${v})`},
+ back:{t:'後退',cat:'move',u:'cm',py:v=>`drone.back(${v})`},
+ left:{t:'左移',cat:'move',u:'cm',py:v=>`drone.left(${v})`},
+ right:{t:'右移',cat:'move',u:'cm',py:v=>`drone.right(${v})`},
+ cw:{t:'右轉',cat:'turn',u:'°',py:v=>`drone.turn_right(${v})`},
+ ccw:{t:'左轉',cat:'turn',u:'°',py:v=>`drone.turn_left(${v})`},
+ rep:{t:'重複',cat:'loop',u:'次'},
+ end:{t:'重複結束',cat:'loop'}};
+const PAL={
+ A:{ops:['takeoff','land','up','down','fwd','back','left','right','cw','ccw','rep','end'],vals:{up:[50,100],down:[50,100],fwd:[50,100,150,200,250,300,350],back:[50,100,150,200,250],left:[50,100,150,200,250],right:[50,100,150,200,250],cw:[90],ccw:[90],rep:[2,3,4,5]}},
+ B:{ops:['fwd','back','cw','ccw','rep','end'],vals:{fwd:[25,50,75,100,150,200],back:[25,50,100],cw:[30,36,45,60,72,90,120,135,144,150,180],ccw:[30,36,45,60,72,90,120,135,144,150,180],rep:[2,3,4,5,6,8,10,12,18,24,36]}}};
+const defVal=(m,op)=>{const v=PAL[m].vals[op];if(!v)return undefined;return op==='cw'||op==='ccw'?(m==='A'?90:90):op==='rep'?(m==='A'?2:4):v.includes(100)?100:v[0]};
+
+/* ---------- levels ---------- */
+// A: 格子 8×6，每格 50 cm。方向 0=北(上) 1=東 2=南 3=西
+const LA=[
+ {name:'第一次飛行',goal:'起飛，穿過 100 cm 高的圓環，降落在停機坪。',par:3,
+  start:[1,4,0],pad:[1,1],rings:[[1,2,100]],walls:[],sample:[['takeoff'],['fwd',100]]},
+ {name:'轉個彎',goal:'穿過兩個圓環後，降落在停機坪。第二個圓環比較高，記得上升。',par:5,
+  start:[1,4,0],pad:[6,1],rings:[[1,2,100],[4,1,150]],walls:[]},
+ {name:'越過高牆',goal:'中間有一排 150 cm 高的牆。飛越它，穿過圓環，降落。',par:7,
+  start:[0,5,1],pad:[7,0],rings:[[7,3,100]],walls:[[4,0,150],[4,1,150],[4,2,150],[4,3,150],[4,4,150],[4,5,150]]},
+ {name:'樓梯巡邏',goal:'三個圓環像樓梯一樣越來越高。試試看用「重複」讓程式變短。',par:8,
+  start:[0,5,1],pad:[6,0],rings:[[2,5,150],[4,5,200],[6,5,250]],walls:[]}];
+// B: 圖形
+const LB=[
+ {name:'正方形',n:4,L:100,A:90,par:3,goal:'飛出邊長 100 cm 的正方形，回到起點。'},
+ {name:'正三角形',n:3,L:150,A:120,par:3,goal:'飛出邊長 150 cm 的正三角形。每次要轉幾度？'},
+ {name:'正六邊形',n:6,L:75,A:60,par:3,goal:'飛出邊長 75 cm 的正六邊形。'},
+ {name:'五角星',n:5,L:150,A:144,par:3,goal:'飛出邊長 150 cm 的五角星。提示：繞了兩圈才回到原本的方向。'},
+ {name:'自由創作',free:true,goal:'沒有標準答案。試試「重複」裡面再放「重複」，畫一朵花。',sample:[['rep',12],['rep',6],['fwd',50],['cw',60],['end'],['cw',30],['end']]}];
+// C: 迷宮
+const LC=[
+ {name:'彎彎走廊',m:["#########","#S..#...#","###.#.#.#","#...#.#.#","#.###.#.#","#.....#G#","#########"],goal:'只有一條路的走廊。設定規則，讓無人機自己飛到綠色終點。'},
+ {name:'岔路迷宮',m:["###########","#S....#...#","#.###.#.#.#","#.#...#.#.#","#.#.###.#.#","#...#...#G#","###.#.###.#","#.....#...#","###########"],goal:'有死路和岔路。只會「撞牆就右轉」可能會原地繞圈。'},
+ {name:'大迷宮',m:["#############","#S..#.......#","#.#.#.#####.#","#.#...#...#.#","#.#####.#.#.#","#...#...#...#","###.#.#####.#","#...#.#...#.#","#.###.#.#.#.#","#.....#.#..G#","#############"],goal:'同一套規則，能不能也走出這個大迷宮？'}];
+const COND={none:'（不用）',fW:'前方有牆',fO:'前方沒牆',lW:'左邊有牆',lO:'左邊沒牆',rW:'右邊有牆',rO:'右邊沒牆'};
+const ACT={fwd:'前進一格',L:'左轉',R:'右轉',Lf:'左轉再前進',Rf:'右轉再前進',U:'迴轉'};
+const PYC={fW:'drone.front_blocked()',fO:'not drone.front_blocked()',lW:'drone.left_blocked()',lO:'not drone.left_blocked()',rW:'drone.right_blocked()',rO:'not drone.right_blocked()'};
+const PYA={fwd:['drone.forward()'],L:['drone.turn_left()'],R:['drone.turn_right()'],Lf:['drone.turn_left()','drone.forward()'],Rf:['drone.turn_right()','drone.forward()'],U:['drone.turn_right()','drone.turn_right()']};
+
+/* ---------- state ---------- */
+let tab='A',lv={A:0,B:0,C:0},speed=1;
+const progs={A:LA.map(l=>(l.sample||[]).map(([op,v])=>({op,v}))),B:LB.map(l=>(l.sample||[]).map(([op,v])=>({op,v})))};
+let rules={c:[['fO','fwd'],['none','R'],['none','L']],e:'R'};
+const stars=store.get('dcode-stars',{});
+let sel=-1,R=null; // runner
+
+const CARDS={
+ A:'<h2>① 指令航線</h2><p>用積木排出飛行順序：起飛、移動、穿過每個圓環（高度要對）、降落在停機坪。</p><p class="note">每格 50 cm。「前進」是往機頭方向。用越少的積木完成，星星越多。</p>',
+ B:'<h2>② 迴圈畫圖形</h2><p>無人機飛過的路線會畫成線。用「重複」積木飛出正多邊形和星形。</p><p class="note">想一想：每次要轉幾度，才會剛好回到起點？</p>',
+ C:'<h2>③ 感測器迷宮</h2><p>這次不排固定路線，而是寫規則。無人機每一步都量前、左、右有沒有牆，再照第一條成立的規則行動。</p><p class="note">同一套規則能走完三個迷宮，才是真正聰明的程式。</p>'};
+
+function setTab(t){if(R)stopRun();tab=t;$$('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===t));$('#modeCard').innerHTML=CARDS[t];
+  $('#blockUI').hidden=t==='C';$('#prog').hidden=t==='C';$('#rules').hidden=t!=='C';sel=-1;buildLv();buildPal();renderProg();renderRules();reset();store.set('dcode-tab',t)}
+$$('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+function levels(){return tab==='A'?LA:tab==='B'?LB:LC}
+function buildLv(){const L=levels(),cur=lv[tab];
+  $('#lvbar').innerHTML=L.map((l,i)=>{const s=stars[tab+i]||0;return `<button class="btn${i===cur?' sel':''}" data-lv="${i}">${i+1} ${esc(l.name)}${s?`<span class="st">${'★'.repeat(s)}</span>`:''}</button>`}).join('')+`<div class="goal">🎯 ${esc(L[cur].goal)}${L[cur].par?`<span class="note">　（${L[cur].par} 塊以內三顆星）</span>`:''}</div>`;
+  $$('[data-lv]').forEach(b=>b.onclick=()=>{if(R)stopRun();lv[tab]=+b.dataset.lv;sel=-1;buildLv();renderProg();reset()})}
+function buildPal(){if(tab==='C'){$('#pal').innerHTML='';return}
+  $('#pal').innerHTML=PAL[tab].ops.map(op=>`<button class="c-${OPS[op].cat}" data-add="${op}">${OPS[op].t}</button>`).join('')+`<button class="btn" id="clr" style="color:var(--bad);padding:4px 9px;font-size:13px">清空</button>`;
+  $$('[data-add]').forEach(b=>b.onclick=()=>addBlock(b.dataset.add));
+  $('#clr').onclick=()=>{if(R)stopRun();curProg().length=0;sel=-1;renderProg();reset()}}
+const curProg=()=>progs[tab][lv[tab]];
+function addBlock(op){if(R)stopRun();const p=curProg();const at=sel>=0?sel+1:p.length;const b={op,v:defVal(tab,op)};
+  if(op==='rep'){p.splice(at,0,b,{op:'end'});sel=at}else{p.splice(at,0,b);sel=at}renderProg();reset()}
+function depths(p){let d=0;return p.map(b=>{if(b.op==='end')d=Math.max(0,d-1);const r=d;if(b.op==='rep')d++;return r})}
+function renderProg(){if(tab==='C'){renderPy();return}
+  const p=curProg(),dp=depths(p),el=$('#prog');
+  if(!p.length){el.innerHTML='<div class="empty">還沒有積木。從上面點「起飛」開始。</div>';renderPy();return}
+  el.innerHTML=p.map((b,i)=>{const o=OPS[b.op],vals=PAL[tab].vals[b.op];
+    const sl=vals?`<select data-v="${i}" aria-label="${o.t}的數值">${vals.map(v=>`<option${v===b.v?' selected':''}>${v}</option>`).join('')}</select> ${o.u}`:'';
+    return `<div class="blk c-${o.cat}${i===sel?' sel':''}" data-i="${i}" style="margin-left:${dp[i]*18}px"><span class="lbl">${o.t} ${sl}</span>
+<button class="ic" data-up="${i}" aria-label="上移">▲</button><button class="ic" data-dn="${i}" aria-label="下移">▼</button><button class="ic" data-del="${i}" aria-label="刪除">✕</button></div>`}).join('');
+  $$('.blk').forEach(d=>d.onclick=e=>{if(e.target.closest('select,button'))return;const i=+d.dataset.i;sel=sel===i?-1:i;renderProg()});
+  $$('[data-v]').forEach(s=>s.onchange=()=>{p[+s.dataset.v].v=+s.value;renderPy();if(R)stopRun();reset()});
+  $$('[data-del]').forEach(b=>b.onclick=()=>{const i=+b.dataset.del;p.splice(i,1);if(sel>=p.length)sel=p.length-1;if(R)stopRun();renderProg();reset()});
+  $$('[data-up]').forEach(b=>b.onclick=()=>{const i=+b.dataset.up;if(i>0){[p[i-1],p[i]]=[p[i],p[i-1]];sel=i-1;if(R)stopRun();renderProg();reset()}});
+  $$('[data-dn]').forEach(b=>b.onclick=()=>{const i=+b.dataset.dn;if(i<p.length-1){[p[i+1],p[i]]=[p[i],p[i+1]];sel=i+1;if(R)stopRun();renderProg();reset()}});
+  renderPy()}
+function hl(s){return esc(s).replace(/\b(for|in|range|while|not|if|elif|else|import)\b/g,'<span class="kw">$1</span>').replace(/\b(\d+)\b/g,'<span class="nm">$1</span>').replace(/(drone\.\w+)/g,'<span class="fn">$1</span>').replace(/(#.*)$/gm,'<span class="cm">$1</span>')}
+function renderPy(){let lines=['from edu_drone import drone',''];
+  if(tab==='C'){lines.push('drone.takeoff()','while not drone.at_goal():');const act=rules.c.filter(([c])=>c!=='none');
+    act.forEach(([c,a],i)=>{lines.push(`    ${i?'elif':'if'} ${PYC[c]}:`);PYA[a].forEach(s=>lines.push('        '+s))});
+    if(act.length){lines.push('    else:');PYA[rules.e].forEach(s=>lines.push('        '+s))}else PYA[rules.e].forEach(s=>lines.push('    '+s));
+    lines.push('drone.land()')}
+  else{if(tab==='B')lines.push('drone.takeoff()  # 這一關會自動起飛');let d=0,k=0;const p=curProg();
+    p.forEach(b=>{if(b.op==='end'){d=Math.max(0,d-1);return}const ind='    '.repeat(d);
+      if(b.op==='rep'){lines.push(`${ind}for ${'ijk'[Math.min(d,2)]} in range(${b.v}):`);d++}else lines.push(ind+OPS[b.op].py(b.v))});
+    if(!p.length)lines.push('# 加入積木後，這裡會出現對應的程式碼');if(tab==='B')lines.push('drone.land()')}
+  $('#py').innerHTML=hl(lines.join('\n'))}
+
+/* ---------- rules UI (C) ---------- */
+function renderRules(){if(tab!=='C')return;const opt=(o,v)=>Object.entries(o).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
+  $('#rules').innerHTML=`<div class="note">一直重複，直到抵達終點：</div>`+rules.c.map(([c,a],i)=>`<div class="rule" data-r="${i}"><b>${i?'否則如果':'如果'}</b><select data-rc="${i}" aria-label="第${i+1}條條件">${opt(COND,c)}</select><span>就</span><select data-ra="${i}" aria-label="第${i+1}條動作">${opt(ACT,a)}</select></div>`).join('')+
+  `<div class="rule" data-r="e"><b>否則</b><select id="re" aria-label="其他情況的動作">${opt(ACT,rules.e)}</select></div>
+<div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="tryL">給我提示</button><button class="btn" id="tryN">範例：撞牆就右轉</button></div>
+<div class="note">規則由上往下檢查，只做第一條成立的。</div>`;
+  $$('[data-rc]').forEach(s=>s.onchange=()=>{rules.c[+s.dataset.rc][0]=s.value;changed()});
+  $$('[data-ra]').forEach(s=>s.onchange=()=>{rules.c[+s.dataset.ra][1]=s.value;changed()});
+  $('#re').onchange=e=>{rules.e=e.target.value;changed()};
+  $('#tryL').onclick=()=>say('提示：想像左手一直貼著牆走。第一條可以是「左邊沒牆 → 左轉再前進」，接下來呢？',null,7000);
+  $('#tryN').onclick=()=>{rules={c:[['fO','fwd'],['none','R'],['none','L']],e:'R'};changed(true)};
+  function changed(re){if(R)stopRun();if(re)renderRules();renderPy();reset()}
+  renderPy()}
+
+/* ---------- compile ---------- */
+function compile(p){const root=[],st=[];let cur=root;
+  for(let i=0;i<p.length;i++){const b=p[i];
+    if(b.op==='rep'){const n={rep:b.v,i,body:[]};cur.push(n);st.push(cur);cur=n.body}
+    else if(b.op==='end'){if(!st.length)throw{i,msg:'這個「重複結束」前面沒有「重複」'};cur=st.pop()}
+    else cur.push({op:b.op,v:b.v,i})}
+  if(st.length)throw{msg:'有「重複」少了「重複結束」'};
+  const out=[];const ex=l=>{for(const n of l){if(out.length>4000)throw{msg:'動作超過 4000 個，迴圈太多層了'};if(n.rep)for(let k=0;k<n.rep;k++)ex(n.body);else out.push(n)}};ex(root);return out}
+const countBlocks=p=>p.filter(b=>b.op!=='end').length;
+
+/* ---------- world state ---------- */
+const CELL=50,GW=8,GH=6;
+let S=null;
+function reset(){const L=levels()[lv[tab]];
+  if(tab==='A'){const [x,y,d]=L.start;S={x:(x+.5)*CELL,y:(y+.5)*CELL,h:0,hd:d*90,fly:false,trail:[[(x+.5)*CELL,(y+.5)*CELL]],got:new Set(),dead:null}}
+  else if(tab==='B'){S={x:0,y:0,hd:0,trail:[[0,0]],pts:[[0,0]],turns:[],dead:null}}
+  else{const m=L.m;let sx=1,sy=1;m.forEach((r,j)=>{const i=r.indexOf('S');if(i>=0){sx=i;sy=j}});S={cx:sx,cy:sy,x:sx,y:sy,d:1,hd:90,trail:[[sx,sy]],visit:{},steps:0,dead:null,hit:-1}}
+  $$('.blk.run,.blk.err').forEach(b=>b.classList.remove('run','err'));$$('.rule.hit').forEach(r=>r.classList.remove('hit'));
+  $('#run').textContent='▶ 執行'}
+function stopRun(){R=null;$('#run').textContent='▶ 執行'}
+$('#stop').onclick=()=>{stopRun();reset();say('已重設',null,1200)};
+$$('[data-sp]').forEach(b=>b.onclick=()=>{speed=+b.dataset.sp;$$('[data-sp]').forEach(x=>x.classList.toggle('sel',x===b))});
+
+function begin(stepMode){
+  if(tab==='C'){reset();R={mode:'C',t:0,pend:null,stepMode,paused:false};return true}
+  let acts;try{acts=compile(curProg())}catch(e){say(e.msg,'bad',4000);if(e.i!=null){const el=$(`.blk[data-i="${e.i}"]`);el&&el.classList.add('err')}return false}
+  if(!acts.length){say('先加入一些積木',null,2000);return false}
+  reset();R={mode:tab,acts,k:-1,cur:null,t:0,stepMode,paused:false};return true}
+$('#run').onclick=()=>{if(R&&!R.done){if(R.paused||R.stepMode){R.paused=false;R.stepMode=false;$('#run').textContent='⏸ 暫停'}else{R.paused=true;$('#run').textContent='▶ 繼續'}return}
+  if(begin(false))$('#run').textContent='⏸ 暫停'};
+$('#step').onclick=()=>{if(!R||R.done){if(!begin(true))return}R.stepMode=true;R.paused=false;R.once=true;$('#run').textContent='▶ 繼續'};
+
+function finish(ok,text){R.done=true;$('#run').textContent='▶ 再執行一次';
+  if(ok){chime();say(text,'ok',6000)}else{beep(150,.25,'square',.08);say(text,'bad',6000)}}
+function award(n){const key=tab+lv[tab],old=stars[key]||0;if(n>old){stars[key]=n;store.set('dcode-stars',stars);buildLv()}
+  try{window.QA&&QA.achieve&&QA.achieve('drone-coding',key,n)}catch(e){}}
+
+/* ---------- A: grid flight ---------- */
+function cellOf(x,y){return[Math.floor(x/CELL),Math.floor(y/CELL)]}
+function checkA(){const L=LA[lv.A];if(!S.fly)return null;
+  if(S.x<0||S.y<0||S.x>GW*CELL||S.y>GH*CELL)return'撞到場地邊的網子了';
+  const [cx,cy]=cellOf(S.x,S.y);for(const [wx,wy,wh] of L.walls)if(wx===cx&&wy===cy&&S.h<=wh)return`撞到 ${wh} cm 高的牆，要飛得比牆高`;
+  L.rings.forEach(([rx,ry,rh],i)=>{if(rx===cx&&ry===cy&&Math.abs(S.h-rh)<1&&!S.got.has(i)){S.got.add(i);beep(990,.08)}});return null}
+function startActA(a){const L=LA[lv.A];const o={op:a.op,v:a.v,x0:S.x,y0:S.y,h0:S.h,hd0:S.hd,x1:S.x,y1:S.y,h1:S.h,hd1:S.hd,dur:.35};
+  if(a.op!=='takeoff'&&!S.fly)return'還沒起飛！第一個動作要先「起飛」';
+  const rad=S.hd*Math.PI/180,fx=Math.sin(rad),fy=-Math.cos(rad);
+  switch(a.op){
+   case'takeoff':if(S.fly)return'已經在飛了，不用再起飛';S.fly=true;o.h1=100;o.dur=.8;break;
+   case'land':o.h1=0;o.dur=.8;break;
+   case'up':o.h1=S.h+a.v;if(o.h1>300)return'太高了！場地的網子只有 300 cm 高';o.dur=.3+a.v/200;break;
+   case'down':o.h1=S.h-a.v;if(o.h1<50)return'高度不能低於 50 cm，要回到地面請用「降落」';o.dur=.3+a.v/200;break;
+   case'fwd':case'back':{const s=a.op==='fwd'?1:-1;o.x1=S.x+fx*a.v*s;o.y1=S.y+fy*a.v*s;o.dur=.25+a.v/220;break}
+   case'left':case'right':{const s=a.op==='right'?1:-1;o.x1=S.x+(-fy)*a.v*s;o.y1=S.y+fx*a.v*s;o.dur=.25+a.v/220;break}
+   case'cw':o.hd1=S.hd+a.v;o.dur=.45;break;
+   case'ccw':o.hd1=S.hd-a.v;o.dur=.45;break}
+  R.cur=o;R.t=0;return null}
+function endA(){const L=LA[lv.A];
+  if(S.fly&&S.h>0)return finish(false,'程式結束了，但無人機還在空中。最後要加「降落」');
+  const [cx,cy]=cellOf(S.x,S.y);
+  if(S.got.size<L.rings.length)return finish(false,`還有 ${L.rings.length-S.got.size} 個圓環沒穿過。注意圓環的高度`);
+  if(cx!==L.pad[0]||cy!==L.pad[1])return finish(false,'降落的位置不在停機坪上');
+  const n=countBlocks(curProg()),st=n<=L.par?3:n<=L.par+3?2:1;award(st);
+  finish(true,`任務完成！用了 ${n} 塊積木，${'★'.repeat(st)}${st<3?`（${L.par} 塊以內可拿三顆星）`:''}`)}
+/* ---------- B: shapes ---------- */
+function startActB(a){const o={op:a.op,v:a.v,x0:S.x,y0:S.y,hd0:S.hd,x1:S.x,y1:S.y,hd1:S.hd,dur:.3};const rad=S.hd*Math.PI/180;
+  if(a.op==='fwd'||a.op==='back'){const s=a.op==='fwd'?1:-1;o.x1=S.x+Math.sin(rad)*a.v*s;o.y1=S.y-Math.cos(rad)*a.v*s;o.dur=.15+a.v/400}
+  else{o.hd1=S.hd+(a.op==='cw'?a.v:-a.v);o.dur=.18+a.v/900}
+  R.cur=o;R.t=0;return null}
+function endB(){const L=LB[lv.B];
+  if(L.free){const n=countBlocks(curProg());award(3);return finish(true,`完成作品！${n} 塊積木飛了 ${R.acts.length} 個動作`)}
+  // 合併連續同方向的轉向與直線
+  const segs=[],turns=[];let pend=0;
+  for(const a of R.acts){if(a.op==='fwd'||a.op==='back'){if(segs.length&&pend===0)segs[segs.length-1]+=a.v*(a.op==='fwd'?1:-1);else{if(segs.length)turns.push(pend);segs.push(a.op==='fwd'?a.v:-a.v)}pend=0}else pend+=a.op==='cw'?a.v:-a.v}
+  const closed=Math.hypot(S.x,S.y)<1;
+  const allL=segs.every(s=>Math.abs(s-L.L)<.5),allT=turns.length&&turns.every(t=>Math.abs(Math.abs(t)-L.A)<.5)&&turns.every(t=>Math.sign(t)===Math.sign(turns[0]));
+  if(segs.length===L.n&&allL&&allT&&closed){const n=countBlocks(curProg()),st=n<=L.par?3:n<=L.par+4?2:1;award(st);
+    return finish(true,`${L.name}完成！轉了 ${L.n} 次 ${L.A}°，合計 ${L.n*L.A}°。${'★'.repeat(st)}${st<3?'　用「重複」可以更短':''}`)}
+  if(!allL&&segs.length)return finish(false,`每一邊都要是 ${L.L} cm`);
+  if(segs.length!==L.n)return finish(false,`${L.name}有 ${L.n} 條邊，你飛了 ${segs.length} 條`);
+  if(!closed)return finish(false,'沒有回到起點。轉的角度對嗎？想想 360° 要分幾次轉完');
+  return finish(false,'形狀不太對，檢查每次轉的角度是否都一樣')}
+/* ---------- C: maze ---------- */
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
+function wallAt(x,y){const m=LC[lv.C].m;return y<0||y>=m.length||x<0||x>=m[0].length||m[y][x]==='#'}
+function sense(){const d=S.d;const f=DIRS[d],l=DIRS[(d+3)%4],r=DIRS[(d+1)%4];return{fW:wallAt(S.cx+f[0],S.cy+f[1]),lW:wallAt(S.cx+l[0],S.cy+l[1]),rW:wallAt(S.cx+r[0],S.cy+r[1])}}
+function test(c,s){return c==='fW'?s.fW:c==='fO'?!s.fW:c==='lW'?s.lW:c==='lO'?!s.lW:c==='rW'?s.rW:c==='rO'?!s.rW:false}
+function stepC(){const m=LC[lv.C].m;if(m[S.cy][S.cx]==='G')return true;
+  const key=S.cx+','+S.cy+','+S.d;if(S.visit[key]){finish(false,'無限迴圈！無人機回到同一格、同一個方向，接下來只會一直重複。改一改規則的順序');return false}S.visit[key]=1;
+  if(S.steps>=300){finish(false,'飛了 300 步還沒到終點，電池沒電了');return false}
+  const s=sense();let idx=-1,act=rules.e;rules.c.forEach(([c,a],i)=>{if(idx<0&&c!=='none'&&test(c,s)){idx=i;act=a}});
+  $$('.rule').forEach(r=>r.classList.toggle('hit',r.dataset.r===String(idx<0?'e':idx)));
+  S.steps++;const turn=t=>{S.d=(S.d+t+4)%4};
+  const go=()=>{const f=DIRS[S.d];if(wallAt(S.cx+f[0],S.cy+f[1])){finish(false,'撞牆了！前方有牆的時候不能前進');return false}S.cx+=f[0];S.cy+=f[1];S.trail.push([S.cx,S.cy]);return true};
+  if(act==='L')turn(-1);else if(act==='R')turn(1);else if(act==='U')turn(2);
+  else if(act==='fwd'){if(!go())return false}else if(act==='Lf'){turn(-1);if(!go())return false}else if(act==='Rf'){turn(1);if(!go())return false}
+  beep(520+S.steps%3*60,.04,'triangle',.05);
+  if(m[S.cy][S.cx]==='G'){const L3=LC.length;stars['C'+lv.C]=3;store.set('dcode-stars',stars);buildLv();try{window.QA&&QA.achieve&&QA.achieve('drone-coding','C'+lv.C,S.steps)}catch(e){}
+    finish(true,`抵達終點！共 ${S.steps} 步。${lv.C<L3-1?'用同一套規則試試下一個迷宮':'三個迷宮都能走，這就是好規則'}`);return false}
+  return true}
+
+/* ---------- main loop ---------- */
+let last=performance.now(),fr=0;
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function tick(now){const dt=Math.min(.05,(now-last)/1000);last=now;fr++;
+  if(R&&!R.done&&!R.paused){
+    if(R.mode==='C'){
+      S.x+=(S.cx-S.x)*Math.min(1,dt*12*speed);S.y+=(S.cy-S.y)*Math.min(1,dt*12*speed);
+      let tgt=S.d*90;let dh=tgt-S.hd;dh=((dh+540)%360)-180;S.hd+=dh*Math.min(1,dt*12*speed);
+      R.t+=dt*speed;
+      if(R.t>=.32&&(!R.stepMode||R.once)){R.t=0;R.once=false;stepC();if(R&&R.stepMode&&!R.done){}}
+    } else {
+      if(!R.cur){
+        if(R.stepMode&&!R.once){}else{R.once=false;R.k++;$$('.blk.run').forEach(b=>b.classList.remove('run'));
+          if(R.k>=R.acts.length){R.mode==='A'?endA():endB()}
+          else{const a=R.acts[R.k];const el=$(`.blk[data-i="${a.i}"]`);el&&el.classList.add('run');
+            const err=R.mode==='A'?startActA(a):startActB(a);if(err){S.dead=err;el&&el.classList.add('err');finish(false,err)}}}}
+      if(R&&R.cur&&!R.done){const o=R.cur;R.t+=dt*speed/o.dur;const e=ease(Math.min(1,R.t));
+        S.x=o.x0+(o.x1-o.x0)*e;S.y=o.y0+(o.y1-o.y0)*e;S.hd=o.hd0+(o.hd1-o.hd0)*e;if(R.mode==='A')S.h=o.h0+(o.h1-o.h0)*e;
+        if(R.mode==='A'){const err=checkA();if(err){S.dead=err;finish(false,err);R.cur=null}}
+        if(R.mode==='B'&&fr%2===0)S.trail.push([S.x,S.y]);
+        if(R&&R.cur&&R.t>=1){S.x=o.x1;S.y=o.y1;S.hd=o.hd1;if(R.mode==='A'){S.h=o.h1;checkA();if(o.op==='land')S.fly=false;S.trail.push([S.x,S.y])}else S.trail.push([S.x,S.y]);R.cur=null}}
+    }}
+  draw();requestAnimationFrame(tick)}
+
+/* ---------- drawing ---------- */
+function drone(c,x,y,r,hd,col='#1f6fd1'){c.save();c.translate(x,y);c.rotate(hd*Math.PI/180);
+  c.strokeStyle='#16263a';c.lineWidth=Math.max(2,r*.16);c.beginPath();c.moveTo(-r*.7,-r*.7);c.lineTo(r*.7,r*.7);c.moveTo(r*.7,-r*.7);c.lineTo(-r*.7,r*.7);c.stroke();
+  const sp=performance.now()/60;[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b],i)=>{c.fillStyle='rgba(31,111,209,.18)';c.beginPath();c.arc(a*r*.7,b*r*.7,r*.42,0,7);c.fill();c.strokeStyle='rgba(22,38,58,.6)';c.lineWidth=1.5;c.beginPath();const an=sp+(i%2?0:1.5);c.moveTo(a*r*.7-Math.cos(an)*r*.38,b*r*.7-Math.sin(an)*r*.38);c.lineTo(a*r*.7+Math.cos(an)*r*.38,b*r*.7+Math.sin(an)*r*.38);c.stroke()});
+  c.fillStyle=col;c.beginPath();c.roundRect?c.roundRect(-r*.32,-r*.4,r*.64,r*.8,r*.15):c.rect(-r*.32,-r*.4,r*.64,r*.8);c.fill();
+  c.fillStyle='#e8a200';c.beginPath();c.moveTo(0,-r*.72);c.lineTo(r*.2,-r*.42);c.lineTo(-r*.2,-r*.42);c.closePath();c.fill();c.restore()}
+function draw(){const {c,w,h}=fit($('#cv'));c.clearRect(0,0,w,h);if(!S)return;if(tab==='A')drawA(c,w,h);else if(tab==='B')drawB(c,w,h);else drawC(c,w,h)}
+function drawA(c,w,h){const L=LA[lv.A];const gw=w-70,pad=16;const s=Math.min((gw-pad*2)/(GW*CELL),(h-pad*2)/(GH*CELL));const ox=pad+((gw-pad*2)-GW*CELL*s)/2,oy=(h-GH*CELL*s)/2;
+  const X=x=>ox+x*s,Y=y=>oy+y*s,cs=CELL*s;
+  c.fillStyle='#fff';c.fillRect(ox,oy,GW*cs,GH*cs);
+  c.strokeStyle='#d7e3ea';c.lineWidth=1;for(let i=0;i<=GW;i++){c.beginPath();c.moveTo(X(i*CELL),oy);c.lineTo(X(i*CELL),Y(GH*CELL));c.stroke()}for(let j=0;j<=GH;j++){c.beginPath();c.moveTo(ox,Y(j*CELL));c.lineTo(X(GW*CELL),Y(j*CELL));c.stroke()}
+  c.strokeStyle='#8aa2b5';c.lineWidth=2;c.strokeRect(ox,oy,GW*cs,GH*cs);
+  c.font='11px "JetBrains Mono",monospace';c.fillStyle='#56697d';c.textAlign='left';c.fillText('每格 50 cm',ox+4,oy+GH*cs+13>h?oy+GH*cs-4:oy+GH*cs+13);
+  // pad
+  const [px,py]=L.pad;c.fillStyle='rgba(29,154,108,.16)';c.fillRect(X(px*CELL)+3,Y(py*CELL)+3,cs-6,cs-6);c.strokeStyle='#1d9a6c';c.lineWidth=2;c.beginPath();c.arc(X((px+.5)*CELL),Y((py+.5)*CELL),cs*.32,0,7);c.stroke();
+  c.fillStyle='#1d9a6c';c.font=`bold ${Math.max(12,cs*.34)}px "Noto Sans TC",sans-serif`;c.textAlign='center';c.fillText('H',X((px+.5)*CELL),Y((py+.5)*CELL)+cs*.12);
+  // walls
+  L.walls.forEach(([wx,wy,wh])=>{c.fillStyle='#8a99a8';c.fillRect(X(wx*CELL)+2,Y(wy*CELL)+2,cs-4,cs-4);c.fillStyle='#fff';c.font=`bold ${Math.max(10,cs*.24)}px "JetBrains Mono",monospace`;c.fillText(wh,X((wx+.5)*CELL),Y((wy+.5)*CELL)+cs*.09)});
+  // rings
+  L.rings.forEach(([rx,ry,rh],i)=>{const got=S.got.has(i);c.strokeStyle=got?'#1d9a6c':'#e07b12';c.lineWidth=Math.max(3,cs*.09);c.beginPath();c.ellipse(X((rx+.5)*CELL),Y((ry+.5)*CELL),cs*.38,cs*.38,0,0,7);c.stroke();
+    c.fillStyle=got?'#1d9a6c':'#e07b12';c.font=`bold ${Math.max(10,cs*.22)}px "JetBrains Mono",monospace`;c.fillText(got?'✓':rh,X((rx+.5)*CELL),Y((ry+.5)*CELL)+cs*.08)});
+  // trail
+  if(S.trail.length>1){c.strokeStyle='rgba(31,111,209,.45)';c.lineWidth=3;c.setLineDash([6,5]);c.beginPath();S.trail.forEach(([x,y],i)=>i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)));c.lineTo(X(S.x),Y(S.y));c.stroke();c.setLineDash([])}
+  // shadow + drone
+  const lift=S.h/300;c.fillStyle=`rgba(22,38,58,${.25-.12*lift})`;c.beginPath();c.ellipse(X(S.x),Y(S.y),cs*.36,cs*.36,0,0,7);c.fill();
+  drone(c,X(S.x),Y(S.y)-lift*cs*.35,cs*.38*(1+lift*.3),S.hd,S.dead?'#d64545':'#1f6fd1');
+  // altitude gauge
+  const gx=w-48,gt=oy+10,gb=oy+GH*cs-10,gH=gb-gt;const Yh=v=>gb-v/300*gH;
+  c.fillStyle='#f1f5f8';c.fillRect(gx,gt,22,gH);c.strokeStyle='#c8d6e0';c.strokeRect(gx,gt,22,gH);
+  c.font='10px "JetBrains Mono",monospace';c.textAlign='right';c.fillStyle='#56697d';[0,100,200,300].forEach(v=>{c.fillText(v,gx-3,Yh(v)+3)});
+  L.rings.forEach(([,,rh],i)=>{c.fillStyle=S.got.has(i)?'#1d9a6c':'#e07b12';c.fillRect(gx-2,Yh(rh)-1.5,26,3)});
+  L.walls.length&&(c.fillStyle='rgba(138,153,168,.5)',c.fillRect(gx+1,Yh(L.walls[0][2]),20,gb-Yh(L.walls[0][2])));
+  c.fillStyle='#1f6fd1';c.beginPath();c.moveTo(gx+24,Yh(S.h));c.lineTo(gx+34,Yh(S.h)-6);c.lineTo(gx+34,Yh(S.h)+6);c.fill();
+  c.textAlign='center';c.fillStyle='#16263a';c.font='bold 11px "JetBrains Mono",monospace';c.fillText(Math.round(S.h)+'cm',gx+11,gb+14>h?gb:gb+14);c.font='11px "Noto Sans TC",sans-serif';c.fillStyle='#56697d';c.fillText('高度',gx+11,gt-4)}
+function drawB(c,w,h){const L=LB[lv.B];
+  // bounds of shape for centering
+  let pts=[[0,0]];if(!L.free){let x=0,y=0,hd=0;for(let k=0;k<L.n;k++){const r=hd*Math.PI/180;x+=Math.sin(r)*L.L;y-=Math.cos(r)*L.L;pts.push([x,y]);hd+=L.A}}
+  const tp=S.trail.concat(pts);let mnx=Math.min(...tp.map(p=>p[0]),-150),mxx=Math.max(...tp.map(p=>p[0]),150),mny=Math.min(...tp.map(p=>p[1]),-150),mxy=Math.max(...tp.map(p=>p[1]),150);
+  if(!L.free){mnx=Math.min(...pts.map(p=>p[0]))-60;mxx=Math.max(...pts.map(p=>p[0]))+60;mny=Math.min(...pts.map(p=>p[1]))-60;mxy=Math.max(...pts.map(p=>p[1]))+60;S.trail.forEach(([x,y])=>{mnx=Math.min(mnx,x-30);mxx=Math.max(mxx,x+30);mny=Math.min(mny,y-30);mxy=Math.max(mxy,y+30)})}
+  const s=Math.min((w-30)/(mxx-mnx),(h-30)/(mxy-mny),2.2);const ox=w/2-(mnx+mxx)/2*s,oy=h/2-(mny+mxy)/2*s;const X=x=>ox+x*s,Y=y=>oy+y*s;
+  // grid 25cm
+  c.strokeStyle='#e1eaf0';c.lineWidth=1;const g=25;for(let x=Math.floor(mnx/g)*g-g*4;x<mxx+g*4;x+=g){c.beginPath();c.moveTo(X(x),0);c.lineTo(X(x),h);c.stroke()}for(let y=Math.floor(mny/g)*g-g*4;y<mxy+g*4;y+=g){c.beginPath();c.moveTo(0,Y(y));c.lineTo(w,Y(y));c.stroke()}
+  if(!L.free){c.strokeStyle='rgba(224,123,18,.55)';c.lineWidth=8;c.lineJoin='round';c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)));c.stroke();
+    c.fillStyle='#e07b12';c.font='12px "Noto Sans TC",sans-serif';c.textAlign='left';c.fillText(`目標：${L.name}，邊長 ${L.L} cm`,10,18)}
+  c.fillStyle='#16263a';c.beginPath();c.arc(X(0),Y(0),5,0,7);c.fill();c.font='11px "Noto Sans TC",sans-serif';c.textAlign='left';c.fillText('起點',X(0)+8,Y(0)+14);
+  if(S.trail.length>1){c.strokeStyle='#1f6fd1';c.lineWidth=3;c.lineJoin='round';c.beginPath();S.trail.forEach(([x,y],i)=>i?c.lineTo(X(x),Y(y)):c.moveTo(X(x),Y(y)));c.lineTo(X(S.x),Y(S.y));c.stroke()}
+  drone(c,X(S.x),Y(S.y),Math.max(12,Math.min(22,40*s)),S.hd,S.dead?'#d64545':'#1f6fd1');
+  c.font='12px "JetBrains Mono",monospace';c.fillStyle='#56697d';c.textAlign='right';const turned=Math.round(S.hd);c.fillText(`機頭累計轉了 ${turned}°`,w-10,18)}
+function drawC(c,w,h){const m=LC[lv.C].m,MW=m[0].length,MH=m.length;const s=Math.min((w-24)/MW,(h-24)/MH);const ox=(w-MW*s)/2,oy=(h-MH*s)/2;
+  for(let j=0;j<MH;j++)for(let i=0;i<MW;i++){const ch=m[j][i];c.fillStyle=ch==='#'?'#3b4e63':'#fff';c.fillRect(ox+i*s,oy+j*s,s+.5,s+.5);
+    if(ch==='G'){c.fillStyle='rgba(29,154,108,.25)';c.fillRect(ox+i*s+2,oy+j*s+2,s-4,s-4);c.fillStyle='#1d9a6c';c.font=`bold ${s*.36}px "Noto Sans TC",sans-serif`;c.textAlign='center';c.fillText('終點',ox+(i+.5)*s,oy+(j+.62)*s)}}
+  c.strokeStyle='#e1eaf0';c.lineWidth=1;for(let i=0;i<=MW;i++){c.beginPath();c.moveTo(ox+i*s,oy);c.lineTo(ox+i*s,oy+MH*s);c.stroke()}for(let j=0;j<=MH;j++){c.beginPath();c.moveTo(ox,oy+j*s);c.lineTo(ox+MW*s,oy+j*s);c.stroke()}
+  if(S.trail.length>1){c.strokeStyle='rgba(31,111,209,.45)';c.lineWidth=Math.max(3,s*.12);c.lineJoin='round';c.lineCap='round';c.beginPath();S.trail.forEach(([x,y],i)=>i?c.lineTo(ox+(x+.5)*s,oy+(y+.5)*s):c.moveTo(ox+(x+.5)*s,oy+(y+.5)*s));c.stroke()}
+  // sensors
+  const sn=sense(),cx=ox+(S.x+.5)*s,cy=oy+(S.y+.5)*s;
+  [[S.d,sn.fW,'前'],[(S.d+3)%4,sn.lW,'左'],[(S.d+1)%4,sn.rW,'右']].forEach(([d,wl,t])=>{const [dx,dy]=DIRS[d];c.strokeStyle=wl?'rgba(214,69,69,.85)':'rgba(29,154,108,.75)';c.lineWidth=2;c.setLineDash([3,3]);c.beginPath();c.moveTo(cx,cy);c.lineTo(cx+dx*s*.95,cy+dy*s*.95);c.stroke();c.setLineDash([]);
+    c.fillStyle=wl?'#d64545':'#1d9a6c';c.font=`bold ${Math.max(10,s*.24)}px "Noto Sans TC",sans-serif`;c.textAlign='center';c.fillText(t,cx+dx*s*.98,cy+dy*s*.98+s*.08)});
+  drone(c,cx,cy,s*.36,S.hd,S.dead?'#d64545':'#1f6fd1');
+  c.fillStyle='#16263a';c.font='12px "JetBrains Mono",monospace';c.textAlign='left';c.fillText(`步數 ${S.steps}`,8,16)}
+
+/* ---------- boot ---------- */
+const t0=store.get('dcode-tab','A');setTab(['A','B','C'].includes(t0)?t0:'A');requestAnimationFrame(tick);
+addEventListener('resize',draw);
+})();
+</script>
+
+<script src="../qa.js" defer></script>
