@@ -30,6 +30,7 @@ window.SITE_ITEMS = [
   },
 
   /* ↓ 新內容加在這一行下面 ↓ */
+  { type:'resource', title:'無人機編程學習單', desc:'搭配「無人機程式飛行」遊戲：指令順序、迴圈與轉角、感測器規則，共 16 題加反思，可直接列印。', url:'resources/drone-coding-worksheet.html', topic:'程式設計', isNew:true, date:'2026-11-26' },
   { type:'video', title:'等不到的約定：哈雷彗星', desc:'哈雷算出一顆彗星每 76 年回來一次，預言它 1758 年再現。他沒能等到那一天，但彗星準時赴約。4 分 53 秒。', youtube:'2WljIF89jNs', series:'科學家故事', topic:'天文', isNew:true, date:'2026-11-25' },
   { type:'video', title:'一封改變命運的信：拉馬努金', desc:'沒受過正規數學訓練的印度青年拉馬努金，寫信給劍橋的哈代，信裡滿是驚人的公式，從此改變了他的一生。4 分 45 秒。', youtube:'IzS0fSMpmmE', series:'科學家故事', topic:'數學', date:'2026-11-25' },
   { type:'video', title:'影子量地球：埃拉托斯特尼', desc:'兩千多年前，埃拉托斯特尼比較兩座城市正午的影子，只差約 7 度，就算出了地球的周長。4 分 50 秒。', youtube:'-EscfnM_VFg', series:'科學家故事', topic:'地球科學', date:'2026-11-25' },
