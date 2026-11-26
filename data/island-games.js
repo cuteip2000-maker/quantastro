@@ -137,12 +137,6 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
-    "title": "無人機足球訓練場",
-    "desc": "推力平衡、慣性煞車，再到 3D 場地穿環射門",
-    "url": "games/drone-soccer.html",
-    "isNew": false
-   },
-   {
     "title": "完全彈性碰撞",
     "desc": "鋼球、橡膠、黏土對撞，再把疊球彈到 100 公尺",
     "url": "games/elastic-collision.html",
@@ -215,12 +209,12 @@ window.ISLAND_ZONES=[
   ]
  },
  {
-  "id": "maze",
-  "name": "數學迷宮花園",
-  "tag": "數學與邏輯",
-  "color": "#ffe08a",
-  "x": 2.6,
-  "z": 3.4,
+  "id": "drone",
+  "name": "無人機基地",
+  "tag": "飛行與程式",
+  "color": "#9fd4ff",
+  "x": 4.7,
+  "z": -3.1,
   "games": [
    {
     "title": "無人機程式飛行",
@@ -228,6 +222,22 @@ window.ISLAND_ZONES=[
     "url": "games/drone-coding.html",
     "isNew": true
    },
+   {
+    "title": "無人機足球訓練場",
+    "desc": "推力平衡、慣性煞車，再到 3D 場地穿環射門",
+    "url": "games/drone-soccer.html",
+    "isNew": false
+   }
+  ]
+ },
+ {
+  "id": "maze",
+  "name": "數學迷宮花園",
+  "tag": "數學與邏輯",
+  "color": "#ffe08a",
+  "x": 2.6,
+  "z": 3.4,
+  "games": [
    {
     "title": "只有五種正多面體",
     "desc": "在一個頂點拼多邊形，親手證明為什麼只有 5 種",
