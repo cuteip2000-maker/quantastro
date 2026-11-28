@@ -140,7 +140,7 @@ window.ISLAND_ZONES=[
     "title": "蝴蝶效應實驗室",
     "desc": "雙擺分身、勞倫茲的天氣、彈珠瞄準：差一點點，結果天差地遠",
     "url": "games/butterfly-effect.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "達文西的樹",
@@ -256,6 +256,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "電腦鼠迷宮賽",
+    "desc": "摸黑走迷宮、沿牆法對決洪水法，親手填出最短路線的數字",
+    "url": "games/micromouse.html",
+    "isNew": true
+   },
    {
     "title": "Recamán 跳跳數列",
     "desc": "第 n 步跳 n 格：畫出數字拱橋，追查哪些數遲遲不出現",
