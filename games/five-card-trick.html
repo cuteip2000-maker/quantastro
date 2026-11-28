@@ -1,0 +1,293 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>五張牌魔術</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: green card table. Play area on the left, notes rail on the right; stacks on phones. Single look. */
+:root{
+  --felt:#1f5c43;
+  --felt2:#174a35;
+  --paper:#f4f1e8;
+  --panel:#ffffff;
+  --rule:#d8d2c1;
+  --ink:#1f231f;
+  --dim:#626a60;
+  --accent:#e0a100;
+  --red:#c8302f;
+  --ok:#22915e;
+  --bad:#d6453d;
+  --gold:#d99a00;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:100%}
+.stage{display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:#fbfaf6;border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--felt);color:#fff;border-color:var(--felt);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--accent);margin-left:4px;letter-spacing:-1px}
+.table{background:radial-gradient(ellipse at 50% 30%,var(--felt),var(--felt2));color:#f3f7f2;padding-block:16px 22px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:12px;flex:1}
+.table .lab{color:#cfe3d6}
+.goal{font-weight:700;font-size:16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lab{font-size:13px;color:var(--dim)}
+.cards{display:flex;flex-wrap:wrap;gap:10px;min-height:112px;align-items:flex-end}
+.card{width:72px;height:102px;border-radius:9px;background:#fff;border:1px solid #c9c3b2;box-shadow:0 2px 6px rgba(0,0,0,.25);color:#1f231f;display:flex;flex-direction:column;justify-content:space-between;padding:5px 7px;font-family:var(--f-num);font-weight:700;position:relative;transition:transform .15s}
+.card.r{color:var(--red)}
+.card .rk{font-size:20px;line-height:1}
+.card .su{font-size:30px;line-height:1;text-align:center}
+.card .rk2{font-size:13px;text-align:right;transform:rotate(180deg)}
+button.card:hover{transform:translateY(-4px)}
+.card.pick{outline:3px solid var(--accent);transform:translateY(-8px)}
+.card.hidden{background:repeating-linear-gradient(45deg,#7b2e2e,#7b2e2e 6px,#933a3a 6px,#933a3a 12px);color:transparent;border-color:#5c2020}
+.card.ghost{background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.4);box-shadow:none;color:#cfe3d6;align-items:center;justify-content:center;font-family:var(--f-body);font-size:13px;font-weight:500}
+.card .tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#231a00;font:700 11px var(--f-body);border-radius:999px;padding:0 7px;white-space:nowrap}
+.card.mini{width:44px;height:60px;padding:3px 4px}
+.card.mini .rk{font-size:14px}.card.mini .su{font-size:18px}.card.mini .rk2{display:none}
+.btn{background:#fbfaf6;border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#231a00;font-weight:700}
+.btn.sel{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
+.btn.done::after{content:" ✓";color:var(--ok);font-weight:900}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.msgline{min-height:1.6em;font-weight:700;background:rgba(0,0,0,.22);border-radius:8px;padding:6px 10px}
+.msgline.ok{background:#2f8f5e}.msgline.bad{background:#b2413a}
+.msgline:empty{display:none}
+.help{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;background:rgba(0,0,0,.18);border-radius:12px;padding:10px 12px}
+.help canvas{width:170px;height:170px;display:block}
+.code{font-family:var(--f-num);font-size:13px;line-height:1.7;color:#e7f1ea}
+.code b{color:var(--accent)}
+.deck{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px}
+.deck button{border:1px solid #c9c3b2;background:#fff;border-radius:5px;font:700 12px var(--f-num);padding:4px 0;color:#1f231f}
+.deck button.r{color:var(--red)}
+.deck button.pick{background:var(--accent);border-color:var(--accent)}
+.pickrow{display:flex;flex-wrap:wrap;gap:5px}
+.pickrow button{min-width:40px;border:1px solid #c9c3b2;background:#fff;border-radius:7px;padding:5px 8px;font:700 15px var(--f-num);color:#1f231f}
+.pickrow button.r{color:var(--red)}
+.pickrow button.sel{background:var(--accent);border-color:var(--accent)}
+.stars{font-size:13px;color:#cfe3d6}
+.q{background:#fbfaf6;color:var(--ink);border-radius:10px;padding:9px 12px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.rcard{background:#fbfaf6;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.rcard.key{background:#e6f2ea;border-color:#a9d0b7}
+.rcard h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.rcard p{margin:0 0 8px;font-size:14px}
+.rcard p:last-child{margin-bottom:0}
+.rcard ol{margin:0;padding-left:1.3em;font-size:14px}
+.tbl{font-family:var(--f-num);font-size:13px;border-collapse:collapse;margin:6px 0}
+.tbl td{border:1px solid var(--rule);padding:2px 8px;text-align:center}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .card{width:58px;height:84px}.card .rk{font-size:17px}.card .su{font-size:24px}
+  .help{grid-template-columns:1fr}.help canvas{margin:auto}
+  .deck button{font-size:10px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 秘密的第一步<span class="st" id="stA"></span><small>為什麼一定同花色</small></button>
+      <button data-tab="B" aria-pressed="false">② 我是助手<span class="st" id="stB"></span><small>藏一張、排四張</small></button>
+      <button data-tab="C" aria-pressed="false">③ 我是魔術師<span class="st" id="stC"></span><small>猜出蓋住的牌</small></button>
+    </nav>
+
+    <!-- A -->
+    <div class="table" id="paneA">
+      <div class="goal">挑戰 1：從整副牌裡選 5 張，讓它們的花色全部不一樣。</div>
+      <div class="deck" id="deckA"></div>
+      <div class="cards" id="handA"></div>
+      <div class="row"><button class="btn" id="clrA">重選</button></div>
+      <div class="msgline" id="lineA"></div>
+      <div id="clockSec" hidden>
+        <div class="goal">挑戰 2：同花色的兩張牌，從哪一張「順時針數」比較近？</div>
+        <div class="row"><button class="btn" id="newPairA">換兩張</button><span class="lab" style="color:#cfe3d6">點你覺得「數過去比較近」的起點牌</span></div>
+        <div class="help"><canvas id="clockA" width="340" height="340" aria-label="13 個點數排成時鐘"></canvas><div><div class="cards" id="pairA"></div><div class="code" id="distA"></div></div></div>
+      </div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="table" id="paneB" hidden>
+      <div class="goal" id="goalB"></div>
+      <div class="cards" id="handB"></div>
+      <div class="lab">你排給魔術師看的順序：</div>
+      <div class="cards" id="rowB"></div>
+      <div class="row"><button class="btn" id="undoB">↶ 退一步</button><button class="btn" id="newB">換一手牌</button><button class="btn pri" id="showB" disabled>交給魔術師</button></div>
+      <div class="msgline" id="lineB"></div>
+      <div class="help"><canvas id="clockB" width="340" height="340" aria-label="點數時鐘"></canvas><div class="code" id="codeB"></div></div>
+      <div class="stars" id="progB"></div>
+      <div class="q" id="qB" hidden></div>
+    </div>
+
+    <!-- C -->
+    <div class="table" id="paneC" hidden>
+      <div class="goal">助手把一張牌蓋起來，把另外四張照順序排好。蓋住的是哪一張？</div>
+      <div class="cards" id="rowC"></div>
+      <div class="row"><span class="lab">花色</span><div class="pickrow" id="suitC"></div></div>
+      <div class="row"><span class="lab">點數</span><div class="pickrow" id="rankC"></div></div>
+      <div class="row"><button class="btn pri" id="guessC">翻開！</button><button class="btn" id="hintC">給我提示</button><button class="btn" id="newC">下一局</button></div>
+      <div class="msgline" id="lineC"></div>
+      <div class="help" id="helpC" hidden><canvas id="clockC" width="340" height="340" aria-label="點數時鐘"></canvas><div class="code" id="codeC"></div></div>
+      <div class="stars" id="progC"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>五張牌魔術</h1>
+    <p class="lede">觀眾隨便抽 5 張牌交給助手。助手蓋住其中一張，把另外 4 張排成一排。魔術師走進來看一眼，就說出蓋住的是哪一張。沒有暗號、沒有作弊，只有數學。</p>
+    <div class="rcard key" id="modeCard"></div>
+    <div class="rcard">
+      <h2>魔術的祕密</h2>
+      <ol>
+        <li><b>選花色：</b>5 張牌只有 4 種花色，一定有兩張同花色。助手蓋住其中一張，另一張放在第一個，告訴魔術師花色。</li>
+        <li><b>選起點：</b>把 A 到 K 排成時鐘。兩張同花色的牌，從其中一張順時針數到另一張，一定不超過 6 步。蓋住「數過去的那張」。</li>
+        <li><b>報步數：</b>剩下 3 張牌按大小分成小、中、大，排列順序有 6 種，剛好代表 1 到 6 步。</li>
+      </ol>
+    </div>
+    <div class="rcard">
+      <h2>小中大的暗號</h2>
+      <table class="tbl"><tr><td>小 中 大</td><td>1</td><td>小 大 中</td><td>2</td></tr><tr><td>中 小 大</td><td>3</td><td>中 大 小</td><td>4</td></tr><tr><td>大 小 中</td><td>5</td><td>大 中 小</td><td>6</td></tr></table>
+      <p>比大小先看點數（A 最小、K 最大）；點數一樣就看花色：♣ ＜ ♦ ＜ ♥ ＜ ♠。</p>
+    </div>
+    <div class="rcard">
+      <h2>從哪裡來的？</h2>
+      <p>這個魔術是數學家費奇・切尼設計的，1950 年被寫進一本數學魔術書，所以常叫作「費奇・切尼五張牌魔術」。它用到的正是「鴿巢原理」和「排列數」。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('fivecard-stars',{A:{},B:{},C:{}});
+const TOT={A:3,B:4,C:4};
+function saveStars(){store.set('fivecard-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+const line=(id,t,cls='')=>{const e=$(id);e.textContent=t;e.className='msgline '+cls};
+
+/* ---------- cards ---------- */
+const SU=['♣','♦','♥','♠'],RK=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const red=s=>s===1||s===2;
+const val=c=>c.r*4+c.s;
+const name=c=>SU[c.s]+RK[c.r];
+function cardHTML(c,{tag='',btn=false,cls='',data=''}={}){const t=btn?'button':'div';return `<${t} class="card ${red(c.s)?'r':''} ${cls}" ${data} aria-label="${name(c)}">${tag?`<span class="tag">${tag}</span>`:''}<span class="rk">${RK[c.r]}</span><span class="su">${SU[c.s]}</span><span class="rk2">${RK[c.r]}${SU[c.s]}</span></${t}>`}
+const CODE={'LMH':1,'LHM':2,'MLH':3,'MHL':4,'HLM':5,'HML':6};
+const CODE_INV=Object.fromEntries(Object.entries(CODE).map(([k,v])=>[v,k]));
+const dist=(a,b)=>((b.r-a.r)%13+13)%13; // clockwise steps from a to b
+function permOf(three){const sorted=three.slice().sort((x,y)=>val(x)-val(y));return three.map(c=>'LMH'[sorted.indexOf(c)]).join('')}
+function decode(four){const f=four[0],d=CODE[permOf(four.slice(1))];return{s:f.s,r:(f.r-1+d)%13+1,d}}
+function deal(n){const all=[];for(let s=0;s<4;s++)for(let r=1;r<=13;r++)all.push({r,s});const out=[];while(out.length<n)out.push(all.splice(Math.floor(Math.random()*all.length),1)[0]);return out}
+function encode(hand){// returns {hidden, four}
+  for(let i=0;i<5;i++)for(let j=0;j<5;j++){if(i===j)continue;const a=hand[i],b=hand[j];if(a.s!==b.s)continue;const d=dist(a,b);if(d>=1&&d<=6){const rest=hand.filter((_,k)=>k!==i&&k!==j);const sorted=rest.slice().sort((x,y)=>val(x)-val(y)),p=CODE_INV[d];return{hidden:b,four:[a].concat(p.split('').map(ch=>sorted['LMH'.indexOf(ch)]))}}}}
+function drawClock(cv,a,b,{showBack=false}={}){const x=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2,R=W*.38;x.clearRect(0,0,W,H);
+  const P=r=>{const t=(r-1)/13*2*Math.PI-Math.PI/2;return[cx+R*Math.cos(t),cy+R*Math.sin(t)]};
+  x.strokeStyle='rgba(255,255,255,.25)';x.lineWidth=2;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  if(a&&b){const arc=(from,to,col,w)=>{const t0=(from.r-1)/13*2*Math.PI-Math.PI/2,d=dist(from,to),t1=t0+d/13*2*Math.PI;x.strokeStyle=col;x.lineWidth=w;x.beginPath();x.arc(cx,cy,R,t0,t1);x.stroke()};
+    if(showBack)arc(b,a,'rgba(255,120,110,.7)',6);arc(a,b,'#ffd23f',8)}
+  for(let r=1;r<=13;r++){const[px,py]=P(r),hot=(a&&a.r===r)||(b&&b.r===r);x.fillStyle=hot?'#ffd23f':'rgba(255,255,255,.85)';x.beginPath();x.arc(px,py,hot?19:15,0,7);x.fill();x.fillStyle='#1f231f';x.font=`700 ${hot?18:15}px "JetBrains Mono",monospace`;x.textAlign='center';x.textBaseline='middle';x.fillText(RK[r],px,py+1)}
+  if(a&&b){x.fillStyle='#fff';x.font='700 22px "Noto Sans TC",sans-serif';x.textAlign='center';x.fillText(`順時針 ${dist(a,b)} 步`,cx,cy)}}
+
+let mode='A';
+const KEY={
+ A:'<h2>① 秘密的第一步</h2><p>魔術的第一步靠「鴿巢原理」：5 張牌、4 種花色，一定有兩張同花色。先自己試試看能不能打破它；再用時鐘看看，為什麼兩張同花色的牌之間最多只差 6 步。</p>',
+ B:'<h2>② 我是助手</h2><p>照三個步驟：①找兩張同花色；②蓋住「從另一張順時針數過去 1～6 步」的那張；③把另一張放第一，剩下三張照暗號排好。排好按「交給魔術師」，電腦魔術師會試著猜。</p>',
+ C:'<h2>③ 我是魔術師</h2><p>看第一張知道花色和起點；看後三張的小中大順序，查出要往前數幾步。選好花色和點數，按「翻開」。連續猜中 3 次就是合格的魔術師！</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#pane'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];renderQ()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+
+/* ---------- A ---------- */
+const A={pick:[],pair:null};
+function deckA(){$('#deckA').innerHTML=[0,1,2,3].map(s=>Array.from({length:13},(_,i)=>{const r=i+1,on=A.pick.some(c=>c.r===r&&c.s===s);return `<button class="${red(s)?'r':''} ${on?'pick':''}" data-dk="${r},${s}" aria-label="${SU[s]}${RK[r]}">${SU[s]}${RK[r]}</button>`}).join('')).join('');
+  $$('[data-dk]').forEach(b=>b.onclick=()=>{const[r,s]=b.dataset.dk.split(',').map(Number);const k=A.pick.findIndex(c=>c.r===r&&c.s===s);if(k>=0)A.pick.splice(k,1);else if(A.pick.length<5)A.pick.push({r,s});updA()})}
+function updA(){deckA();$('#handA').innerHTML=A.pick.map(c=>cardHTML(c,{cls:'mini'})).join('');const n=A.pick.length,used=new Set(A.pick.map(c=>c.s)).size;
+  if(n<5)line('#lineA',n?`已選 ${n} 張，用了 ${used} 種花色`+(n===4&&used===4?'。四種花色都用完了，第 5 張要選什麼？':''):'');
+  else{const cnt=[0,0,0,0];A.pick.forEach(c=>cnt[c.s]++);const s=cnt.findIndex(v=>v>=2);line('#lineA',`不管怎麼選，一定有兩張同花色（這次是 ${SU[s]}）。4 個籠子、5 隻鴿子，至少一個籠子擠兩隻！`,'ok');if(!stars.A[0]){stars.A[0]=1;saveStars()}$('#clockSec').hidden=false;if(!A.pair)newPair()}}
+$('#clrA').onclick=()=>{A.pick=[];updA()};
+function newPair(){const s=Math.floor(Math.random()*4);let r1=1+Math.floor(Math.random()*13),r2;do{r2=1+Math.floor(Math.random()*13)}while(r2===r1);A.pair=[{r:r1,s},{r:r2,s}];A.chosen=null;drawPair()}
+function drawPair(){const[a,b]=A.pair;$('#pairA').innerHTML=A.pair.map((c,i)=>cardHTML(c,{btn:true,data:`data-pa="${i}"`,cls:A.chosen===i?'pick':''})).join('');
+  $$('[data-pa]').forEach(el=>el.onclick=()=>{const i=+el.dataset.pa,from=A.pair[i],to=A.pair[1-i],d=dist(from,to),db=13-d;A.chosen=i;
+    if(d<=6){$('#distA').innerHTML=`從 <b>${name(from)}</b> 順時針數到 <b>${name(to)}</b>：<b>${d}</b> 步 ✔<br>反過來要 ${db} 步。兩個方向加起來是 13，所以其中一邊一定 ≤ 6。`;A.ok=(A.ok||0)+1;if(A.ok>=3&&!stars.A[1]){stars.A[1]=1;saveStars();$('#qA').hidden=false;renderQ()}}
+    else $('#distA').innerHTML=`從 <b>${name(from)}</b> 順時針數到 <b>${name(to)}</b> 要 ${d} 步，太遠了（超過 6）。換另一張當起點試試。`;
+    drawPair()});
+  drawClock($('#clockA'),A.chosen===null?a:A.pair[A.chosen],A.chosen===null?b:A.pair[1-A.chosen],{showBack:A.chosen!==null});
+  if(A.chosen===null)$('#distA').innerHTML=`答對 3 次過關（目前 ${A.ok||0} 次）`}
+$('#newPairA').onclick=newPair;
+
+/* ---------- B ---------- */
+const B={hand:[],hidden:null,row:[],wins:0};
+function newB(){B.hand=deal(5);B.hidden=null;B.row=[];line('#lineB','');renderB()}
+function renderB(){const step=B.hidden===null?1:B.row.length===0?2:3;
+  $('#goalB').textContent=['','步驟 1：點一張牌把它「蓋起來」（要蓋同花色兩張中，順時針數過去的那一張）','步驟 2：點和蓋住的牌同花色的那張，放在第一個','步驟 3：照暗號把剩下的三張排好'][step]+(B.row.length===4?'　→ 排好了！按「交給魔術師」':'');
+  $('#handB').innerHTML=B.hand.map((c,i)=>i===B.hidden?cardHTML(c,{cls:'hidden',tag:'蓋住'}):B.row.includes(i)?'<div class="card ghost">已排</div>':cardHTML(c,{btn:true,data:`data-hb="${i}"`})).join('');
+  $('#rowB').innerHTML=[0,1,2,3].map(k=>B.row[k]!==undefined?cardHTML(B.hand[B.row[k]],{tag:k===0?'第一張':''}):`<div class="card ghost">${k+1}</div>`).join('');
+  $$('[data-hb]').forEach(el=>el.onclick=()=>{const i=+el.dataset.hb;if(B.hidden===null){B.hidden=i}else if(B.row.length<4){B.row.push(i)}renderB()});
+  $('#showB').disabled=B.row.length!==4;
+  // helper
+  const h=B.hidden!==null?B.hand[B.hidden]:null,f=B.row.length?B.hand[B.row[0]]:null;
+  drawClock($('#clockB'),f||null,f&&h?h:null);
+  let t='';if(h&&f){const d=dist(f,h);t+=`第一張 <b>${name(f)}</b> → 蓋住 <b>${name(h)}</b>：順時針 <b>${d}</b> 步${f.s!==h.s?'　<span style="color:#ffb4ad">（花色不一樣！）</span>':d>6||d<1?'　<span style="color:#ffb4ad">（超過 6 步！）</span>':''}<br>`;
+    if(d>=1&&d<=6)t+=`後三張要排成：<b>${CODE_INV[d].replace(/L/g,'小').replace(/M/g,'中').replace(/H/g,'大').split('').join(' ')}</b><br>`}
+  const rest=B.hand.filter((_,k)=>k!==B.hidden&&k!==B.row[0]);if(B.hidden!==null&&B.row.length){const so=rest.slice().sort((x,y)=>val(x)-val(y));t+=`剩下三張：小 ${name(so[0])}、中 ${name(so[1])}、大 ${name(so[2])}`}
+  $('#codeB').innerHTML=t||'暗號表：小中大＝1、小大中＝2、中小大＝3、中大小＝4、大小中＝5、大中小＝6';
+  $('#progB').textContent=`成功騙過觀眾 ${Math.min(B.wins,3)} / 3 次`}
+$('#undoB').onclick=()=>{if(B.row.length)B.row.pop();else B.hidden=null;renderB()};
+$('#newB').onclick=newB;
+$('#showB').onclick=()=>{const four=B.row.map(i=>B.hand[i]),h=B.hand[B.hidden],g=decode(four);
+  if(g.s===h.s&&g.r===h.r){B.wins++;if(B.wins<=3){stars.B[B.wins-1]=1;saveStars()}line('#lineB',`魔術師說：「蓋住的是 ${name(h)}！」翻開一看，完全正確 🎉`,'ok');if(B.wins>=3&&$('#qB').hidden){$('#qB').hidden=false;renderQ()}setTimeout(newB,2600)}
+  else{let why=four[0].s!==h.s?'第一張和蓋住的牌花色不同，魔術師猜錯花色了':dist(four[0],h)<1||dist(four[0],h)>6?`從第一張順時針數到蓋住的牌要 ${dist(four[0],h)} 步，超過 6，暗號表示不出來。應該蓋另一張同花色的牌`:`後三張排成「${permOf(four.slice(1)).replace(/L/g,'小').replace(/M/g,'中').replace(/H/g,'大')}」代表 ${g.d} 步，但其實要 ${dist(four[0],h)} 步`;
+    line('#lineB',`魔術師猜「${name(g)}」，猜錯了！${why}。按「退一步」修改。`,'bad')}renderB()};
+
+/* ---------- C ---------- */
+const C={hand:null,enc:null,s:null,r:null,streak:0,done:false};
+$('#suitC').innerHTML=SU.map((s,i)=>`<button class="${red(i)?'r':''}" data-cs="${i}">${s}</button>`).join('');
+$('#rankC').innerHTML=RK.slice(1).map((r,i)=>`<button data-cr="${i+1}">${r}</button>`).join('');
+$$('[data-cs]').forEach(b=>b.onclick=()=>{C.s=+b.dataset.cs;$$('[data-cs]').forEach(x=>x.classList.toggle('sel',x===b))});
+$$('[data-cr]').forEach(b=>b.onclick=()=>{C.r=+b.dataset.cr;$$('[data-cr]').forEach(x=>x.classList.toggle('sel',x===b))});
+function newC(){C.hand=deal(5);C.enc=encode(C.hand);C.s=C.r=null;C.done=false;$$('[data-cs],[data-cr]').forEach(x=>x.classList.remove('sel'));$('#helpC').hidden=true;line('#lineC','');
+  $('#rowC').innerHTML=cardHTML(C.enc.hidden,{cls:'hidden',tag:'蓋住'})+C.enc.four.map((c,k)=>cardHTML(c,{tag:k===0?'第一張':''})).join('');progC()}
+function progC(){$('#progC').textContent=`連續猜中 ${C.streak} 次（目標 3 次）`}
+$('#newC').onclick=newC;
+$('#hintC').onclick=()=>{const f=C.enc.four[0],rest=C.enc.four.slice(1),so=rest.slice().sort((x,y)=>val(x)-val(y)),p=permOf(rest);$('#helpC').hidden=false;
+  drawClock($('#clockC'),f,null);$('#codeC').innerHTML=`花色：看第一張 → <b>${SU[f.s]}</b><br>起點：<b>${RK[f.r]}</b><br>後三張：${rest.map(c=>name(c)+'＝'+'小中大'['LMH'.indexOf(p[rest.indexOf(c)])]).join('、')}<br>順序「${p.replace(/L/g,'小').replace(/M/g,'中').replace(/H/g,'大')}」→ 查暗號表，往前數幾步？`};
+$('#guessC').onclick=()=>{if(C.done){newC();return}if(C.s===null||C.r===null){line('#lineC','先選花色和點數','bad');return}const h=C.enc.hidden;
+  if(C.s===h.s&&C.r===h.r){C.streak++;C.done=true;if(C.streak<=3&&!stars.C[C.streak-1]){stars.C[C.streak-1]=1;saveStars()}line('#lineC',`翻開：${name(h)}！你猜中了 🎩`,'ok');if(C.streak>=3&&$('#qC').hidden){$('#qC').hidden=false;renderQ()}}
+  else{C.streak=0;C.done=true;const f=C.enc.four[0],d=decode(C.enc.four).d;line('#lineC',`翻開：${name(h)}。花色看第一張（${SU[f.s]}），後三張代表 ${d} 步：${RK[f.r]} 往前數 ${d} 步就是 ${RK[h.r]}。`,'bad')}
+  $('#rowC .card.hidden').outerHTML=cardHTML(h,{tag:'蓋住的牌'});progC()};
+
+/* ---------- questions ---------- */
+const QS={
+ A:{t:'如果觀眾只抽 4 張牌，這個魔術還一定做得到嗎？',ch:['可以，一樣','不一定，4 張牌可能四種花色都不同','可以，而且更簡單'],ans:1,ok:'沒錯！4 張牌可能剛好 ♣♦♥♠ 各一張，就找不到同花色的兩張。5 張是保證有同花色的最少張數。',key:2},
+ B:{t:'剩下三張牌的排列方式總共有幾種？為什麼剛好夠用？',ch:['3 種，不夠用','6 種（3×2×1），剛好表示 1～6 步','9 種，多出來了'],ans:1,ok:'3×2×1 ＝ 6 種排法，剛好對應 1 到 6 步。而時鐘告訴我們最多只需要 6 步，數學算得剛剛好！',key:3},
+ C:{t:'如果一副牌是 1～52 都不一樣的數字卡（沒有花色），助手還能用 4 張牌報出第 5 張嗎？',ch:['不行','可以，而且其實可以用到 124 張的牌','只能用到 20 張'],ans:1,ok:'可以！數學家證明，5 張牌的魔術最多可以用 124 張牌。4 張牌的排列有 24 種，再加上選哪張蓋起來，資訊量剛好夠。',key:3}};
+function renderQ(){const m=mode,el=$('#q'+m);if(!el||el.hidden)return;const q=QS[m];
+  el.innerHTML=`<div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${k}">${s}</button>`).join('')}</div><div class="msgline" style="background:none;color:inherit;padding:4px 0 0"></div>`;
+  el.querySelectorAll('[data-ans]').forEach(b=>b.onclick=()=>{const ml=el.querySelector('.msgline');if(+b.dataset.ans===q.ans){b.classList.add('ok');ml.textContent=q.ok;ml.style.color='var(--ok)';stars[m][q.key]=1;saveStars()}else{b.classList.add('no');ml.textContent='再想想';ml.style.color='var(--bad)'}})}
+
+window.__fc={encode,decode,B,C,permOf,dist,CODE_INV,val};
+saveStars();updA();newB();newC();setMode('A');
+if(stars.A[0]){$('#clockSec').hidden=false;newPair()}if(stars.A[1]){$('#qA').hidden=false;renderQ()}
+})();
+</script>
+
+<script src="../qa.js" defer></script>

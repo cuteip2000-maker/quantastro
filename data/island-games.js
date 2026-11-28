@@ -146,7 +146,7 @@ window.ISLAND_ZONES=[
     "title": "跨步電壓逃生",
     "desc": "電線掉在地上怎麼逃？兩腳之間的電壓、小碎步逃生、雷擊為什麼牛特別危險",
     "url": "games/step-voltage.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "蝴蝶效應實驗室",
@@ -268,6 +268,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "五張牌魔術",
+    "desc": "藏一張、排四張，魔術師就猜得出來：鴿巢原理加排列的魔法",
+    "url": "games/five-card-trick.html",
+    "isNew": true
+   },
    {
     "title": "考拉茲冰雹數",
     "desc": "偶數除 2、奇數乘 3 加 1：最後都會到 1 嗎？沒人能證明",
