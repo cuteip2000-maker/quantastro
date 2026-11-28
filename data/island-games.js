@@ -263,10 +263,16 @@ window.ISLAND_ZONES=[
   "z": 3.4,
   "games": [
    {
+    "title": "考拉茲冰雹數",
+    "desc": "偶數除 2、奇數乘 3 加 1：最後都會到 1 嗎？沒人能證明",
+    "url": "games/collatz.html",
+    "isNew": true
+   },
+   {
     "title": "傅立葉魔法",
     "desc": "正弦波疊出方波、圓圈接圓圈畫圖，再從頻譜聽出音符",
     "url": "games/fourier.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "博弈論對決場",
