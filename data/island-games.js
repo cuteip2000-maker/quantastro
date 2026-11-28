@@ -152,7 +152,7 @@ window.ISLAND_ZONES=[
     "title": "微波爐裡的金屬",
     "desc": "內壁全是鐵為什麼不炸？用巧克力量光速、猜誰會冒火花",
     "url": "games/microwave-metal.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "尖端放電實驗室",
@@ -286,6 +286,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "聖彼得堡悖論",
+    "desc": "期望值無限大的擲硬幣賭局，為什麼沒人肯花大錢玩？",
+    "url": "games/st-petersburg.html",
+    "isNew": true
+   },
    {
     "title": "五張牌魔術",
     "desc": "藏一張、排四張，魔術師就猜得出來：鴿巢原理加排列的魔法",
