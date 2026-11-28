@@ -152,7 +152,7 @@ window.ISLAND_ZONES=[
     "title": "魯珀特之淚",
     "desc": "錘子敲不破、夾斷尾巴就爆炸的玻璃淚，和強化玻璃的祕密",
     "url": "games/ruperts-drop.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "千米高樓挑戰",
@@ -298,6 +298,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "螞蟻爬盒子",
+    "desc": "把盒子攤平拉直線，用畢氏定理找最短路線，再解蜘蛛和蒼蠅謎題",
+    "url": "games/ant-box.html",
+    "isNew": true
+   },
    {
     "title": "聖彼得堡悖論",
     "desc": "期望值無限大的擲硬幣賭局，為什麼沒人肯花大錢玩？",
