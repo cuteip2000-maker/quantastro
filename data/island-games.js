@@ -140,7 +140,7 @@ window.ISLAND_ZONES=[
     "title": "達文西的樹",
     "desc": "樹枝總面積等於樹幹？查證黃金比率分枝的說法，再找出 137.5° 黃金角",
     "url": "games/davinci-tree.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "完全彈性碰撞",
@@ -244,6 +244,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "Recamán 跳跳數列",
+    "desc": "第 n 步跳 n 格：畫出數字拱橋，追查哪些數遲遲不出現",
+    "url": "games/recaman.html",
+    "isNew": true
+   },
    {
     "title": "Sacks 數字螺旋",
     "desc": "把數字繞成螺旋，質數竟然排成曲線；再找出歐拉的 k²＋k＋41",
