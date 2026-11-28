@@ -257,10 +257,16 @@ window.ISLAND_ZONES=[
   "z": 3.4,
   "games": [
    {
+    "title": "皮克定理釘板",
+    "desc": "在釘板上圍圖形，只數釘子就算出面積：自己找出 I ＋ B÷2 − 1",
+    "url": "games/pick-theorem.html",
+    "isNew": true
+   },
+   {
     "title": "電腦鼠迷宮賽",
     "desc": "摸黑走迷宮、沿牆法對決洪水法，親手填出最短路線的數字",
     "url": "games/micromouse.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "Recamán 跳跳數列",

@@ -1,0 +1,294 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>皮克定理釘板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: wooden geoboard. Board on the left with a work strip under it, notes rail on the right; stacks on phones. Single light look. */
+:root{
+  --paper:#f3efe6;
+  --sheet:#fcfaf5;
+  --panel:#ffffff;
+  --rule:#ddd5c4;
+  --ink:#2a261f;
+  --dim:#6b6455;
+  --accent:#2f7d6d;
+  --bnd:#e07a1f;
+  --inn:#2f6fd1;
+  --ok:#25915b;
+  --bad:#d6453d;
+  --gold:#d99a00;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--sheet);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--gold);margin-left:4px;letter-spacing:-1px}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;border-top:1px solid var(--rule)}
+.cv{position:relative;min-height:340px;background:#c99b62}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair;touch-action:manipulation}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(520px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#fff;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad)}
+.side{background:var(--panel);border-left:1px solid var(--rule);padding:12px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto}
+.meter{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.meter div{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:6px 8px;text-align:center}
+.meter small{display:block;font-size:12px;color:var(--dim)}
+.meter b{font:700 20px var(--f-num)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.done::after{content:" ✓";color:var(--ok);font-weight:900}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.tasks{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.tasks div::before{content:"○ ";color:var(--dim)}
+.tasks div.done{color:var(--ok)}
+.tasks div.done::before{content:"● "}
+table.rec{border-collapse:collapse;font-family:var(--f-num);font-size:13px;width:100%}
+table.rec td,table.rec th{border:1px solid var(--rule);padding:3px 6px;text-align:center}
+table.rec th{background:var(--sheet);font-family:var(--f-body);font-weight:700;color:var(--dim)}
+table.rec tr.bad td{background:#fde4e2}
+table.rec tr.good td.p{color:var(--ok);font-weight:700}
+.sl{display:flex;align-items:center;gap:8px;font-size:15px;font-family:var(--f-num)}
+.sl input{flex:1;accent-color:var(--accent)}
+.sl b{min-width:3.5ch;color:var(--accent);text-align:right}
+.fx{font-family:var(--f-num);background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;font-size:15px;text-align:center}
+.q{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#e6f3ef;border-color:#a9d3c8}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+@media (max-width:1150px){.app{grid-template-columns:minmax(0,1fr) 290px}.work{grid-template-columns:minmax(0,1fr) 270px}}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;height:auto}
+  .work{grid-template-columns:1fr}
+  .cv{height:min(100vw,60vh)}
+  .side{border-left:0;border-top:1px solid var(--rule)}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 釘板實驗<span class="st" id="stA"></span><small>數點、量面積、找規律</small></button>
+      <button data-tab="B" aria-pressed="false">② 猜出公式<span class="st" id="stB"></span><small>面積 ＝ ? × I ＋ ? × B ＋ ?</small></button>
+      <button data-tab="C" aria-pressed="false">③ 釘板挑戰<span class="st" id="stC"></span><small>照條件圍出圖形</small></button>
+    </nav>
+    <div class="work">
+      <div class="cv" id="cv">
+        <canvas id="c" aria-label="9 乘 9 的釘板，點釘子圍出多邊形"></canvas>
+        <div class="msg" id="msg"></div>
+      </div>
+      <div class="side">
+        <div class="meter">
+          <div><small style="color:var(--inn)">內部點 I</small><b id="mI">–</b></div>
+          <div><small style="color:var(--bnd)">邊界點 B</small><b id="mB">–</b></div>
+          <div><small>面積</small><b id="mA">–</b></div>
+        </div>
+        <div class="row"><button class="btn" id="undo">↶ 復原</button><button class="btn" id="clear">清除</button><span class="note" id="hint">點釘子圍出圖形，最後點回起點封口。</span></div>
+
+        <div id="sideA" class="row" style="flex-direction:column;align-items:stretch;gap:8px">
+          <button class="btn pri" id="recA" disabled>把這個圖形記到表格</button>
+          <div class="tasks" id="tasksA"></div>
+          <div id="tblA"></div>
+          <div class="q" id="qA" hidden></div>
+        </div>
+
+        <div id="sideB" hidden style="display:flex;flex-direction:column;gap:8px">
+          <div class="fx">面積 ＝ <b id="fa"></b> × I ＋ <b id="fb"></b> × B ＋ <b id="fc"></b></div>
+          <label class="sl">I 的係數<input id="sa" type="range" min="-2" max="2" step="0.5" value="0"><b id="sav"></b></label>
+          <label class="sl">B 的係數<input id="sb" type="range" min="-2" max="2" step="0.5" value="0"><b id="sbv"></b></label>
+          <label class="sl">常數　　<input id="sc" type="range" min="-3" max="3" step="0.5" value="0"><b id="scv"></b></label>
+          <div class="note">表格裡是你在模式 ① 記下的圖形，再加上幾個範例。調三個滑桿，讓每一列的「公式算出」都等於真正的面積。</div>
+          <div id="tblB"></div>
+          <div class="q" id="qB" hidden></div>
+        </div>
+
+        <div id="sideC" hidden style="display:flex;flex-direction:column;gap:8px">
+          <div class="row" id="chBtns"></div>
+          <div style="font-weight:700" id="chGoal"></div>
+          <button class="btn pri" id="chkC" disabled>檢查</button>
+          <div class="q" id="qC" hidden></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>皮克定理釘板</h1>
+    <p class="lede">在釘板上用橡皮筋圍一個多邊形，只要數一數釘子，就能算出面積，不用量長度、也不用切三角形。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>皮克定理</h2>
+      <p>頂點都在格子點上的多邊形：</p>
+      <div class="fx" style="font-weight:700">面積 ＝ I ＋ B ÷ 2 − 1</div>
+      <p>I 是圖形「裡面」的點數，B 是「邊上」的點數（包括頂點）。</p>
+    </div>
+    <div class="card">
+      <h2>誰發現的？</h2>
+      <p>1899 年，奧地利數學家喬治・皮克發表了這個公式。它一開始沒什麼人注意，直到 1969 年被收進一本很受歡迎的數學趣味書，才變得有名。</p>
+    </div>
+    <div class="card">
+      <h2>為什麼是 B ÷ 2？</h2>
+      <p>想像每個釘子分到一塊面積。裡面的釘子拿到完整的一塊；邊上的釘子一半在圖形外面，只拿到半塊。最後的 −1，是繞一整圈時轉角多算出來的部分要扣掉。</p>
+    </div>
+    <div class="card">
+      <h2>什麼時候不能用？</h2>
+      <p>頂點不在格子點上、邊互相交叉，或圖形中間有洞，公式就不成立。有洞的圖形要改成「I ＋ B ÷ 2 − 1 ＋ 洞的數量」。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('pick-stars',{A:{},B:{},C:{}});
+const TOT={A:4,B:2,C:5};
+function saveStars(){store.set('pick-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+let msgT=0;function msg(s,cls='',ms=3400){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+const fmt=v=>Number.isInteger(v)?String(v):v.toFixed(1);
+
+/* ---------- geometry ---------- */
+const N=8; // points 0..8
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
+function area2(P){let s=0;for(let i=0;i<P.length;i++){const[a,b]=P[i],[c,d]=P[(i+1)%P.length];s+=a*d-b*c}return Math.abs(s)}
+function onSeg(p,a,b){const cr=(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);if(cr!==0)return false;return Math.min(a[0],b[0])<=p[0]&&p[0]<=Math.max(a[0],b[0])&&Math.min(a[1],b[1])<=p[1]&&p[1]<=Math.max(a[1],b[1])}
+function inside(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const[xi,yi]=P[i],[xj,yj]=P[j];if((yi>p[1])!==(yj>p[1])&&p[0]<(xj-xi)*(p[1]-yi)/(yj-yi)+xi)c=!c}return c}
+function count(P){let I=0,B=0;const bset=[],iset=[];for(let x=0;x<=N;x++)for(let y=0;y<=N;y++){const p=[x,y];let onB=false;for(let i=0;i<P.length;i++)if(onSeg(p,P[i],P[(i+1)%P.length])){onB=true;break}
+    if(onB){B++;bset.push(p)}else if(inside(p,P)){I++;iset.push(p)}}return{I,B,A:area2(P)/2,bset,iset}}
+function segX(a,b,c,d){const o=(p,q,r)=>Math.sign((q[0]-p[0])*(r[1]-p[1])-(q[1]-p[1])*(r[0]-p[0]));
+  const o1=o(a,b,c),o2=o(a,b,d),o3=o(c,d,a),o4=o(c,d,b);if(o1!==o2&&o3!==o4&&o1&&o2&&o3&&o4)return true;
+  if(!o1&&onSeg(c,a,b)||!o2&&onSeg(d,a,b)||!o3&&onSeg(a,c,d)||!o4&&onSeg(b,c,d))return true;return false}
+function simple(P,closed){const n=P.length,E=[];for(let i=0;i<(closed?n:n-1);i++)E.push([P[i],P[(i+1)%n],i]);
+  for(let i=0;i<E.length;i++)for(let j=i+1;j<E.length;j++){const adj=j===i+1||(closed&&i===0&&j===E.length-1);if(adj){// adjacent: only overlap check (collinear backtrack)
+        let a,b,d;if(j===i+1){[a,b]=E[i];d=E[j][1]}else{[a,b]=E[j];d=E[i][1]}const cr=(b[0]-a[0])*(d[1]-b[1])-(b[1]-a[1])*(d[0]-b[0]);const dot=(b[0]-a[0])*(d[0]-b[0])+(b[1]-a[1])*(d[1]-b[1]);if(cr===0&&dot<0)return false;continue}
+      if(segX(E[i][0],E[i][1],E[j][0],E[j][1]))return false}return true}
+
+/* ---------- board ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*d;c.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+function geo(w=W,h=H){const s=Math.floor(Math.min((w-40)/N,(h-40)/N)),ox=(w-s*N)/2,oy=(h-s*N)/2;return{s,ox,oy}}
+const S={pts:[],closed:false,info:null};
+function draw(){if(!W)return;const{s,ox,oy}=geo(),X=x=>ox+x*s,Y=y=>oy+(N-y)*s;ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#d8ae78';ctx.fillRect(ox-14,oy-14,s*N+28,s*N+28);
+  ctx.strokeStyle='rgba(90,60,25,.18)';ctx.lineWidth=1;for(let k=0;k<=N;k++){ctx.beginPath();ctx.moveTo(X(k),Y(0));ctx.lineTo(X(k),Y(N));ctx.moveTo(X(0),Y(k));ctx.lineTo(X(N),Y(k));ctx.stroke()}
+  const P=S.pts;
+  if(S.closed){ctx.fillStyle='rgba(47,125,109,.28)';ctx.beginPath();P.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.closePath();ctx.fill()}
+  if(P.length){ctx.strokeStyle='#1f5f52';ctx.lineWidth=3.5;ctx.lineJoin='round';ctx.beginPath();P.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));if(S.closed)ctx.closePath();ctx.stroke()}
+  const bs=new Set(),is=new Set();if(S.info){S.info.bset.forEach(p=>bs.add(p+''));S.info.iset.forEach(p=>is.add(p+''))}
+  for(let x=0;x<=N;x++)for(let y=0;y<=N;y++){const k=[x,y]+'';let col='#5a3d1c',r=Math.max(3,s*.07);if(bs.has(k)){col='#e07a1f';r*=1.7}else if(is.has(k)){col='#2f6fd1';r*=1.7}
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(X(x),Y(y),r,0,7);ctx.fill()}
+  P.forEach(([x,y],i)=>{ctx.strokeStyle=i===0&&!S.closed?'#d6453d':'#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(X(x),Y(y),Math.max(6,s*.15),0,7);ctx.stroke()});
+  if(mode==='C'&&CH[C.i]&&CH[C.i].show){ctx.strokeStyle='rgba(214,69,61,.55)';ctx.setLineDash([5,4]);ctx.lineWidth=2;ctx.beginPath();CH[C.i].show.forEach(([x,y],i)=>i?ctx.lineTo(X(x),Y(y)):ctx.moveTo(X(x),Y(y)));ctx.closePath();ctx.stroke();ctx.setLineDash([])}}
+c.addEventListener('click',e=>{const r=c.getBoundingClientRect(),{s,ox,oy}=geo(r.width,r.height);const gx=Math.round((e.clientX-r.left-ox)/s),gy=N-Math.round((e.clientY-r.top-oy)/s);
+  if(gx<0||gy<0||gx>N||gy>N)return;const px=ox+gx*s,py=oy+(N-gy)*s;if(Math.hypot(e.clientX-r.left-px,e.clientY-r.top-py)>s*.45)return;tapPoint([gx,gy])});
+function tapPoint(p){if(S.closed){S.pts=[];S.closed=false;S.info=null}
+  const P=S.pts;if(P.length&&p[0]===P[0][0]&&p[1]===P[0][1]){if(P.length<3){msg('至少要 3 個頂點','bad');return}
+    if(!simple(P,true)){msg('邊不能交叉，換個順序試試','bad');return}if(area2(P)===0){msg('這個圖形是扁的，沒有面積','bad');return}
+    S.closed=true;S.info=count(P);onClose();upd();draw();return}
+  if(P.some(q=>q[0]===p[0]&&q[1]===p[1])){msg('這個釘子已經用過了','bad',1500);return}
+  const np=P.concat([p]);if(!simple(np,false)){msg('邊不能交叉','bad');return}S.pts=np;upd();draw()}
+$('#undo').onclick=()=>{if(S.closed){S.closed=false;S.info=null}else S.pts.pop();upd();draw()};
+$('#clear').onclick=()=>{S.pts=[];S.closed=false;S.info=null;upd();draw()};
+function upd(){const i=S.info;$('#mI').textContent=i?i.I:'–';$('#mB').textContent=i?i.B:'–';$('#mA').textContent=i?fmt(i.A):'–';
+  $('#hint').textContent=S.closed?'再點任何釘子就會重畫。':S.pts.length?'繼續點下一個頂點，點紅圈的起點封口。':'點釘子圍出圖形，最後點回起點封口。';
+  $('#recA').disabled=!S.closed;$('#chkC').disabled=!S.closed}
+window.__pick={tapPoint,count,S};
+
+let mode='A';
+const KEY={
+ A:'<h2>① 釘板實驗</h2><p>點釘子圍出多邊形（頂點都要在釘子上）。面板會自動數出<b style="color:var(--inn)">內部點 I</b>、<b style="color:var(--bnd)">邊界點 B</b>，並算出面積。</p><p>照右邊任務做各種圖形，記到表格裡，找出規律。</p>',
+ B:'<h2>② 猜出公式</h2><p>面積和 I、B 有固定的關係。調整三個係數，讓表格每一列都對上，你就重新發現了皮克定理！</p>',
+ C:'<h2>③ 釘板挑戰</h2><p>照條件圍出圖形，再按「檢查」。先用皮克定理想想 I 和 B 要多少，會比亂試快很多。</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));$('#sideA').hidden=m!=='A';$('#sideB').hidden=m!=='B';$('#sideC').hidden=m!=='C';
+  $('#modeCard').innerHTML=KEY[m];if(m==='B')updB();if(m==='C')setCh(C.i);resize()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+function onClose(){if(mode==='A')msg(`I ＝ ${S.info.I}，B ＝ ${S.info.B}，面積 ＝ ${fmt(S.info.A)}。按「記到表格」`,'',2600)}
+
+/* ---------- A ---------- */
+const recs=store.get('pick-recs',[]);
+const TA=[
+ {t:'記下 3 個「內部點 I ＝ 0」、但 B 不一樣的圖形',ok:()=>new Set(recs.filter(r=>r.I===0).map(r=>r.B)).size>=3},
+ {t:'記下 3 個「邊界點 B ＝ 4」、但 I 不一樣的圖形',ok:()=>new Set(recs.filter(r=>r.B===4).map(r=>r.I)).size>=3},
+];
+$('#recA').onclick=()=>{if(!S.closed)return;const{I,B,A}=S.info;if(recs.some(r=>r.I===I&&r.B===B&&r.A===A)){msg('表格裡已經有一樣 I、B 的圖形了，換一個','',2200);return}
+  recs.push({I,B,A});if(recs.length>14)recs.shift();store.set('pick-recs',recs);updA();checkA();msg('記下來了！','ok',1400)};
+function checkA(){TA.forEach((t,i)=>{if(!stars.A[i]&&t.ok()){stars.A[i]=1;saveStars();msg(['I ＝ 0 時，B 每多 1，面積就多 0.5','B 固定時，I 每多 1，面積就多 1'][i],'ok',4500)}});
+  if(stars.A[0]&&stars.A[1]&&$('#qA').hidden){$('#qA').hidden=false;renderQA()}updA()}
+function updA(){$('#tasksA').innerHTML=TA.map((t,i)=>`<div class="${stars.A[i]?'done':''}">任務 ${i+1}：${t.t}</div>`).join('');
+  $('#tblA').innerHTML=recs.length?`<table class="rec"><tr><th>I</th><th>B</th><th>面積</th></tr>${recs.slice().sort((a,b)=>a.I-b.I||a.B-b.B).map(r=>`<tr><td>${r.I}</td><td>${r.B}</td><td>${fmt(r.A)}</td></tr>`).join('')}</table>`:'<div class="note">表格還是空的。試試 1×1 的小正方形：I ＝ 0、B ＝ 4。</div>'}
+const QA=[
+ {t:'I ＝ 0 時，邊界點 B 每多 1 個，面積增加多少？',ch:['0.5','1','2'],ans:0,ok:'0.5！邊上的釘子每個只「貢獻」半格面積。'},
+ {t:'B 固定時，內部點 I 每多 1 個，面積增加多少？',ch:['0.5','1','2'],ans:1,ok:'1！裡面的釘子每個貢獻一整格。'},
+];let qai=0;
+function renderQA(){if(qai>=QA.length){$('#qA').innerHTML='<div class="qt" style="color:var(--ok)">都答對了！到模式 ② 把公式拼出來。</div>';return}const q=QA[qai];
+  $('#qA').innerHTML=`<div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-qa="${k}">${s}</button>`).join('')}</div>`;
+  $$('[data-qa]').forEach(b=>b.onclick=()=>{if(+b.dataset.qa===q.ans){b.classList.add('ok');msg(q.ok,'ok',4000);stars.A[2+qai]=1;saveStars();qai++;setTimeout(renderQA,1200)}else{b.classList.add('no');msg('看看表格再想想','bad')}})}
+
+/* ---------- B ---------- */
+const PRESET=[{I:0,B:3,A:.5},{I:0,B:4,A:1},{I:1,B:4,A:2},{I:1,B:8,A:4},{I:4,B:4,A:5},{I:2,B:6,A:4},{I:0,B:10,A:4}];
+const Bf={a:0,b:0,c:0};
+['a','b','c'].forEach(k=>{$('#s'+k).oninput=e=>{Bf[k]=+e.target.value;updB()}});
+function updB(){$('#fa').textContent=fmt(Bf.a);$('#fb').textContent=fmt(Bf.b);$('#fc').textContent=fmt(Bf.c);$('#sav').textContent=fmt(Bf.a);$('#sbv').textContent=fmt(Bf.b);$('#scv').textContent=fmt(Bf.c);
+  const rows=[...recs];PRESET.forEach(p=>{if(!rows.some(r=>r.I===p.I&&r.B===p.B))rows.push(p)});
+  let good=0;const html=rows.map(r=>{const v=Bf.a*r.I+Bf.b*r.B+Bf.c,ok=Math.abs(v-r.A)<1e-9;if(ok)good++;return `<tr class="${ok?'good':'bad'}"><td>${r.I}</td><td>${r.B}</td><td>${fmt(r.A)}</td><td class="p">${fmt(v)}</td></tr>`}).join('');
+  $('#tblB').innerHTML=`<div class="note">對上 ${good} / ${rows.length} 列</div><table class="rec"><tr><th>I</th><th>B</th><th>真正面積</th><th>公式算出</th></tr>${html}</table>`;
+  if(good===rows.length&&!stars.B[0]){stars.B[0]=1;saveStars();msg('全部對上了！面積 ＝ I ＋ B ÷ 2 − 1，這就是皮克定理','ok',5000);$('#qB').hidden=false;renderQB()}
+  if(stars.B[0]&&$('#qB').hidden){$('#qB').hidden=false;renderQB()}}
+function renderQB(){const q={t:'用皮克定理算：一個多邊形有 5 個內部點、8 個邊界點，面積是多少？',ch:['8','9','12','13'],ans:0,ok:'5 ＋ 8 ÷ 2 − 1 ＝ 8 ✔'};
+  $('#qB').innerHTML=`<div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-qb="${k}">${s}</button>`).join('')}</div>`;
+  $$('[data-qb]').forEach(b=>b.onclick=()=>{if(+b.dataset.qb===q.ans){b.classList.add('ok');msg(q.ok,'ok');stars.B[1]=1;saveStars()}else{b.classList.add('no');msg('I ＋ B ÷ 2 − 1，代進去算算看','bad')}})}
+
+/* ---------- C ---------- */
+const CH=[
+ {t:'圍一個面積是 ½ 的三角形（最小的格子三角形）。',ok:i=>S.pts.length===3&&i.A===.5},
+ {t:'圍一個面積 4、而且裡面沒有任何釘子（I ＝ 0）的圖形。',ok:i=>i.A===4&&i.I===0},
+ {t:'圍一個面積 4、邊上只有 4 個釘子（B ＝ 4）的四邊形。',ok:i=>S.pts.length===4&&i.A===4&&i.B===4},
+ {t:'圍一個面積 5 的正方形。（提示：正方形可以斜斜的）',ok:i=>isSquare(S.pts)&&i.A===5},
+ {t:'圍一個 I ＝ 6、B ＝ 6 的圖形。先算算看面積要多少。',ok:i=>i.I===6&&i.B===6},
+];
+function isSquare(P){if(P.length!==4)return false;const d=(a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2;const s=[d(P[0],P[1]),d(P[1],P[2]),d(P[2],P[3]),d(P[3],P[0])];return s.every(v=>v===s[0])&&d(P[0],P[2])===d(P[1],P[3])}
+const C={i:0};
+function setCh(i){C.i=i;$('#chBtns').innerHTML=CH.map((_,j)=>`<button class="btn ${j===i?'sel':''} ${stars.C[j]?'done':''}" data-ch="${j}">${j+1}</button>`).join('');
+  $$('[data-ch]').forEach(b=>b.onclick=()=>setCh(+b.dataset.ch));$('#chGoal').textContent='挑戰 '+(i+1)+'：'+CH[i].t;draw()}
+$('#chkC').onclick=()=>{if(!S.closed)return;const ok=CH[C.i].ok(S.info);
+  if(ok){stars.C[C.i]=1;saveStars();msg(['過關！I ＝ 0、B ＝ 3：0 ＋ 3 ÷ 2 − 1 ＝ ½','過關！I ＝ 0 時 B 要 10：0 ＋ 10 ÷ 2 − 1 ＝ 4','過關！B ＝ 4 時 I 要 3：3 ＋ 4 ÷ 2 − 1 ＝ 4','過關！斜正方形，邊長是 √5，面積 5','過關！面積 ＝ 6 ＋ 6 ÷ 2 − 1 ＝ 8'][C.i],'ok',4500);setCh(C.i);
+    const nx=CH.findIndex((_,j)=>!stars.C[j]);if(nx>=0)setTimeout(()=>{setCh(nx);S.pts=[];S.closed=false;S.info=null;upd();draw()},1800)}
+  else msg(`還不對：現在 I ＝ ${S.info.I}、B ＝ ${S.info.B}、面積 ＝ ${fmt(S.info.A)}${S.pts.length?`、${S.pts.length} 個頂點`:''}`,'bad',3500)};
+
+saveStars();upd();updA();if(stars.A[0]&&stars.A[1]){$('#qA').hidden=false;qai=stars.A[3]?2:stars.A[2]?1:0;renderQA()}setMode('A');
+})();
+</script>
+
+<script src="../qa.js" defer></script>
