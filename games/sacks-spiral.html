@@ -1,0 +1,391 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sacks 數字螺旋</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: star-chart bench. Dark spiral sky on the left, task strip under it, notes rail on the right; stacks on phones. Single dark look. */
+:root{
+  --bg:#0c1222;
+  --sky:#0a0f1d;
+  --panel:#131b30;
+  --panel2:#1a2440;
+  --rule:#2c3a5e;
+  --ink:#eef2ff;
+  --dim:#9aa6c6;
+  --accent:#ffcf5a;
+  --prime:#5fd4ff;
+  --sq:#ffcf5a;
+  --pron:#d68bff;
+  --ok:#5be39a;
+  --bad:#ff6b7a;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--accent);margin-left:4px;letter-spacing:-1px}
+.cv{position:relative;flex:1;min-height:340px;background:var(--sky);border-top:1px solid var(--rule);touch-action:none}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.tip{position:absolute;pointer-events:none;background:rgba(19,27,48,.95);border:1px solid var(--rule);border-radius:6px;padding:3px 9px;font-family:var(--f-num);font-size:13px;white-space:nowrap;z-index:3}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:4px;z-index:2}
+.zoom button{width:34px;height:34px;border-radius:8px;border:1px solid var(--rule);background:rgba(19,27,48,.9);font-weight:700}
+.legend{position:absolute;left:10px;top:10px;background:rgba(19,27,48,.88);border:1px solid var(--rule);border-radius:8px;padding:6px 11px;font-size:13px;line-height:1.7;pointer-events:none;max-width:calc(100% - 70px)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#0c1222;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad)}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#1d1600;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:3px 11px;font-size:13.5px;background:var(--panel2)}
+.chip[aria-pressed="true"]{border-color:currentColor;font-weight:700}
+.chip i{width:10px;height:10px;border-radius:50%;background:currentColor}
+.q{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qh{font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.dots{display:flex;gap:4px}
+.dots b{width:20px;height:20px;border-radius:50%;border:1px solid var(--rule);font:700 11px/18px var(--f-num);text-align:center;color:var(--dim);cursor:pointer;background:var(--panel)}
+.dots b.done{background:var(--ok);border-color:var(--ok);color:#0c1222}
+.dots b.cur{border-color:var(--accent);color:var(--accent)}
+.sl{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.sl input{width:150px;accent-color:var(--accent)}
+.sl b{font-family:var(--f-num);min-width:3ch;color:var(--accent)}
+.stat{font-family:var(--f-num);font-size:13px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.kgrid{display:flex;flex-wrap:wrap;gap:3px}
+.kgrid span{font:500 11.5px/1 var(--f-num);padding:4px 4px;border-radius:4px;min-width:34px;text-align:center}
+.kgrid .p{background:rgba(91,227,154,.18);color:var(--ok)}
+.kgrid .c{background:rgba(255,107,122,.16);color:var(--bad);text-decoration:line-through}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#2a2614;border-color:#6b5a22}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.card ul{margin:0;padding-left:1.2em;font-size:14px}
+.fx{font-family:var(--f-num);background:var(--sky);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:13.5px;margin:6px 0;text-align:center;overflow-x:auto}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  .cv{flex:none;height:58vh;min-height:340px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .sl input{width:120px}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 數字怎麼繞<span class="st" id="stA"></span><small>螺旋上的平方數</small></button>
+      <button data-tab="B" aria-pressed="false">② 質數浮現<span class="st" id="stB"></span><small>上萬個數一起看</small></button>
+      <button data-tab="C" aria-pressed="false">③ 質數曲線獵人<span class="st" id="stC"></span><small>找出最會生質數的公式</small></button>
+    </nav>
+    <div class="cv" id="cv">
+      <canvas id="c" aria-label="Sacks 數字螺旋圖，可拖曳、縮放，點數字查看"></canvas>
+      <div class="legend" id="legend"></div>
+      <div class="zoom"><button id="zin" aria-label="放大">＋</button><button id="zout" aria-label="縮小">−</button><button id="zfit" aria-label="回到全圖">⤢</button></div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- A -->
+    <div class="dock" id="dockA">
+      <div class="row">
+        <label class="sl">畫到第<input id="nA" type="range" min="10" max="400" step="1" value="100"><b id="nAV"></b>個數</label>
+        <button class="btn" id="playA">▶ 一個一個長出來</button>
+        <button class="btn" id="spiralA">螺旋線：顯示</button>
+      </div>
+      <div class="q" id="qA"></div>
+    </div>
+
+    <!-- B -->
+    <div class="dock" id="dockB" hidden>
+      <div class="row">
+        <span class="lab">範圍 1～</span>
+        <button class="btn" data-nb="100">100</button>
+        <button class="btn sel" data-nb="1000">1000</button>
+        <button class="btn" data-nb="5000">5000</button>
+        <button class="btn" data-nb="10000">10000</button>
+      </div>
+      <div class="row" id="setsB"></div>
+      <div class="stat" id="statB"></div>
+      <div class="q" id="qB"></div>
+    </div>
+
+    <!-- C -->
+    <div class="dock" id="dockC" hidden>
+      <div class="row">
+        <span class="lab">關卡</span>
+        <button class="btn sel" data-lv="0">1 找 15 個</button>
+        <button class="btn" data-lv="1">2 找 25 個</button>
+        <button class="btn" data-lv="2">3 連續 40 個</button>
+        <button class="btn" id="hintC">給我提示</button>
+      </div>
+      <div class="row" style="font-family:var(--f-num);font-size:16px;font-weight:700">
+        公式：k² <span id="coefB" style="color:var(--accent)"></span> ＋ <span id="coefC" style="color:var(--accent)"></span>
+        <span class="note" style="font-family:var(--f-body);font-weight:400">（k ＝ 0, 1, 2, …, 39）</span>
+      </div>
+      <div class="row">
+        <label class="sl">b<input id="bC" type="range" min="0" max="10" step="1" value="2"></label>
+        <button class="btn" data-adj="b,-1" aria-label="b 減 1">−</button><button class="btn" data-adj="b,1" aria-label="b 加 1">＋</button>
+        <label class="sl" style="margin-left:8px">c<input id="cC" type="range" min="1" max="60" step="1" value="1"></label>
+        <button class="btn" data-adj="c,-1" aria-label="c 減 1">−</button><button class="btn" data-adj="c,1" aria-label="c 加 1">＋</button>
+      </div>
+      <div class="stat" id="statC"></div>
+      <div class="kgrid" id="kgrid" aria-label="40 個結果"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>Sacks 數字螺旋</h1>
+    <p class="lede">把 0、1、2、3、…一個接一個繞成螺旋，再把質數點亮。亂七八糟的質數，竟然排出一條條曲線。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>螺旋怎麼繞？</h2>
+      <p>1994 年，程式設計師羅伯特・薩克斯（Robert Sacks）想出這種排法：每個數 n 離中心的距離是 √n，轉過的圈數也是 √n。</p>
+      <div class="fx">距離 = √n　　轉了 √n 圈</div>
+      <p>這樣排，相鄰兩個數的間隔差不多一樣，越外圈每一圈放的數越多。</p>
+    </div>
+    <div class="card">
+      <h2>為什麼平方數排成一直線？</h2>
+      <p>1、4、9、16 的 √n 是 1、2、3、4，剛好轉了整數圈，全部回到正東方。所以每跨過一個平方數，就是新的一圈。</p>
+      <p>從 k² 到 (k+1)² 之間有 2k+1 步，外圈一圈比內圈多 2 個數。</p>
+    </div>
+    <div class="card">
+      <h2>質數為什麼排成曲線？</h2>
+      <p>像 k²＋k＋41 這種公式，算出來的數 √ 大約是 k＋½，所以都落在正西方附近，連起來是一條慢慢彎的曲線。</p>
+      <p>有些公式特別常算出質數，它的曲線就特別亮。1772 年，歐拉發現 k²＋k＋41 在 k＝0～39 時全部都是質數。</p>
+    </div>
+    <div class="card">
+      <h2>它的表哥：烏蘭螺旋</h2>
+      <p>1963 年，數學家烏蘭開會時無聊，把數字繞成方形螺旋，也看見質數排成斜線。薩克斯把方形改成圓形，曲線變得更清楚。</p>
+      <p>為什麼質數會這樣排，數學家到現在還沒有完全證明。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('sacks-stars',{A:{},B:{},C:{}});
+function saveStars(){store.set('sacks-stars',stars);
+  [['A',6],['B',5],['C',3]].forEach(([m,t])=>{const n=Object.keys(stars[m]).filter(k=>k!=='bonus').length;$('#st'+m).textContent=n?(n>=t?'★':'')+n+'/'+t:''})}
+
+/* ---------- numbers ---------- */
+const MAXN=12000;
+const sieve=new Uint8Array(MAXN+1).fill(1);sieve[0]=sieve[1]=0;
+for(let i=2;i*i<=MAXN;i++)if(sieve[i])for(let j=i*i;j<=MAXN;j+=i)sieve[j]=0;
+const isP=n=>n>=2&&n<=MAXN&&sieve[n]===1;
+const isSq=n=>{const r=Math.round(Math.sqrt(n));return r*r===n};
+const isPron=n=>{const k=Math.floor(Math.sqrt(n));return n>0&&k*(k+1)===n};
+function factor(n){if(n<2)return '';if(isP(n))return '質數';const f=[];let m=n;for(let d=2;d*d<=m;d++)while(m%d===0){f.push(d);m/=d}if(m>1)f.push(m);return '= '+f.join(' × ')}
+const pos=n=>{const r=Math.sqrt(n),t=2*Math.PI*r;return[r*Math.cos(t),-r*Math.sin(t)]};
+
+/* ---------- canvas view ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');
+let W=0,H=0,DPR=1;
+const view={z:1,px:0,py:0,R:10}; // R = √-radius to fit
+function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*DPR;c.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+const unit=()=>Math.max(1,(Math.min(W,H)/2-22)/view.R)*view.z;
+function toScr(n){const[x,y]=pos(n),u=unit();return[W/2+view.px+x*u,H/2+view.py+y*u]}
+function fit(R){view.R=Math.max(2,R);view.z=1;view.px=view.py=0}
+function zoomAt(k,sx=W/2,sy=H/2){const nz=Math.min(40,Math.max(.6,view.z*k));k=nz/view.z;
+  view.px=(view.px+W/2-sx)*k-(W/2-sx);view.py=(view.py+H/2-sy)*k-(H/2-sy);view.z=nz;draw()}
+$('#zin').onclick=()=>zoomAt(1.5);$('#zout').onclick=()=>zoomAt(1/1.5);$('#zfit').onclick=()=>{view.z=1;view.px=view.py=0;draw()};
+c.addEventListener('wheel',e=>{e.preventDefault();const r=c.getBoundingClientRect();zoomAt(e.deltaY<0?1.15:1/1.15,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+const ptrs=new Map();let drag=null,moved=0,pinch=0;
+c.addEventListener('pointerdown',e=>{try{c.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===1){drag=[e.clientX,e.clientY];moved=0}else if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch=Math.hypot(a[0]-b[0],a[1]-b[1]);moved=99}});
+c.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(pinch){const r=c.getBoundingClientRect();zoomAt(d/pinch,(a[0]+b[0])/2-r.left,(a[1]+b[1])/2-r.top)}pinch=d;return}
+  if(drag){const dx=e.clientX-drag[0],dy=e.clientY-drag[1];moved+=Math.abs(dx)+Math.abs(dy);if(moved>5){view.px+=dx;view.py+=dy;drag=[e.clientX,e.clientY];c.style.cursor='grabbing';draw()}}
+  if(e.pointerType==='mouse'&&!drag)hover(e)});
+c.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;
+  if(drag&&moved<=5){const n=nearest(e);if(n!==null)tap(n,e)}
+  if(!ptrs.size){drag=null;c.style.cursor='grab'}});
+c.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);drag=null;pinch=0});
+c.addEventListener('pointerleave',()=>{$('#tip').hidden=true});
+function nearest(e){const r=c.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const N=curN(),u=unit();const[wx,wy]=[(x-W/2-view.px)/u,(y-H/2-view.py)/u];const rr=Math.hypot(wx,wy);
+  const lo=Math.max(0,Math.floor((rr-1.2)**2)),hi=Math.min(N,Math.ceil((rr+1.2)**2));let best=null,bd=Math.max(14,u*.9)**2;
+  if(hi-lo>6000)return null;
+  for(let n=lo;n<=hi;n++){if(!visible(n))continue;const[sx,sy]=toScr(n),d=(sx-x)**2+(sy-y)**2;if(d<bd){bd=d;best=n}}return best}
+function hover(e){const n=nearest(e),t=$('#tip');if(n===null){t.hidden=true;return}
+  const[sx,sy]=toScr(n);t.textContent=n+'  '+factor(n);t.hidden=false;
+  t.style.left=Math.min(W-t.offsetWidth-6,sx+12)+'px';t.style.top=Math.max(4,sy-34)+'px'}
+let msgT=0;function msg(s,cls='',ms=2600){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+function showTip(n){const t=$('#tip'),[sx,sy]=toScr(n);t.textContent=n+'  '+factor(n);t.hidden=false;t.style.left=Math.min(W-t.offsetWidth-6,Math.max(4,sx+12))+'px';t.style.top=Math.max(4,sy-34)+'px'}
+
+/* ---------- mode switching ---------- */
+let mode='A';
+const KEY={
+ A:'<h2>① 數字怎麼繞</h2><p>先畫 100 個數，看看它們怎麼繞。點圖上的數字可以看到它是幾、能不能分解。照下方的題目一題一題找規律。</p><p class="note" style="margin:0">滑鼠滾輪或兩指可以縮放，拖曳可以移動。</p>',
+ B:'<h2>② 質數浮現</h2><p>一次看上萬個數。點亮不同的數字家族，比較它們排出的圖案：哪些是直線、哪些是曲線、哪些幾乎看不到。</p>',
+ C:'<h2>③ 質數曲線獵人</h2><p>公式 k²＋bk＋c 算出的 40 個數，會在螺旋上連成一條曲線。調整 b 和 c，讓曲線上的質數越多越好。</p><p>綠點是質數，紅叉是合數。</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));
+  ['A','B','C'].forEach(k=>$('#dock'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];$('#tip').hidden=true;
+  if(m==='A')fit(Math.sqrt(A.n)+.8);if(m==='B')fit(Math.sqrt(B.n)+.5);if(m==='C')fitC();
+  renderQ();draw()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+const curN=()=>mode==='A'?A.shown:mode==='B'?B.n:C.maxN;
+function visible(n){if(mode==='C')return true;return n<=curN()}
+
+/* ---------- A ---------- */
+const A={n:innerWidth<600?60:100,shown:innerWidth<600?60:100,spiral:true,play:0,q:0,flash:null,sq:false,pr:false};
+const QA=[
+ {t:'在圖上點出數字 10。',click:10,ok:'對了！10 在第 3 圈剛開始不久的地方。',hint:'從中心的 0 開始，沿著螺旋一個一個數。'},
+ {t:'正東方那條直線上有 1、4、9、16。在圖上點出下一個。',click:25,ok:'25！它也在正東方。',hint:'從 16 往外再繞一圈，回到正東方。',after:()=>A.sq=true},
+ {t:'正東方直線上的數，都是什麼數？',ch:['質數','平方數','偶數','3 的倍數'],ans:1,ok:'都是平方數：√n 是整數，剛好轉了整數圈，回到出發的方向。'},
+ {t:'從 25 往外繞一整圈到 36，一共走了幾步？',ch:['9','10','11','12'],ans:2,ok:'11 步。從 k² 到 (k+1)² 要 2k+1 步，k＝5 就是 11。',hint:'25→26 算一步，數到 36。'},
+ {t:'正西方也有一條直線：2、6、12、20。在圖上點出下一個。',click:30,ok:'30！正西方是半圈的位置。',hint:'2、6、12、20 之間差 4、6、8，下一個差 10。',after:()=>A.pr=true},
+ {t:'2、6、12、20、30 有什麼共同點？',ch:['都是 2 的次方','都是兩個相鄰整數相乘','都是質數','都是平方數加 1'],ans:1,ok:'1×2、2×3、3×4、4×5、5×6！k(k+1) 的 √ 大約是 k＋½，剛好多轉半圈。'},
+];
+$('#nA').oninput=e=>{A.n=+e.target.value;A.shown=A.n;A.play=0;$('#nAV').textContent=A.n;fit(Math.sqrt(A.n)+.8);draw()};
+$('#nAV').textContent=A.n;$('#nA').value=A.n;
+$('#spiralA').onclick=e=>{A.spiral=!A.spiral;e.target.textContent='螺旋線：'+(A.spiral?'顯示':'隱藏');draw()};
+$('#playA').onclick=()=>{if(reduce){A.shown=A.n;draw();return}A.shown=0;A.play=performance.now();loop()};
+function loop(){if(!A.play)return;const t=(performance.now()-A.play)/1000;A.shown=Math.min(A.n,Math.floor(t*Math.max(12,A.n/8)));draw();if(A.shown<A.n)requestAnimationFrame(loop);else A.play=0}
+
+/* ---------- B ---------- */
+const SETS=[
+ {id:'p',name:'質數',col:'#5fd4ff',f:isP},
+ {id:'sq',name:'平方數',col:'#ffcf5a',f:isSq},
+ {id:'pr',name:'k(k+1)',col:'#d68bff',f:isPron},
+ {id:'ev',name:'偶數',col:'#ff9a5a',f:n=>n>0&&n%2===0},
+ {id:'six',name:'6 的倍數 ±1',col:'#5be39a',f:n=>n>1&&(n%6===1||n%6===5)},
+];
+const B={n:1000,on:new Set(['p']),q:0};
+$('#setsB').innerHTML='<span class="lab">點亮</span>'+SETS.map(s=>`<button class="chip" data-set="${s.id}" style="color:${s.col}" aria-pressed="${B.on.has(s.id)}"><i></i><span style="color:var(--ink)">${s.name}</span></button>`).join('');
+$$('[data-set]').forEach(b=>b.onclick=()=>{const id=b.dataset.set;B.on.has(id)?B.on.delete(id):B.on.add(id);b.setAttribute('aria-pressed',B.on.has(id));statB();draw()});
+$$('[data-nb]').forEach(b=>b.onclick=()=>{B.n=+b.dataset.nb;$$('[data-nb]').forEach(x=>x.classList.toggle('sel',x===b));fit(Math.sqrt(B.n)+.5);statB();draw()});
+function statB(){$('#statB').innerHTML=SETS.filter(s=>B.on.has(s.id)).map(s=>{let k=0;for(let n=1;n<=B.n;n++)if(s.f(n))k++;return `<span style="color:${s.col}">●</span> ${s.name} <b>${k}</b> 個（${(k/B.n*100).toFixed(1)}%）`}).join('　')||'先點亮一個數字家族'}
+const QB=[
+ {t:'只點亮「質數」，範圍選 1～1000。1 到 1000 之間有幾個質數？',ch:['100 個','168 個','250 個','500 個'],ans:1,ok:'168 個。看下方的計數就能讀到。'},
+ {t:'再把範圍換成 1～10000，質數佔全部的比例變大還是變小？',ch:['變大','差不多','變小'],ans:2,ok:'變小了：1000 以內約 16.8%，10000 以內約 12.3%。數越大，質數越稀。'},
+ {t:'同時點亮「質數」和「平方數」。正東方那條平方數直線上，有幾個質數？',ch:['很多','一半','一個也沒有'],ans:2,ok:'一個也沒有。平方數 k×k 一定能被 k 整除，不可能是質數。'},
+ {t:'點亮「k(k+1)」。正西方這條線上為什麼也沒有質數（2 除外）？',ch:['它們都太大','它們都是偶數','它們都是平方數','只是剛好'],ans:1,ok:'相鄰兩個整數一定有一個是偶數，所以 k(k+1) 一定是偶數。'},
+ {t:'同時點亮「質數」和「6 的倍數 ±1」。比 3 大的質數落在哪裡？',ch:['全部都在 6 的倍數 ±1 裡','只有一半在裡面','全部都不在裡面'],ans:0,ok:'全部都在！6k、6k+2、6k+4 是偶數，6k+3 是 3 的倍數，質數只能是 6k±1。'},
+];
+
+/* ---------- C ---------- */
+const C={b:2,c:1,lv:0,maxN:2000,vals:[],cnt:0,run:0};
+const GOAL=[15,25,40];
+function calcC(){C.vals=[];C.cnt=0;C.run=0;let run=0;for(let k=0;k<40;k++){const v=k*k+C.b*k+C.c,p=isP(v);C.vals.push([v,p]);if(p){C.cnt++;run++;C.run=Math.max(C.run,run)}else run=0}
+  C.maxN=Math.max(...C.vals.map(v=>v[0]))}
+function fitC(){fit(Math.sqrt(C.maxN)+.6)}
+function updC(first){calcC();$('#coefB').textContent=C.b===0?'':C.b===1?'＋ k':'＋ '+C.b+'k';$('#coefC').textContent=C.c;$('#bC').value=C.b;$('#cC').value=C.c;
+  const g=GOAL[C.lv],have=C.lv===2?C.run:C.cnt;
+  $('#statC').innerHTML=`質數 <b>${C.cnt}</b> / 40　最長連續 <b>${C.run}</b> 個　目標：${C.lv===2?'連續 40 個全是質數':'至少 '+g+' 個質數'}`;
+  $('#kgrid').innerHTML=C.vals.map(([v,p],k)=>`<span class="${p?'p':'c'}" title="k=${k}">${v}</span>`).join('');
+  if(!first&&have>=g&&!C.won){C.won=true;stars.C[C.lv]=1;saveStars();
+    msg(C.lv===2?`太厲害了！k² ${$('#coefB').textContent} ＋ ${C.c} 連續 40 個都是質數`:`過關！${C.cnt} 個質數`,'ok',3500);if(C.lv===2){$('#qC').hidden=false;renderQ()}}
+  if(have<g)C.won=false;
+  fitC();draw()}
+$('#bC').oninput=e=>{C.b=+e.target.value;updC()};$('#cC').oninput=e=>{C.c=+e.target.value;updC()};
+$$('[data-adj]').forEach(b=>b.onclick=()=>{const[k,d]=b.dataset.adj.split(',');const lim=k==='b'?[0,10]:[1,60];C[k]=Math.min(lim[1],Math.max(lim[0],C[k]+ +d));updC()});
+$$('[data-lv]').forEach(b=>b.onclick=()=>{C.lv=+b.dataset.lv;C.won=false;$$('[data-lv]').forEach(x=>x.classList.toggle('sel',x===b));$('#qC').hidden=!(C.lv===2&&stars.C[2]);msg(['關卡 1：讓 40 個結果裡至少有 15 個質數','關卡 2：至少 25 個質數','關卡 3：找出連續 40 個全是質數的公式（歷史上真的有人找到）'][C.lv],'',3500);updC(true);
+  const have=C.lv===2?C.run:C.cnt;if(have>=GOAL[C.lv]){C.won=true;stars.C[C.lv]=1;saveStars();if(C.lv===2){$('#qC').hidden=false;renderQ()}msg('目前的公式已經達成這一關了！過關','ok')}});
+const HINT=['b 是偶數時曲線會貼近正東方的平方數線，那裡沒有質數。先把 b 改成奇數試試。','b＝1 時，試試 c＝11、17 這些質數。','b＝1，c 在 40 附近找找看。'];
+$('#hintC').onclick=()=>msg(HINT[C.lv],'',4500);
+const QC={t:'歐拉的 k²＋k＋41 到了 k＝40 就失敗了：40²＋40＋41 ＝ 1681。1681 等於多少？',ch:['質數','41 × 41','40 × 42','29 × 58'],ans:1,ok:'41 × 41！40×40＋40＋41 ＝ 40×41＋41 ＝ 41×41。任何這種公式都不可能永遠只生出質數。'};
+
+/* ---------- questions ---------- */
+function qHTML(list,i,done,id){const q=list[i];
+  return `<div class="qh"><span>題目</span><span class="dots">${list.map((_,j)=>`<b class="${done[j]?'done':''} ${j===i?'cur':''}" data-q="${id},${j}" role="button" tabindex="0" aria-label="第 ${j+1} 題">${j+1}</b>`).join('')}</span></div>
+  <div class="qt">${q.t}</div>
+  ${q.ch?`<div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${id},${k}">${s}</button>`).join('')}</div>`:`<div class="note">👆 直接點圖上的數字${q.hint?`　<button class="btn" data-hint="${id}" style="font-size:12.5px;padding:2px 8px">提示</button>`:''}</div>`}`}
+function renderQ(){
+  if(mode==='A')$('#qA').innerHTML=qHTML(QA,A.q,stars.A,'A');
+  if(mode==='B')$('#qB').innerHTML=qHTML(QB,B.q,stars.B,'B');
+  if(mode==='C'&&!$('#qC').hidden)$('#qC').innerHTML=`<div class="qh"><span>加分題</span></div><div class="qt">${QC.t}</div><div class="row">${QC.ch.map((s,k)=>`<button class="btn" data-ans="C,${k}">${s}</button>`).join('')}</div>`;
+  $$('[data-q]').forEach(b=>b.onclick=b.onkeydown=e=>{if(e.type==='keydown'&&e.key!=='Enter')return;const[m,j]=b.dataset.q.split(',');(m==='A'?A:B).q=+j;renderQ()});
+  $$('[data-hint]').forEach(b=>b.onclick=()=>msg(QA[A.q].hint,'',4000));
+  $$('[data-ans]').forEach(b=>b.onclick=()=>{const[m,k]=b.dataset.ans.split(',');answer(m,+k,b)});}
+function answer(m,k,btn){
+  const q=m==='A'?QA[A.q]:m==='B'?QB[B.q]:QC;
+  if(k===q.ans){btn.classList.add('ok');msg(q.ok,'ok',5000);if(m==='C'){stars.C.bonus=1;saveStars();return}win(m)}
+  else{btn.classList.add('no');msg(m==='A'&&q.hint?'再想想。'+q.hint:'再想想，看看圖上的點','bad',3500)}}
+function win(m){const st=m==='A'?A:B,list=m==='A'?QA:QB,q=list[st.q];stars[m][st.q]=1;saveStars();if(q.after)q.after();
+  draw();setTimeout(()=>{const nx=list.findIndex((_,j)=>!stars[m][j]);if(nx>=0)st.q=nx;renderQ()},1400);renderQ()}
+function tap(n){showTip(n);
+  if(mode==='A'){const q=QA[A.q];A.flash=n;draw();
+    if(q.click!==undefined){if(n===q.click){msg(q.ok,'ok',4000);win('A')}else msg(`這是 ${n}，不是 ${q.click}。`+(q.hint||''),'bad',3500)}}}
+
+/* ---------- drawing ---------- */
+function draw(){if(!W)return;ctx.clearRect(0,0,W,H);
+  const u=unit(),cx=W/2+view.px,cy=H/2+view.py;
+  if(mode==='A')drawA(u,cx,cy);else if(mode==='B')drawB(u,cx,cy);else drawC(u,cx,cy);
+  legend()}
+function axes(cx,cy,R,u){ctx.save();ctx.setLineDash([4,6]);ctx.lineWidth=1;
+  ctx.strokeStyle='rgba(255,207,90,.35)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*u,cy);ctx.stroke();
+  ctx.strokeStyle='rgba(214,139,255,.3)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx-R*u,cy);ctx.stroke();ctx.restore()}
+function spiralPath(maxN,u,cx,cy){ctx.beginPath();const R=Math.sqrt(maxN);for(let s=0;s<=R;s+=Math.min(.02,.5/Math.max(1,R))){const t=2*Math.PI*s;const x=cx+s*Math.cos(t)*u,y=cy-s*Math.sin(t)*u;s?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
+function drawA(u,cx,cy){const N=A.shown,gap=Math.PI*u;
+  if(A.sq||A.pr)axes(cx,cy,Math.sqrt(A.n)+.6,u);
+  if(A.spiral){ctx.strokeStyle='rgba(154,166,198,.35)';ctx.lineWidth=1;spiralPath(N,u,cx,cy)}
+  const rad=Math.max(2.2,Math.min(13,gap*.36,u*.46)),lab=u>=18;A.lab=lab;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`700 ${Math.min(13,rad*1.05)}px "JetBrains Mono",monospace`;
+  for(let n=0;n<=N;n++){const[x,y]=toScr(n);if(x<-20||y<-20||x>W+20||y>H+20)continue;
+    let col='#5b6788';if(A.sq&&isSq(n))col='#ffcf5a';else if(A.pr&&isPron(n))col='#d68bff';
+    if(n===A.flash)col='#ffffff';
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,lab?rad:rad*.8,0,7);ctx.fill();
+    if(lab){ctx.fillStyle=col==='#5b6788'?'#eef2ff':'#0c1222';ctx.fillText(n,x,y+.5)}}
+  }
+function drawB(u,cx,cy){const N=B.n,gap=Math.PI*u,r=Math.max(1,Math.min(6,gap*.3));
+  const on=SETS.filter(s=>B.on.has(s.id));
+  ctx.fillStyle='rgba(120,135,170,.28)';
+  for(let n=1;n<=N;n++){const[x,y]=toScr(n);if(x<-5||y<-5||x>W+5||y>H+5)continue;ctx.fillRect(x-r*.5,y-r*.5,r,r)}
+  on.slice().reverse().forEach(s=>{ctx.fillStyle=s.col;for(let n=1;n<=N;n++){if(!s.f(n))continue;const[x,y]=toScr(n);if(x<-5||y<-5||x>W+5||y>H+5)continue;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}});
+  if(u>=30){ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='500 11px "JetBrains Mono",monospace';ctx.fillStyle='#eef2ff';for(let n=1;n<=N;n++){const[x,y]=toScr(n);if(x<0||y<0||x>W||y>H)continue;ctx.fillText(n,x,y-r-7)}}}
+function drawC(u,cx,cy){const N=C.maxN,gap=Math.PI*u,r=Math.max(1,Math.min(5,gap*.28));
+  ctx.fillStyle='rgba(95,212,255,.35)';
+  for(let n=2;n<=N;n++){if(!isP(n))continue;const[x,y]=toScr(n);if(x<-5||y<-5||x>W+5||y>H+5)continue;ctx.fillRect(x-r*.5,y-r*.5,r,r)}
+  ctx.strokeStyle='rgba(255,207,90,.7)';ctx.lineWidth=1.6;ctx.beginPath();C.vals.forEach(([v],k)=>{const[x,y]=toScr(v);k?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+  const s=Math.max(3.5,Math.min(7,r+2.5));
+  C.vals.forEach(([v,p])=>{const[x,y]=toScr(v);if(p){ctx.fillStyle='#5be39a';ctx.beginPath();ctx.arc(x,y,s,0,7);ctx.fill()}
+    else{ctx.strokeStyle='#ff6b7a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x-s,y-s);ctx.lineTo(x+s,y+s);ctx.moveTo(x+s,y-s);ctx.lineTo(x-s,y+s);ctx.stroke()}})}
+function legend(){const L=$('#legend');
+  if(mode==='A')L.innerHTML=`0～${A.shown}`+(A.lab?'':'（放大看數字）')+(A.sq?'　<i style="background:var(--sq)"></i>平方數':'')+(A.pr?'　<i style="background:var(--pron)"></i>k(k+1)':'');
+  else if(mode==='B')L.innerHTML=`1～${B.n}`;
+  else L.innerHTML=`<i style="background:var(--prime);opacity:.6"></i>所有質數　<i style="background:var(--ok)"></i>公式算出的質數　<span style="color:var(--bad)">✕</span> 合數`}
+
+/* ---------- init ---------- */
+saveStars();statB();calcC();updC(true);setMode('A');
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='+'||e.key==='=')zoomAt(1.3);if(e.key==='-')zoomAt(1/1.3)});
+})();
+</script>
+
+<script src="../qa.js" defer></script>

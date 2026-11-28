@@ -220,7 +220,7 @@ window.ISLAND_ZONES=[
     "title": "無人機程式飛行",
     "desc": "用指令積木排航線、用迴圈畫圖形、寫規則走出迷宮",
     "url": "games/drone-coding.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "無人機足球訓練場",
@@ -238,6 +238,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "Sacks 數字螺旋",
+    "desc": "把數字繞成螺旋，質數竟然排成曲線；再找出歐拉的 k²＋k＋41",
+    "url": "games/sacks-spiral.html",
+    "isNew": true
+   },
    {
     "title": "只有五種正多面體",
     "desc": "在一個頂點拼多邊形，親手證明為什麼只有 5 種",
