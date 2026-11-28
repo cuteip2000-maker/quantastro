@@ -149,10 +149,16 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "魯珀特之淚",
+    "desc": "錘子敲不破、夾斷尾巴就爆炸的玻璃淚，和強化玻璃的祕密",
+    "url": "games/ruperts-drop.html",
+    "isNew": true
+   },
+   {
     "title": "千米高樓挑戰",
     "desc": "為什麼沒有 1000 公尺的大樓？重量、電梯和風的三大難關",
     "url": "games/skyscraper-limits.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "微波爐裡的金屬",
