@@ -143,6 +143,12 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "尖端放電實驗室",
+    "desc": "電荷擠到尖端、空氣被擊穿發出藍光，再當避雷針工程師",
+    "url": "games/point-discharge.html",
+    "isNew": true
+   },
+   {
     "title": "跨步電壓逃生",
     "desc": "電線掉在地上怎麼逃？兩腳之間的電壓、小碎步逃生、雷擊為什麼牛特別危險",
     "url": "games/step-voltage.html",
@@ -272,7 +278,7 @@ window.ISLAND_ZONES=[
     "title": "五張牌魔術",
     "desc": "藏一張、排四張，魔術師就猜得出來：鴿巢原理加排列的魔法",
     "url": "games/five-card-trick.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "考拉茲冰雹數",
