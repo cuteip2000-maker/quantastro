@@ -12,7 +12,7 @@ window.ISLAND_ZONES=[
     "title": "三種陀螺儀",
     "desc": "轉子、雷射、會唱歌的碗：飛機和衛星怎麼知道自己轉了多少",
     "url": "games/gyroscopes.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "猛禽引擎的鑽石",
@@ -148,6 +148,12 @@ window.ISLAND_ZONES=[
   "x": -6.4,
   "z": -1.6,
   "games": [
+   {
+    "title": "微波爐裡的金屬",
+    "desc": "內壁全是鐵為什麼不炸？用巧克力量光速、猜誰會冒火花",
+    "url": "games/microwave-metal.html",
+    "isNew": true
+   },
    {
     "title": "尖端放電實驗室",
     "desc": "電荷擠到尖端、空氣被擊穿發出藍光，再當避雷針工程師",
