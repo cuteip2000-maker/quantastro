@@ -183,6 +183,12 @@ window.ISLAND_ZONES=[
   "z": 4.2,
   "games": [
    {
+    "title": "量子糾纏實驗室",
+    "desc": "成對光子的神奇配合、挑戰愛因斯坦的答案卡、用糾纏抓竊聽者",
+    "url": "games/quantum-entanglement.html",
+    "isNew": true
+   },
+   {
     "title": "雙狹縫實驗",
     "desc": "電子一顆一顆排出條紋，偷看一眼條紋就消失",
     "url": "games/double-slit.html",
@@ -248,7 +254,7 @@ window.ISLAND_ZONES=[
     "title": "Recamán 跳跳數列",
     "desc": "第 n 步跳 n 格：畫出數字拱橋，追查哪些數遲遲不出現",
     "url": "games/recaman.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "Sacks 數字螺旋",

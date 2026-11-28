@@ -1,0 +1,337 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>量子糾纏實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: optics bench at night. Lab view on the left with a control strip under it, notes rail on the right; stacks on phones. Single dark look. */
+:root{
+  --bg:#0f1024;
+  --sky:#0a0b1a;
+  --panel:#16182f;
+  --panel2:#1e2140;
+  --rule:#343866;
+  --ink:#f1f0ff;
+  --dim:#a3a3c9;
+  --accent:#b98cff;
+  --a:#ff8fb8;
+  --b:#7fd6ff;
+  --red:#ff6b7a;
+  --grn:#5be39a;
+  --ok:#5be39a;
+  --bad:#ff6b7a;
+  --gold:#ffd166;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--gold);margin-left:4px;letter-spacing:-1px}
+.cv{position:relative;flex:1;min-height:260px;background:var(--sky);border-top:1px solid var(--rule)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#0f1024;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad)}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#1b0b33;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.done::after{content:" ✓";color:var(--ok);font-weight:900}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.btn.cR{color:var(--red)}.btn.cG{color:var(--grn)}
+.stat{font-family:var(--f-num);font-size:13.5px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.goal{font-weight:700}
+.tasks{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.tasks div::before{content:"○ ";color:var(--dim)}
+.tasks div.done{color:var(--ok)}
+.tasks div.done::before{content:"● "}
+.tbl{font-family:var(--f-num);font-size:12.5px;overflow-x:auto}
+.tbl table{border-collapse:collapse}
+.tbl td,.tbl th{padding:2px 5px;text-align:center;border:1px solid var(--rule);min-width:24px}
+.tbl th{color:var(--dim);font-weight:500;text-align:left;white-space:nowrap;position:sticky;left:0;background:var(--panel)}
+.tbl .x{opacity:.3}
+.tbl .chk{background:rgba(255,209,102,.18)}
+.tbl .err{background:rgba(255,107,122,.35)}
+.q{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qh{font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.dots{display:flex;gap:4px}
+.dots b{width:20px;height:20px;border-radius:50%;border:1px solid var(--rule);font:700 11px/18px var(--f-num);text-align:center;color:var(--dim);cursor:pointer;background:var(--panel)}
+.dots b.done{background:var(--ok);border-color:var(--ok);color:#0f1024}
+.dots b.cur{border-color:var(--accent);color:var(--accent)}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#241a3d;border-color:#5f4a99}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+.fx{font-family:var(--f-num);background:var(--sky);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:13px;margin:6px 0;text-align:center}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  .cv{flex:none;height:36vh;min-height:230px}
+  .dock{max-height:none}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 成對的光子<span class="st" id="stA"></span><small>兩邊結果怎麼配</small></button>
+      <button data-tab="B" aria-pressed="false">② 答案卡挑戰<span class="st" id="stB"></span><small>貝爾實驗</small></button>
+      <button data-tab="C" aria-pressed="false">③ 糾纏密碼<span class="st" id="stC"></span><small>抓出竊聽者</small></button>
+    </nav>
+    <div class="cv" id="cv">
+      <canvas id="c" aria-label="實驗裝置示意圖"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- A -->
+    <div class="dock" id="dockA">
+      <div class="row"><span class="lab" style="color:var(--a)">小愛的偏振片</span><span id="angA" class="row"></span></div>
+      <div class="row"><span class="lab" style="color:var(--b)">小柏的偏振片</span><span id="angB" class="row"></span></div>
+      <div class="row">
+        <button class="btn pri" id="fire1">發射 1 對</button>
+        <button class="btn pri" id="fire20">發射 20 對</button>
+        <button class="btn" id="clrA">清除紀錄</button>
+      </div>
+      <div class="stat" id="statA"></div>
+      <div class="tbl" id="tblA"></div>
+      <div class="tasks" id="tasksA"></div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="dock" id="dockB" hidden>
+      <div class="goal">每顆粒子出發前，先發一張「答案卡」：旋鈕轉到 1、2、3 時各要亮什麼燈。兩顆粒子拿同一張卡。</div>
+      <div class="row"><span class="lab">你的答案卡</span><span id="cardB" class="row"></span></div>
+      <div class="row">
+        <button class="btn pri" id="runCard">用答案卡測 300 次</button>
+        <button class="btn pri" id="runQ" style="background:var(--b);border-color:var(--b)">用真正的量子粒子測 300 次</button>
+      </div>
+      <div class="stat" id="statB"></div>
+      <div class="q" id="qB"></div>
+    </div>
+
+    <!-- C -->
+    <div class="dock" id="dockC" hidden>
+      <div class="row"><span class="lab">回合</span><b id="roundC" style="font-family:var(--f-num)"></b>
+        <span class="note">每回合可能有、也可能沒有竊聽者偷看。</span></div>
+      <div class="row" id="stepsC">
+        <button class="btn pri" id="c1">① 發射 48 對</button>
+        <button class="btn" id="c2" disabled>② 公開比對偏振片方向</button>
+        <button class="btn" id="c3" disabled>③ 抽一半出來對答案</button>
+      </div>
+      <div class="row" id="judgeC" hidden>
+        <span class="lab">你的判斷</span>
+        <button class="btn" id="jSafe">安全，沒有竊聽者</button>
+        <button class="btn" id="jEve">有竊聽者！</button>
+      </div>
+      <div class="stat" id="statC"></div>
+      <div class="tbl" id="tblC"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>量子糾纏實驗室</h1>
+    <p class="lede">一對糾纏的光子，就算分隔很遠，量出來的結果還是互相配合。這不是魔術，也不能拿來超光速傳訊息。動手量量看。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>什麼是量子糾纏？</h2>
+      <p>兩個粒子一起產生後，它們的狀態綁在一起，不能分開描述。量其中一個，另一個的結果就跟著確定，不管距離多遠。</p>
+      <p>每一邊單獨看，結果都完全隨機；要把兩邊的紀錄放在一起比，才看得出配合得多神奇。</p>
+    </div>
+    <div class="card">
+      <h2>愛因斯坦不相信</h2>
+      <p>1935 年，愛因斯坦認為粒子一定是出發時就「寫好答案」，量子力學只是還沒看清楚。他把糾纏叫作「鬼魅般的超距作用」。</p>
+      <p>1964 年，貝爾想出一個實驗：如果粒子真的帶著寫好的答案，配對率一定有個下限。模式 ② 就是這個實驗的簡化版。</p>
+    </div>
+    <div class="card">
+      <h2>實驗怎麼說？</h2>
+      <p>從 1970 年代起，克勞瑟、阿斯佩、蔡林格等人做了這種實驗，結果都站在量子力學這一邊：粒子沒有事先寫好答案。他們三人獲得 2022 年諾貝爾物理獎。</p>
+      <p>2017 年，中國的「墨子號」衛星把糾纏光子對分送到相距超過 1200 公里的兩個地面站，糾纏依然成立。</p>
+    </div>
+    <div class="card">
+      <h2>能超光速傳訊息嗎？</h2>
+      <p>不行。小愛不管怎麼轉偏振片，小柏自己看到的永遠是一半一半的隨機結果。兩人要用電話等一般方式交換紀錄，才看得出關聯。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('qent-stars',{A:{},B:{},C:{}});
+const TOT={A:4,B:4,C:4};
+function saveStars(){store.set('qent-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+let msgT=0;function msg(s,cls='',ms=3400){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+const rand=()=>Math.random();
+
+/* ---------- canvas ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*d;c.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+let shots=[]; // flying photon pairs {t0}
+let lampA=null,lampB=null,lampT=0;
+function anim(){const now=performance.now();shots=shots.filter(s=>now-s.t0<700);draw();if(shots.length||now-lampT<900)requestAnimationFrame(anim)}
+function fireAnim(ra,rb){lampA=ra;lampB=rb;lampT=performance.now()+(reduce?0:650);if(!reduce)shots.push({t0:performance.now()});requestAnimationFrame(anim)}
+function bench(labelA,labelB,angA,angB,colA,colB){
+  const cy=H*.48,sx=W/2,ax=Math.max(70,W*.14),bx=W-ax,now=performance.now();
+  ctx.strokeStyle='rgba(185,140,255,.25)';ctx.setLineDash([3,6]);ctx.beginPath();ctx.moveTo(ax,cy);ctx.lineTo(bx,cy);ctx.stroke();ctx.setLineDash([]);
+  // source
+  ctx.fillStyle='#2a2550';ctx.strokeStyle='#b98cff';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(sx-34,cy-24,68,48,10);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#d9c7ff';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('糾纏光源',sx,cy+4);
+  // photons
+  shots.forEach(s=>{const f=Math.min(1,(now-s.t0)/650);[[sx-(sx-ax-30)*f,'#ff8fb8'],[sx+(bx-30-sx)*f,'#7fd6ff']].forEach(([x,col])=>{ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=12;ctx.beginPath();ctx.arc(x,cy,6,0,7);ctx.fill();ctx.shadowBlur=0});
+    ctx.strokeStyle='rgba(255,255,255,.35)';ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(sx-(sx-ax-30)*f,cy);ctx.lineTo(sx+(bx-30-sx)*f,cy);ctx.stroke();ctx.setLineDash([])});
+  // stations
+  [[ax,labelA,angA,colA,lampA,'#ff8fb8'],[bx,labelB,angB,colB,lampB,'#7fd6ff']].forEach(([x,lab,ang,cols,lamp,tc])=>{
+    const r=Math.min(30,H*.12);ctx.strokeStyle=tc;ctx.lineWidth=2;ctx.fillStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.arc(x,cy,r,0,7);ctx.fill();ctx.stroke();
+    if(ang!==null&&typeof ang==='number'){const a=-ang*Math.PI/180;ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x-Math.sin(-a)*0-Math.cos(a)*0,cy);ctx.save();ctx.translate(x,cy);ctx.rotate(-ang*Math.PI/180-Math.PI/2);ctx.beginPath();ctx.moveTo(0,-r*.8);ctx.lineTo(0,r*.8);ctx.stroke();ctx.restore()}
+    else if(ang!==null){ctx.fillStyle='#fff';ctx.font='900 18px "JetBrains Mono",monospace';ctx.fillText(ang,x,cy+6)}
+    ctx.fillStyle=tc;ctx.font='700 13px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText(lab,x,cy-r-28);
+    // lamps
+    const lit=lamp!==null&&now>=lampT-1&&now-lampT<10000;
+    cols.forEach((col,i)=>{const ly=cy+r+22,lx=x+(i?14:-14);ctx.fillStyle=lit&&lamp===i?col:'rgba(255,255,255,.08)';if(lit&&lamp===i){ctx.shadowColor=col;ctx.shadowBlur=14}ctx.beginPath();ctx.arc(lx,ly,9,0,7);ctx.fill();ctx.shadowBlur=0});
+  });}
+
+let mode='A';
+const KEY={
+ A:'<h2>① 成對的光子</h2><p>光源一次射出一對糾纏光子，分別飛到小愛和小柏。每邊有一片偏振片：光子通過就亮「1」，被擋住就亮「0」。</p><p>轉動偏振片角度，多發射幾對，完成下方任務。</p>',
+ B:'<h2>② 答案卡挑戰</h2><p>兩台機器各有一個旋鈕（1、2、3），每次隨機轉一個，量完亮紅燈或綠燈。</p><p><b>規則：兩邊轉到同一格時，燈色一定要一樣。</b></p><p>如果粒子出發時就帶著寫好的答案卡（愛因斯坦的想法），你能讓「兩邊同色」的比例低到 50% 嗎？</p>',
+ C:'<h2>③ 糾纏密碼</h2><p>小愛和小柏用糾纏光子做出只有兩人知道的密碼。每邊隨機選偏振片方向：<b>＋</b>（0°）或 <b>×</b>（45°）。</p><p>方向相同的那幾對，兩人結果一定相同，可以當密碼。竊聽者偷看會留下錯誤，抽查就抓得到。判斷對 3 回合就過關。</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#dock'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];lampA=lampB=null;renderQ();draw()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+
+/* ---------- A ---------- */
+const ANG=[0,30,45,60,90];
+const A={a:0,b:0,rec:[],seg:null};
+function angBtns(id,key){$('#'+id).innerHTML=ANG.map(v=>`<button class="btn ${A[key]===v?'sel':''}" data-${key}="${v}">${v}°</button>`).join('');
+  $$(`[data-${key}]`).forEach(b=>b.onclick=()=>{A[key]=+b.dataset[key];A.rec=[];angBtns(id,key);updA();draw()})}
+function pair(a,b){const ra=rand()<.5?1:0,d=(a-b)*Math.PI/180,same=rand()<Math.cos(d)**2;return[ra,same?ra:1-ra]}
+function fire(n){let last;for(let i=0;i<n;i++){last=pair(A.a,A.b);A.rec.push(last)}if(A.rec.length>200)A.rec=A.rec.slice(-200);fireAnim(last[0],last[1]);updA();checkA()}
+$('#fire1').onclick=()=>fire(1);$('#fire20').onclick=()=>fire(20);$('#clrA').onclick=()=>{A.rec=[];updA()};
+const TA=[
+ {t:'兩邊都轉到 0°，發射至少 20 對：兩人的結果每一次都一樣嗎？',ok:()=>A.a===0&&A.b===0&&A.rec.length>=20,win:'兩邊都是 0° 時，結果 100% 相同，但每一邊自己是一半 1、一半 0 的隨機。'},
+ {t:'小愛 0°、小柏 90°，發射至少 20 對。',ok:()=>A.a===0&&A.b===90&&A.rec.length>=20,win:'差 90° 時，結果永遠相反！'},
+ {t:'小愛 0°、小柏 45°，發射至少 40 對。',ok:()=>A.a===0&&A.b===45&&A.rec.length>=40,win:'差 45° 時，相同的比例大約一半，看起來就像沒有關聯。'},
+];
+function updA(){const n=A.rec.length,same=A.rec.filter(r=>r[0]===r[1]).length,a1=A.rec.filter(r=>r[0]).length,b1=A.rec.filter(r=>r[1]).length;
+  angBtns('angA','a');angBtns('angB','b');
+  $('#statA').innerHTML=n?`共 <b>${n}</b> 對　兩邊相同 <b style="color:var(--gold)">${(same/n*100).toFixed(0)}%</b>　小愛亮 1：<b>${(a1/n*100).toFixed(0)}%</b>　小柏亮 1：<b>${(b1/n*100).toFixed(0)}%</b>　（理論相同率 ${(Math.cos((A.a-A.b)*Math.PI/180)**2*100).toFixed(0)}%）`:'還沒有紀錄。換角度會清除紀錄。';
+  const last=A.rec.slice(-24);$('#tblA').innerHTML=last.length?`<table><tr><th style="color:var(--a)">小愛</th>${last.map(r=>`<td>${r[0]}</td>`).join('')}</tr><tr><th style="color:var(--b)">小柏</th>${last.map(r=>`<td style="${r[0]!==r[1]?'color:var(--bad)':''}">${r[1]}</td>`).join('')}</tr></table>`:'';
+  $('#tasksA').innerHTML=TA.map((t,i)=>`<div class="${stars.A[i]?'done':''}">任務 ${i+1}：${t.t}</div>`).join('');
+  $('#qA').hidden=!(stars.A[0]&&stars.A[1]&&stars.A[2]);if(!$('#qA').hidden)renderQ()}
+function checkA(){TA.forEach((t,i)=>{if(!stars.A[i]&&t.ok()){stars.A[i]=1;saveStars();msg(t.win,'ok',5000);updA()}})}
+const QA=[{t:'小愛不管怎麼轉偏振片，小柏自己看到的「亮 1 的比例」會改變嗎？可以用糾纏傳訊息給小柏嗎？',ch:['會改變，可以傳訊息','不會改變，不能傳訊息','只有 90° 時可以'],ans:1,ok:'不會改變！小柏單獨看永遠是一半一半的隨機。要把兩人紀錄拿來比才看得到關聯，所以糾纏不能超光速傳訊息。',key:3}];
+function drawA(){bench('小愛','小柏',A.a,A.b,['#d8d9f5','#ffd166'],['#d8d9f5','#ffd166']);
+  ctx.fillStyle='#a3a3c9';ctx.font='500 11px "JetBrains Mono",monospace';const r=Math.min(30,H*.12),cy=H*.48,ax=Math.max(70,W*.14),bx=W-ax;
+  [ax,bx].forEach(x=>{ctx.textAlign='center';ctx.fillText('0',x-14,cy+r+40);ctx.fillText('1',x+14,cy+r+40)})}
+
+/* ---------- B: Mermin ---------- */
+const B={card:['R','G','R'],res:null};
+function cardUI(){$('#cardB').innerHTML=B.card.map((v,i)=>`<button class="btn ${v==='R'?'cR':'cG'}" data-cd="${i}">旋鈕 ${i+1}：${v==='R'?'● 紅':'● 綠'}</button>`).join('');
+  $$('[data-cd]').forEach(b=>b.onclick=()=>{const i=+b.dataset.cd;B.card[i]=B.card[i]==='R'?'G':'R';cardUI();B.res=null;statB();draw()})}
+function theory(card){let s=0;for(let i=0;i<3;i++)for(let j=0;j<3;j++)if(card[i]===card[j])s++;return s/9}
+function run(kind){let same=0,sameSet=0,sameSetOK=0,last;for(let t=0;t<300;t++){const i=Math.floor(rand()*3),j=Math.floor(rand()*3);let x,y;
+    if(kind==='card'){x=B.card[i];y=B.card[j]}else{x=rand()<.5?'R':'G';const d=(i-j)*120*Math.PI/180;y=rand()<Math.cos(d/2)**2?x:(x==='R'?'G':'R')}
+    if(x===y)same++;if(i===j){sameSet++;if(x===y)sameSetOK++}last=[i,j,x,y]}
+  B.res={kind,rate:same/300,sameSet,sameSetOK,last};fireAnim(last[2]==='R'?0:1,last[3]==='R'?0:1);statB();
+  if(kind==='q'){B.qrun=true}draw()}
+$('#runCard').onclick=()=>run('card');$('#runQ').onclick=()=>run('q');
+function statB(){const th=theory(B.card);let s=`你的答案卡理論上兩邊同色：<b>${(th*100).toFixed(1)}%</b>（${Math.round(th*9)}/9）`;
+  if(B.res)s+=`<br>剛剛 300 次（${B.res.kind==='card'?'答案卡':'量子粒子'}）：兩邊同色 <b style="color:var(--gold)">${(B.res.rate*100).toFixed(0)}%</b>　轉到同一格 ${B.res.sameSet} 次，同色 ${B.res.sameSetOK} 次`;
+  $('#statB').innerHTML=s}
+const QB=[
+ {t:'答案卡設成「紅紅紅」（三格同色），兩邊同色的比例是多少？',ch:['50%','5/9 ≈ 56%','100%'],ans:2,ok:'100%，不管轉到哪一格都是紅燈。'},
+ {t:'換各種答案卡試試看。最低能讓兩邊同色降到多少？',ch:['0%','5/9 ≈ 56%','50%'],ans:1,ok:'最低就是 5/9 ≈ 56%。只要兩邊轉到同一格時要同色，任何答案卡都做不到 50%。',no:'把三格設成兩紅一綠，或兩綠一紅，看看理論值。'},
+ {t:'按「用真正的量子粒子測 300 次」多試幾次。量子粒子的同色比例大約是？',ch:['大約 50%','大約 56%','大約 100%'],ans:0,ok:'大約 50%（理論上剛好一半），比任何答案卡都低，而且轉到同一格時照樣 100% 同色。'},
+ {t:'所以這個實驗告訴我們什麼？',ch:['粒子出發時就帶著寫好的答案','粒子不是事先寫好答案，量的那一刻才決定','量子力學算錯了'],ans:1,ok:'答案卡（愛因斯坦的「事先寫好」）做不到的事，量子粒子做到了。這就是貝爾實驗，2022 年諾貝爾物理獎就頒給做這類實驗的人。'},
+];
+function drawB(){const lr=B.res?B.res.last:null;bench('機器 1','機器 2',lr?String(lr[0]+1):'?',lr?String(lr[1]+1):'?',['#ff6b7a','#5be39a'],['#ff6b7a','#5be39a'])}
+
+/* ---------- C: key with eavesdropper ---------- */
+const C={round:1,wins:0,rows:null,step:0,eve:false};
+function newRound(){C.rows=null;C.step=0;C.eve=rand()<.5;$('#roundC').textContent=`${C.round}（已判斷對 ${C.wins} 次，過關要 3 次）`;
+  $('#c1').disabled=false;$('#c2').disabled=true;$('#c3').disabled=true;$('#judgeC').hidden=true;$('#statC').textContent='按 ① 發射光子對。';$('#tblC').innerHTML='';draw()}
+$('#c1').onclick=()=>{C.rows=[];for(let i=0;i<48;i++){const a=rand()<.5?0:1,b=rand()<.5?0:1,r=rand()<.5?1:0;let x=r,bobR;
+    if(C.eve){const e=rand()<.5?0:1,er=e===a?r:(rand()<.5?1:0);bobR=b===e?er:(rand()<.5?1:0)}else bobR=b===a?r:(rand()<.5?1:0);
+    C.rows.push({a,b,ra:r,rb:bobR})}
+  C.step=1;$('#c1').disabled=true;$('#c2').disabled=false;fireAnim(C.rows[47].ra,C.rows[47].rb);
+  $('#statC').textContent='兩人各自量完了。接著按 ②，公開說出每次用的方向（不說結果）。';tblC()};
+$('#c2').onclick=()=>{C.step=2;$('#c2').disabled=true;$('#c3').disabled=false;const k=C.rows.filter(r=>r.a===r.b).length;
+  $('#statC').innerHTML=`方向相同的有 <b>${k}</b> 對，其他的丟掉（變淡）。這 ${k} 個結果，兩人應該完全相同。按 ③ 抽一半公開對答案。`;
+  let idx=C.rows.map((r,i)=>r.a===r.b?i:-1).filter(i=>i>=0);idx.forEach((i,j)=>{if(j%2===0)C.rows[i].chk=true});tblC()};
+$('#c3').onclick=()=>{C.step=3;$('#c3').disabled=true;const ch=C.rows.filter(r=>r.chk),err=ch.filter(r=>r.ra!==r.rb).length;C.err=err;C.nchk=ch.length;
+  $('#statC').innerHTML=`抽查 <b>${ch.length}</b> 個，對不上的有 <b style="color:${err?'var(--bad)':'var(--ok)'}">${err}</b> 個（${ch.length?(err/ch.length*100).toFixed(0):0}%）。剩下沒公開的就是密碼。有沒有竊聽者？`;$('#judgeC').hidden=false;tblC()};
+function judge(saysEve){$('#judgeC').hidden=true;const right=saysEve===C.eve;
+  const key=C.rows.filter(r=>r.a===r.b&&!r.chk).map(r=>r.ra).join('');
+  if(right){C.wins++;msg(C.eve?'抓到了！竊聽者偷量光子，用錯方向就會讓大約 1/4 的密碼出錯。':'答對！沒有錯誤，密碼是 '+key,'ok',5000)}
+  else msg(C.eve?'其實有竊聽者！'+(C.err?'有對不上的就該懷疑。':'這次運氣太好沒露餡，抽查更多就能抓到。'):'其實很安全。沒有竊聽者時，方向相同的結果一定相同。','bad',5000);
+  if(C.wins>=3&&!stars.C[0]){stars.C[0]=1;saveStars();setTimeout(()=>msg('三回合都判斷正確！挑戰下方問題','ok',4000),5200)}
+  C.round++;setTimeout(newRound,1200);renderQ()}
+$('#jSafe').onclick=()=>judge(false);$('#jEve').onclick=()=>judge(true);
+function tblC(){if(!C.rows){$('#tblC').innerHTML='';return}const sym=v=>v?'×':'＋';
+  const cls=r=>C.step>=2?(r.a!==r.b?'x':r.chk&&C.step>=3?(r.ra!==r.rb?'err':'chk'):''):'';
+  $('#tblC').innerHTML=`<table><tr><th style="color:var(--a)">小愛方向</th>${C.rows.map(r=>`<td class="${cls(r)}">${sym(r.a)}</td>`).join('')}</tr>
+  <tr><th style="color:var(--a)">小愛結果</th>${C.rows.map(r=>`<td class="${cls(r)}">${r.ra}</td>`).join('')}</tr>
+  <tr><th style="color:var(--b)">小柏方向</th>${C.rows.map(r=>`<td class="${cls(r)}">${C.step>=2?sym(r.b):'?'}</td>`).join('')}</tr>
+  <tr><th style="color:var(--b)">小柏結果</th>${C.rows.map(r=>`<td class="${cls(r)}">${C.step>=3&&r.chk||C.step>=2&&r.a!==r.b?r.rb:'?'}</td>`).join('')}</tr></table>`}
+const QC=[
+ {t:'為什麼只留下「兩人方向相同」的那幾對？',ch:['方向相同時，兩人結果一定一樣','方向不同的光子比較慢','比較好算'],ans:0,ok:'方向相同時，糾纏光子的結果一定相同；方向不同時結果亂配，不能當密碼。'},
+ {t:'竊聽者偷量光子時，為什麼一定會留下痕跡？',ch:['竊聽者會發出聲音','量子測量會改變光子，猜錯方向就會造成錯誤','密碼會自動刪除'],ans:1,ok:'竊聽者不知道兩人用的方向，猜錯時他的測量會打亂光子，讓大約 1/4 的密碼位元對不上。'},
+ {t:'抽查的數量越多，對抓竊聽者有什麼影響？',ch:['越容易抓到','越難抓到','沒有影響'],ans:0,ok:'越容易抓到。每個抽查位元有 1/4 的機會露出錯誤，抽 12 個全部都沒出錯的機會只剩約 3%。'},
+];
+function drawC(){bench('小愛','小柏',C.rows?(C.rows[47].a?45:0):0,C.rows?(C.rows[47].b?45:0):0,['#d8d9f5','#ffd166'],['#d8d9f5','#ffd166']);
+  // eve silhouette (hidden identity)
+  const cy=H*.48,x=W*.72;ctx.fillStyle='rgba(255,255,255,.08)';ctx.beginPath();ctx.arc(x,cy-46,10,0,7);ctx.fill();ctx.beginPath();ctx.roundRect(x-12,cy-34,24,22,6);ctx.fill();
+  ctx.fillStyle='#a3a3c9';ctx.font='500 11px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('竊聽者？',x,cy-62)}
+
+/* ---------- questions ---------- */
+const Q={A:{list:QA,i:0,key:j=>3},B:{list:QB,i:0,key:j=>j},C:{list:QC,i:0,key:j=>j+1}};
+function renderQ(){['A','B','C'].forEach(m=>{if(mode!==m)return;const el=$('#q'+m);if(!el||el.hidden&&m==='A')return;const S=Q[m];
+  if(m==='C'){if(!stars.C[0]){el.hidden=true;return}el.hidden=false}
+  const q=S.list[S.i];
+  el.innerHTML=`<div class="qh"><span>題目</span><span class="dots">${S.list.map((_,j)=>`<b class="${stars[m][S.key(j)]?'done':''} ${j===S.i?'cur':''}" data-q="${m},${j}" role="button" tabindex="0" aria-label="第 ${j+1} 題">${j+1}</b>`).join('')}</span></div>
+  <div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${m},${k}">${s}</button>`).join('')}</div>`});
+  $$('[data-q]').forEach(b=>b.onclick=b.onkeydown=e=>{if(e.type==='keydown'&&e.key!=='Enter')return;const[m,j]=b.dataset.q.split(',');Q[m].i=+j;renderQ()});
+  $$('[data-ans]').forEach(b=>b.onclick=()=>{const[m,k]=b.dataset.ans.split(',');const S=Q[m],q=S.list[S.i];
+    if(+k===q.ans){b.classList.add('ok');msg(q.ok,'ok',6000);stars[m][S.key(S.i)]=1;saveStars();setTimeout(()=>{const nx=S.list.findIndex((_,j)=>!stars[m][S.key(j)]);if(nx>=0)S.i=nx;renderQ()},1500)}
+    else{b.classList.add('no');msg(q.no||'再想想，動手多試幾次','bad',3500)}})}
+
+function draw(){if(!W)return;ctx.clearRect(0,0,W,H);if(mode==='A')drawA();else if(mode==='B')drawB();else drawC()}
+saveStars();cardUI();statB();updA();newRound();setMode('A');
+})();
+</script>
+
+<script src="../qa.js" defer></script>
