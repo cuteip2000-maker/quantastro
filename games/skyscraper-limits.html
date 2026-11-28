@@ -1,0 +1,266 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>千米高樓挑戰</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: architect's desk. Elevation drawing on the left with a control strip under it, notes rail on the right; stacks on phones. Single light look. */
+:root{
+  --paper:#eef1f4;
+  --sheet:#f9fafc;
+  --panel:#ffffff;
+  --rule:#d3d9e2;
+  --ink:#1f2530;
+  --dim:#5e6878;
+  --accent:#2563c9;
+  --ok:#22915e;
+  --bad:#d6453d;
+  --gold:#d99a00;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--sheet);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--gold);margin-left:4px;letter-spacing:-1px}
+.cv{position:relative;flex:1;min-height:320px;background:linear-gradient(#cfe3f7,#eef4fa);border-top:1px solid var(--rule)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#fff;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad)}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.sl{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.sl input{width:200px;accent-color:var(--accent)}
+.sl b{font-family:var(--f-num);min-width:6ch;color:var(--accent)}
+.stat{font-family:var(--f-num);font-size:13.5px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.tasks{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.tasks div::before{content:"○ ";color:var(--dim)}
+.tasks div.done{color:var(--ok)}
+.tasks div.done::before{content:"● "}
+.q{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#e6eefb;border-color:#b3c8ee}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  .cv{flex:none;height:min(110vw,56vh);min-height:320px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .sl input{width:140px}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 撐得住自己嗎<span class="st" id="stA"></span><small>材料與重量</small></button>
+      <button data-tab="B" aria-pressed="false">② 電梯大塞車<span class="st" id="stB"></span><small>電梯吃掉樓地板</small></button>
+      <button data-tab="C" aria-pressed="false">③ 風的考驗<span class="st" id="stC"></span><small>大樓會跳舞</small></button>
+    </nav>
+    <div class="cv" id="cv">
+      <canvas id="c" aria-label="大樓側面示意圖"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- A -->
+    <div class="dock" id="dockA">
+      <div class="row"><span class="lab">材料</span><button class="btn sel" data-mt="brick">磚頭</button><button class="btn" data-mt="conc">普通混凝土</button><button class="btn" data-mt="hsc">高強度混凝土</button><button class="btn" data-mt="steel">鋼骨</button>
+        <button class="btn" id="taperA">造型：上下一樣粗</button></div>
+      <div class="row"><label class="sl">樓高<input id="hA" type="range" min="40" max="1500" step="20" value="100"><b id="hAV"></b></label></div>
+      <div class="stat" id="statA"></div>
+      <div class="tasks" id="tasksA"></div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="dock" id="dockB" hidden>
+      <div class="row"><label class="sl">樓高<input id="hB" type="range" min="200" max="1200" step="20" value="1000"><b id="hBV"></b></label></div>
+      <div class="row"><span class="lab">空中大廳</span><button class="btn sel" data-k="0">0 個</button><button class="btn" data-k="1">1 個</button><button class="btn" data-k="2">2 個</button><button class="btn" data-k="3">3 個</button>
+        <span class="lab" style="margin-left:8px">電梯纜繩</span><button class="btn sel" data-rope="steel">鋼纜（最長約 500 公尺）</button><button class="btn" data-rope="carbon">碳纖維纜（約 1000 公尺）</button></div>
+      <div class="stat" id="statB"></div>
+      <div class="tasks" id="tasksB"></div>
+      <div class="q" id="qB" hidden></div>
+    </div>
+
+    <!-- C -->
+    <div class="dock" id="dockC" hidden>
+      <div class="row"><span class="lab">造型</span><button class="btn sel" data-sh="box">方柱</button><button class="btn" data-sh="taper">逐段退縮</button>
+        <button class="btn" id="tmdC">阻尼球：沒裝</button></div>
+      <div class="row"><label class="sl">風速<input id="vC" type="range" min="5" max="50" step="1" value="10"><b id="vCV"></b></label></div>
+      <div class="stat" id="statC"></div>
+      <div class="tasks" id="tasksC"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>千米高樓挑戰</h1>
+    <p class="lede">目前最高的哈里發塔是 828 公尺。為什麼沒人蓋到 1000 公尺？不是蓋不出來，而是越高，麻煩就像滾雪球一樣變大。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>現在的紀錄</h2>
+      <p>杜拜的哈里發塔 2010 年完工，高 828 公尺，主要結構是高強度鋼筋混凝土。台北 101 高 508 公尺，曾是世界最高。</p>
+      <p>沙烏地阿拉伯的吉達塔計畫超過 1000 公尺，2013 年動工、後來停工多年，2023 年才重新開工。</p>
+    </div>
+    <div class="card">
+      <h2>四個大麻煩</h2>
+      <p><b>重量：</b>越下面的柱子要撐越多樓層，下層會被柱子和牆塞滿。</p>
+      <p><b>電梯：</b>鋼纜太長會被自己的重量拉斷，而且樓越高需要的電梯越多，電梯井會吃掉樓地板。</p>
+      <p><b>風：</b>高處風很大，風繞過大樓會左右「拍打」，讓大樓搖晃。</p>
+      <p><b>錢：</b>每多蓋一層，能賣能租的面積越來越少，蓋得越高越不划算。</p>
+    </div>
+    <div class="card">
+      <h2>台北 101 的大鐵球</h2>
+      <p>台北 101 在 87 到 92 樓之間掛了一顆約 660 公噸的鋼球，叫「調諧質量阻尼器」。大樓往一邊晃，鋼球就往反方向擺，把搖晃吸收掉。</p>
+    </div>
+    <div class="card">
+      <h2>遊戲的簡化</h2>
+      <p>遊戲裡的數字用簡單的公式估算，用來比較「趨勢」。真實的大樓設計還要考慮地震、地基、消防逃生、抽水等更多問題。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('tower-stars',{A:{},B:{},C:{}});
+const TOT={A:3,B:3,C:4};
+function saveStars(){store.set('tower-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+let msgT=0;function msg(s,cls='',ms=4200){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+function award(key,k,text){if(!stars[key][k]){stars[key][k]=1;saveStars();if(text)msg(text,'ok',5200);return true}return false}
+function tasks(el,list,key){el.innerHTML=list.map((t,k)=>`<div class="${stars[key][k]?'done':''}">任務 ${k+1}：${t}</div>`).join('')}
+
+/* ---------- canvas ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*d;c.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+let mode='A';
+const KEY={
+ A:'<h2>① 撐得住自己嗎</h2><p>每層樓都很重，最底下的柱子要撐住上面全部。選材料、拉高度，看看最底層有多少面積被柱子和牆佔掉。</p><p class="note" style="margin:0">本遊戲規定：底層被結構佔掉超過 50% 就算失敗。</p>',
+ B:'<h2>② 電梯大塞車</h2><p>樓越高，住的人越多、電梯跑一趟越久，就需要越多部電梯，電梯井會從一樓一路往上吃掉樓地板。加入「空中大廳」（先坐快速電梯到半空，再換區域電梯），並選擇纜繩。</p><p class="note" style="margin:0">目標：1000 公尺高、每段電梯不超過纜繩上限，一樓被電梯井佔掉 25% 以下。</p>',
+ C:'<h2>③ 風的考驗</h2><p>風吹過大樓時，兩側會輪流甩出漩渦，把大樓左右拍打。拍打的節奏和大樓自己搖擺的節奏一樣時，就會「共振」，越晃越大。</p><p class="note" style="margin:0">大樓高 600 公尺、寬 60 公尺。</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#dock'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];renderQ();resize()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+
+/* ---------- A: weight ---------- */
+const MAT={brick:{n:'磚頭',s:1.5e6,r:1800,col:'#b5654a'},conc:{n:'普通混凝土',s:12e6,r:2400,col:'#a8adb5'},hsc:{n:'高強度混凝土',s:40e6,r:2500,col:'#7d8796'},steel:{n:'鋼骨',s:150e6,r:7850,col:'#4f6f9a'}};
+const A={mt:'brick',taper:false,H:100,log:{}};
+function struct(H,mt,taper){const{s,r}=MAT[mt],n=Math.max(1,Math.round(H/4)),F0=2500,q=10e3,h=4;let L=0,Ab=0;const prof=[];
+  for(let i=n-1;i>=0;i--){const F=taper?F0*(1-.8*i/n):F0;L+=q*F;const den=s-r*9.8*h;const Ar=den>0?L/den:1e9;L+=r*9.8*Ar*h;prof[i]=Math.min(1,Ar/F);Ab=Ar}
+  return{frac:Ab/F0,prof}}
+$$('[data-mt]').forEach(b=>b.onclick=()=>{A.mt=b.dataset.mt;$$('[data-mt]').forEach(x=>x.classList.toggle('sel',x===b));updA()});
+$('#taperA').onclick=()=>{A.taper=!A.taper;$('#taperA').textContent='造型：'+(A.taper?'越往上越細':'上下一樣粗');$('#taperA').classList.toggle('sel',A.taper);updA()};
+$('#hA').oninput=e=>{A.H=+e.target.value;updA()};
+const TA=['用磚頭蓋到 200 公尺，會怎樣？','只用普通混凝土，蓋到 1000 公尺以上而且不失敗（提示：試試造型）'];
+function updA(){const S=struct(A.H,A.mt,A.taper),ok=S.frac<=.5;$('#hAV').textContent=A.H+' m';
+  $('#statA').innerHTML=`${MAT[A.mt].n}、${A.taper?'越往上越細':'上下一樣粗'}、${A.H} 公尺：最底層被結構佔掉 <b style="color:${ok?'var(--ok)':'var(--bad)'}">${S.frac>9.99?'超過 999':(S.frac*100).toFixed(0)}%</b>　${ok?'撐得住':'<b style="color:var(--bad)">失敗：底層塞滿柱子</b>'}`;
+  if(A.mt==='brick'&&A.H>=200&&!ok)award('A',0,'磚頭太弱又太重：100 多公尺時，底層就被牆塞滿了。1891 年芝加哥 16 層的磚造大樓，底層牆厚將近 2 公尺');
+  if(A.mt==='conc'&&A.H>=1000&&ok&&A.taper)award('A',1,'越往上越細，上面變輕，連普通混凝土都撐得住 1000 公尺！材料其實不是最大的障礙');
+  tasks($('#tasksA'),TA,'A');if(stars.A[0]&&stars.A[1]&&$('#qA').hidden){$('#qA').hidden=false;renderQ()}draw()}
+function building(H,maxH,{prof=null,col='#8b95a5',taper=false,sway=0,lobbies=[]}={}){const gy=H0(),sc=(gy-30)/maxH,bw0=Math.min(W*.16,90),cx=W*.42;
+  const n=prof?prof.length:40;for(let i=0;i<n;i++){const z0=i/n*H,z1=(i+1)/n*H,w=taper?bw0*(1-.8*i/n):bw0,y0=gy-z0*sc,y1=gy-z1*sc,dx=sway*Math.pow(z0/H,2);
+    ctx.fillStyle='#dfe6ef';ctx.fillRect(cx-w/2+dx,y1,w,y0-y1+.5);if(prof){const f=prof[i];ctx.fillStyle=f>.5?'#d6453d':col;const sw=w*f/2;ctx.fillRect(cx-w/2+dx,y1,sw,y0-y1+.5);ctx.fillRect(cx+w/2-sw+dx,y1,sw,y0-y1+.5)}}
+  ctx.strokeStyle='#5e6878';ctx.lineWidth=1;ctx.strokeRect(cx-bw0/2,gy-H*sc,bw0,H*sc);
+  lobbies.forEach(z=>{ctx.fillStyle='#d99a00';ctx.fillRect(cx-bw0/2-4,gy-z*sc-2,bw0+8,4)});
+  return{gy,sc,cx,bw0}}
+const H0=()=>H-28;
+function refs(maxH){const gy=H0(),sc=(gy-30)/maxH;ctx.fillStyle='#5e6878';ctx.font='500 11px "Noto Sans TC",sans-serif';ctx.textAlign='left';
+  [[828,'哈里發塔 828 m'],[508,'台北 101　508 m'],[1000,'1000 m']].forEach(([h,t])=>{if(h>maxH)return;const y=gy-h*sc;ctx.strokeStyle=h===1000?'rgba(214,69,61,.6)':'rgba(94,104,120,.35)';ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(W*.62,y);ctx.lineTo(W-8,y);ctx.stroke();ctx.setLineDash([]);ctx.fillText(t,W*.62,y-4)});
+  ctx.fillStyle='#7a8a5a';ctx.fillRect(0,gy,W,H-gy)}
+function drawA(){const maxH=Math.max(1100,A.H*1.05);refs(maxH);const S=struct(A.H,A.mt,A.taper);building(A.H,maxH,{prof:S.prof.length>80?S.prof.filter((_,i)=>i%Math.ceil(S.prof.length/80)===0):S.prof,col:MAT[A.mt].col,taper:A.taper});
+  ctx.fillStyle='#1f2530';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('灰色＝可以用的樓地板　彩色＝柱子和牆',10,18)}
+
+/* ---------- B: elevators ---------- */
+const B={H:1000,k:0,rope:'steel'};
+function elev(Hh,k){const v=8,floors=Hh/4,zoneH=Hh/(k+1),fz=floors/(k+1),P=fz*80,Tloc=2*zoneH/v+fz*.5*6,nLoc=Math.ceil(.12*P*Tloc/(20*300));let ground=nLoc;for(let j=1;j<=k;j++){const h=j*zoneH;ground+=Math.ceil(.12*P*(2*h/v+20)/(50*300))}
+  return{share:ground*8/2500,run:Math.max(zoneH,k*zoneH),ground}}
+$('#hB').oninput=e=>{B.H=+e.target.value;updB()};
+$$('[data-k]').forEach(b=>b.onclick=()=>{B.k=+b.dataset.k;$$('[data-k]').forEach(x=>x.classList.toggle('sel',x===b));updB()});
+$$('[data-rope]').forEach(b=>b.onclick=()=>{B.rope=b.dataset.rope;$$('[data-rope]').forEach(x=>x.classList.toggle('sel',x===b));updB()});
+const TB=['1000 公尺、沒有空中大廳：一樓會被電梯井佔掉多少？','達成目標：1000 公尺、纜繩夠長、電梯井 25% 以下'];
+function updB(){const E=elev(B.H,B.k),lim=B.rope==='steel'?500:1000,runOK=E.run<=lim+1e-6,shOK=E.share<=.25;$('#hBV').textContent=B.H+' m';
+  $('#statB').innerHTML=`需要 <b>${E.ground}</b> 部電梯經過一樓　一樓被電梯井佔掉 <b style="color:${shOK?'var(--ok)':'var(--bad)'}">${E.share>9.99?'超過 999':(E.share*100).toFixed(0)}%</b><br>最長的一段電梯 <b style="color:${runOK?'var(--ok)':'var(--bad)'}">${Math.round(E.run)} 公尺</b>（纜繩上限 ${lim} 公尺）${runOK?'':'　<b style="color:var(--bad)">纜繩太長，會被自己的重量拉斷</b>'}`;
+  if(B.H>=1000&&B.k===0)award('B',0,'超過 100%！電梯井比整層樓還大，根本放不下');
+  if(B.H>=1000&&runOK&&shOK)award('B',1,B.rope==='carbon'?'用輕很多的碳纖維纜繩，加上空中大廳分段，才讓千米大樓的電梯可行':'成功！');
+  tasks($('#tasksB'),TB,'B');if(stars.B[0]&&stars.B[1]&&$('#qB').hidden){$('#qB').hidden=false;renderQ()}draw()}
+function drawB(){const maxH=1250;refs(maxH);const E=elev(B.H,B.k),zones=[];for(let j=1;j<=B.k;j++)zones.push(j*B.H/(B.k+1));const g=building(B.H,maxH,{lobbies:zones});
+  // shafts drawn as vertical bars inside, width ∝ share
+  const sh=Math.min(1,E.share),w=g.bw0*sh;ctx.fillStyle='rgba(37,99,201,.55)';ctx.fillRect(g.cx-w/2,g.gy-(B.k?B.H/(B.k+1):B.H)*g.sc,w,(B.k?B.H/(B.k+1):B.H)*g.sc);
+  for(let j=1;j<=B.k;j++){const z0=j*B.H/(B.k+1),z1=Math.min(B.H,(j+1)*B.H/(B.k+1));const w2=g.bw0*Math.min(1,sh*.6);ctx.fillStyle='rgba(37,99,201,.35)';ctx.fillRect(g.cx-w2/2,g.gy-z1*g.sc,w2,(z1-z0)*g.sc)}
+  ctx.fillStyle='#1f2530';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('藍色＝電梯井　黃線＝空中大廳',10,18)}
+
+/* ---------- C: wind ---------- */
+const HC=600,DC=60,FN=46/HC,ST=.2;
+const C={sh:'box',tmd:false,v:10,seenRes:false};
+$$('[data-sh]').forEach(b=>b.onclick=()=>{C.sh=b.dataset.sh;$$('[data-sh]').forEach(x=>x.classList.toggle('sel',x===b));updC()});
+$('#tmdC').onclick=()=>{C.tmd=!C.tmd;$('#tmdC').textContent='阻尼球：'+(C.tmd?'裝好了':'沒裝');$('#tmdC').classList.toggle('sel',C.tmd);updC()};
+$('#vC').oninput=e=>{C.v=+e.target.value;updC()};
+function swayOf(v,sh,tmd){const z=tmd?.08:.02;const Ds=sh==='box'?[DC]:[60,52,45,38,31,24];let a=0;Ds.forEach(D=>{const fs=ST*v/D,r=fs/FN;a+=1/Math.sqrt((1-r*r)**2+(2*z*r)**2)});a/=Ds.length;return .0001*v*v*a}
+const resV=FN*DC/ST;
+const TC=['方柱、沒有阻尼球：找出讓大樓晃得最厲害的風速','在共振的風速下，改成「逐段退縮」造型','在共振的風速下，裝上阻尼球'];
+function updC(){const s=swayOf(C.v,C.sh,C.tmd),near=Math.abs(C.v-resV)<=2;$('#vCV').textContent=C.v+' m/s';
+  $('#statC').innerHTML=`大樓自己搖擺：每 <b>${(1/FN).toFixed(0)}</b> 秒一次　漩渦拍打：每 <b>${(DC/(ST*C.v)).toFixed(0)}</b> 秒一次（方柱）<br>頂樓晃動約 <b style="color:${s>1?'var(--bad)':s>.4?'var(--gold)':'var(--ok)'}">${s.toFixed(2)}</b> 公尺${s>1?'　<b style="color:var(--bad)">大家都暈了！</b>':''}`;
+  if(C.sh==='box'&&!C.tmd&&near&&s>1){C.seenRes=true;award('C',0,`風速約 ${Math.round(resV)} m/s 時，拍打和搖擺的節奏一樣：共振！`)}
+  if(C.seenRes&&near&&C.sh==='taper'&&!C.tmd)award('C',1,'每段寬度不同，漩渦的節奏亂掉，沒辦法一起拍打。哈里發塔就是用這招「打亂風」');
+  if(C.seenRes&&near&&C.tmd&&C.sh==='box')award('C',2,'阻尼球往反方向擺，把搖晃吃掉了！台北 101 就有一顆 660 公噸的大鋼球');
+  tasks($('#tasksC'),TC,'C');if(stars.C[0]&&stars.C[1]&&stars.C[2]&&$('#qC').hidden){$('#qC').hidden=false;renderQ()}draw()}
+let raf=0;function loop(){const f=()=>{if(mode==='C')draw();raf=requestAnimationFrame(f)};raf=requestAnimationFrame(f)}
+function drawC(){const t=performance.now()/1000,s=swayOf(C.v,C.sh,C.tmd),maxH=700,gy=H0(),sc=(gy-30)/maxH,cx=W*.42,bw0=Math.min(W*.14,70);
+  ctx.fillStyle='#7a8a5a';ctx.fillRect(0,gy,W,H-gy);const amp=Math.min(60,s*22),ph=Math.sin(t*2*Math.PI*.6);
+  const segs=C.sh==='box'?[[0,600,bw0]]:[[0,100,bw0],[100,200,bw0*.87],[200,300,bw0*.75],[300,400,bw0*.63],[400,500,bw0*.52],[500,600,bw0*.4]];
+  segs.forEach(([z0,z1,w])=>{for(let z=z0;z<z1;z+=10){const dx=amp*ph*Math.pow(z/600,2),y=gy-z*sc;ctx.fillStyle='#8b95a5';ctx.fillRect(cx-w/2+dx,y-10*sc,w,10*sc+.6)}});
+  if(C.tmd){const dx=amp*ph*Math.pow(560/600,2);ctx.fillStyle='#d99a00';ctx.beginPath();ctx.arc(cx+dx-amp*ph*.4,gy-560*sc,Math.max(5,bw0*.15),0,7);ctx.fill()}
+  // wind + vortices
+  ctx.strokeStyle='rgba(37,99,201,.45)';ctx.lineWidth=1.5;for(let k=0;k<6;k++){const y=gy-(80+k*90)*sc;ctx.beginPath();for(let x=8;x<cx-bw0;x+=6)ctx.lineTo(x,y+Math.sin(x/30+t*C.v/5)*3);ctx.stroke()}
+  for(let k=0;k<5;k++){const x=cx+bw0*.8+((t*C.v*3+k*60)%(W-cx-bw0));const side=k%2?1:-1;ctx.strokeStyle='rgba(37,99,201,.35)';ctx.beginPath();ctx.arc(x,gy-300*sc+side*bw0*.4,10,0,Math.PI*1.6);ctx.stroke()}
+  ctx.fillStyle='#1f2530';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('風 →',10,gy-620*sc);ctx.fillText(`頂樓晃動 ${s.toFixed(2)} m（畫面誇大）`,10,18)}
+
+/* ---------- questions ---------- */
+const QS={
+ A:{t:'哈里發塔做成底部寬、越往上越細的造型，從「重量」來看有什麼好處？',ch:['比較好看而已','上面變輕，下面的柱子要撐的重量變少','可以裝更多電梯'],ans:1,ok:'對！上面越輕，下面越不用塞滿柱子。不過真正讓千米大樓卡關的，還有電梯、風和錢。',key:2},
+ B:{t:'為什麼超高大樓要設「空中大廳」，讓人中途換電梯？',ch:['讓大家運動','電梯分段後，每部電梯跑的距離短、可以共用電梯井，一樓不會被電梯井塞滿，鋼纜也不會太長','因為規定'],ans:1,ok:'沒錯！像搭捷運轉乘一樣：快速電梯直達空中大廳，再換區域電梯。',key:2},
+ C:{t:'台北 101 的大鋼球是用什麼原理減少搖晃？',ch:['讓大樓變重就不會晃','鋼球擺動的方向和大樓相反，把搖晃的能量吸收掉','鋼球可以擋風'],ans:1,ok:'對！它叫「調諧質量阻尼器」，把它的擺動節奏調得和大樓一樣，大樓往左它往右，抵消搖晃。',key:3}};
+function renderQ(){const m=mode,el=$('#q'+m);if(!el||el.hidden)return;const q=QS[m];
+  el.innerHTML=`<div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${k}">${s}</button>`).join('')}</div>`;
+  el.querySelectorAll('[data-ans]').forEach(b=>b.onclick=()=>{if(+b.dataset.ans===q.ans){b.classList.add('ok');msg(q.ok,'ok',6500);stars[m][q.key]=1;saveStars()}else{b.classList.add('no');msg('再想想','bad',2500)}})}
+
+function draw(){if(!W)return;ctx.clearRect(0,0,W,H);if(mode==='A')drawA();else if(mode==='B')drawB();else drawC()}
+window.__tw={struct,elev,swayOf,resV};
+saveStars();updA();updB();updC();setMode('A');loop();
+})();
+</script>
+
+<script src="../qa.js" defer></script>

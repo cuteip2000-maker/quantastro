@@ -149,6 +149,12 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "千米高樓挑戰",
+    "desc": "為什麼沒有 1000 公尺的大樓？重量、電梯和風的三大難關",
+    "url": "games/skyscraper-limits.html",
+    "isNew": true
+   },
+   {
     "title": "微波爐裡的金屬",
     "desc": "內壁全是鐵為什麼不炸？用巧克力量光速、猜誰會冒火花",
     "url": "games/microwave-metal.html",
@@ -290,7 +296,7 @@ window.ISLAND_ZONES=[
     "title": "聖彼得堡悖論",
     "desc": "期望值無限大的擲硬幣賭局，為什麼沒人肯花大錢玩？",
     "url": "games/st-petersburg.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "五張牌魔術",
