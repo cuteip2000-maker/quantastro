@@ -143,6 +143,12 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "跨步電壓逃生",
+    "desc": "電線掉在地上怎麼逃？兩腳之間的電壓、小碎步逃生、雷擊為什麼牛特別危險",
+    "url": "games/step-voltage.html",
+    "isNew": true
+   },
+   {
     "title": "蝴蝶效應實驗室",
     "desc": "雙擺分身、勞倫茲的天氣、彈珠瞄準：差一點點，結果天差地遠",
     "url": "games/butterfly-effect.html",
@@ -266,7 +272,7 @@ window.ISLAND_ZONES=[
     "title": "考拉茲冰雹數",
     "desc": "偶數除 2、奇數乘 3 加 1：最後都會到 1 嗎？沒人能證明",
     "url": "games/collatz.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "傅立葉魔法",
