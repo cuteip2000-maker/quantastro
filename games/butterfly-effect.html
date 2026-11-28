@@ -1,0 +1,337 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>蝴蝶效應實驗室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: chaos lab. Simulation sheet on the left with a control strip under it, notes rail on the right; stacks on phones. Single light look. */
+:root{
+  --paper:#eef1f6;
+  --sheet:#fafbfd;
+  --panel:#ffffff;
+  --rule:#d3d9e4;
+  --ink:#1d2433;
+  --dim:#5d6678;
+  --accent:#6a4bd6;
+  --p1:#e0457b;
+  --p2:#1f8fd6;
+  --ok:#23925c;
+  --bad:#d6453d;
+  --gold:#d99a00;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--sheet);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--gold);margin-left:4px;letter-spacing:-1px}
+.cv{position:relative;flex:1;min-height:300px;background:var(--sheet);border-top:1px solid var(--rule)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#fff;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad)}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.done::after{content:" ✓";color:var(--ok);font-weight:900}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.sl{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.sl input{width:170px;accent-color:var(--accent)}
+.sl b{font-family:var(--f-num);min-width:6ch;color:var(--accent)}
+.stat{font-family:var(--f-num);font-size:13.5px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.tasks{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.tasks div::before{content:"○ ";color:var(--dim)}
+.tasks div.done{color:var(--ok)}
+.tasks div.done::before{content:"● "}
+table.rec{border-collapse:collapse;font-family:var(--f-num);font-size:13px}
+table.rec td,table.rec th{border:1px solid var(--rule);padding:3px 9px;text-align:center}
+table.rec th{background:var(--sheet);font-family:var(--f-body);font-weight:700;color:var(--dim)}
+.q{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qh{font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.dots{display:flex;gap:4px}
+.dots b{width:20px;height:20px;border-radius:50%;border:1px solid var(--rule);font:700 11px/18px var(--f-num);text-align:center;color:var(--dim);cursor:pointer;background:var(--panel)}
+.dots b.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.dots b.cur{border-color:var(--accent);color:var(--accent)}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#f0ebff;border-color:#c9b9f5}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  .cv{flex:none;height:50vh;min-height:300px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .sl input{width:120px}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 雙擺分身<span class="st" id="stA"></span><small>差一點點會怎樣</small></button>
+      <button data-tab="B" aria-pressed="false">② 勞倫茲的天氣<span class="st" id="stB"></span><small>天氣預報為什麼有極限</small></button>
+      <button data-tab="C" aria-pressed="false">③ 彈珠瞄準<span class="st" id="stC"></span><small>撞越多次越難瞄</small></button>
+    </nav>
+    <div class="cv" id="cv">
+      <canvas id="c" aria-label="模擬畫面"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- A -->
+    <div class="dock" id="dockA">
+      <div class="row"><span class="lab">起始角度</span>
+        <button class="btn sel" data-th="10">小角度 10°</button><button class="btn" data-th="120">大角度 120°</button><button class="btn" data-th="150">很大 150°</button>
+      </div>
+      <div class="row"><span class="lab">兩個分身差</span>
+        <button class="btn sel" data-dd="0.1">0.1°</button><button class="btn" data-dd="0.01">0.01°</button><button class="btn" data-dd="0.001">0.001°</button>
+        <button class="btn pri" id="goA">▶ 放手</button><button class="btn" id="stopA">■ 停止</button>
+      </div>
+      <div class="stat" id="statA"></div>
+      <div class="tasks" id="tasksA"></div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="dock" id="dockB" hidden>
+      <div class="goal" style="font-weight:700">真實的大氣和測量值只差一點點。比較不同的測量誤差，預報能準多久？</div>
+      <div class="row"><span class="lab">測量誤差</span>
+        <button class="btn sel" data-e="1">1</button><button class="btn" data-e="0.01">0.01</button><button class="btn" data-e="0.0001">0.0001</button><button class="btn" data-e="0.000001">0.000001</button>
+        <button class="btn pri" id="goB">▶ 開始預報</button>
+      </div>
+      <div class="stat" id="statB"></div>
+      <div id="recB"></div>
+      <div class="q" id="qB" hidden></div>
+    </div>
+
+    <!-- C -->
+    <div class="dock" id="dockC" hidden>
+      <div class="row"><span class="lab">關卡</span>
+        <button class="btn sel" data-lv="0">1 直接打</button><button class="btn" data-lv="1">2 繞過障礙</button><button class="btn" data-lv="2">3 撞 4 次以上才進</button>
+      </div>
+      <div class="goal" id="goalC" style="font-weight:700"></div>
+      <div class="row">
+        <label class="sl">發射角度<input id="angC" type="range" min="-60" max="60" step="0.01" value="0"><b id="angCV"></b></label>
+      </div>
+      <div class="row">
+        <button class="btn" data-da="-1">−1°</button><button class="btn" data-da="-0.1">−0.1°</button><button class="btn" data-da="-0.01">−0.01°</button>
+        <button class="btn" data-da="0.01">＋0.01°</button><button class="btn" data-da="0.1">＋0.1°</button><button class="btn" data-da="1">＋1°</button>
+        <button class="btn pri" id="goC">發射！</button>
+        <button class="btn" id="ghostC" aria-pressed="true">分身：顯示</button>
+      </div>
+      <div class="stat" id="statC"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>蝴蝶效應實驗室</h1>
+    <p class="lede">起點只差一點點，結果卻天差地遠。這不是因為規則亂，而是規則本身會把小差距一路放大。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>勞倫茲的咖啡時間</h2>
+      <p>1961 年，氣象學家勞倫茲用電腦模擬天氣。他想重看一段結果，就把印出來的數字 0.506127 偷懶輸入成 0.506，然後去泡咖啡。</p>
+      <p>回來一看，新的天氣和原來的一開始很像，後來卻完全不同。差了萬分之一，就改變了整個未來。</p>
+    </div>
+    <div class="card">
+      <h2>名字從哪來？</h2>
+      <p>1972 年，勞倫茲的一場演講題目是：「巴西一隻蝴蝶拍翅膀，會不會在德州引起龍捲風？」從此這個現象被叫作「蝴蝶效應」。</p>
+      <p>他的方程式畫出來的軌跡，剛好也像一對蝴蝶翅膀（模式 ②）。</p>
+    </div>
+    <div class="card">
+      <h2>混沌不是亂來</h2>
+      <p>雙擺、天氣、彈珠台都遵守確定的物理定律，同樣的起點一定得到同樣的結果。問題是起點永遠量不到完全準確，而小誤差會被放大。</p>
+      <p>這種「規則確定、卻幾乎無法長期預測」的現象，叫作「混沌」。</p>
+    </div>
+    <div class="card">
+      <h2>不是什麼都混沌</h2>
+      <p>小角度的單擺、雙擺，行星繞太陽，短時間的天氣，都還能準確預測。混沌只是告訴我們：預測有一條時間的極限，量得再準也只能把極限往後推一點。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('chaos-stars',{A:{},B:{},C:{}});
+const TOT={A:4,B:3,C:4};
+function saveStars(){store.set('chaos-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+let msgT=0;function msg(s,cls='',ms=3600){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+function rk4(f,s,h){const k1=f(s),k2=f(s.map((v,i)=>v+h/2*k1[i])),k3=f(s.map((v,i)=>v+h/2*k2[i])),k4=f(s.map((v,i)=>v+h*k3[i]));return s.map((v,i)=>v+h/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]))}
+
+/* ---------- canvas ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*d;c.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+
+let mode='A',raf=0;
+const KEY={
+ A:'<h2>① 雙擺分身</h2><p>兩個一模一樣的雙擺疊在一起，只有下面那節差一點點角度。放手後，它們會一直同步嗎？</p><p class="note" style="margin:0">兩個擺錘的距離超過半節擺長，就算「分家」。</p>',
+ B:'<h2>② 勞倫茲的天氣</h2><p>這是勞倫茲 1963 年的天氣簡化方程式。粉紅色是「真正的天氣」，藍色是「從測量值出發的預報」。兩者差太多，預報就失效了。</p><p class="note" style="margin:0">時間用模型的時間單位，不是真的天數。</p>',
+ C:'<h2>③ 彈珠瞄準</h2><p>調好角度發射彈珠，撞到圓柱會反彈，要打進金色的洞。淡色線是只差 0.05° 的兩顆「分身」：撞得越多次，它們分得越開。</p>'};
+function setMode(m){mode=m;stopA();$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#dock'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];renderQ();draw()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+
+/* ---------- A: double pendulum ---------- */
+const G=9.8;
+function fp(s){const[a,b,w1,w2]=s,d=a-b,den=3-Math.cos(2*d);
+  return[w1,w2,(-G*3*Math.sin(a)-G*Math.sin(a-2*b)-2*Math.sin(d)*(w2*w2+w1*w1*Math.cos(d)))/den,(2*Math.sin(d)*(w1*w1*2+G*2*Math.cos(a)+w2*w2*Math.cos(d)))/den]}
+const pos=s=>[Math.sin(s[0])+Math.sin(s[1]),-Math.cos(s[0])-Math.cos(s[1])];
+const A={th:10,dd:0.1,run:false,t:0,P:null,Q:null,trail:[],split:null,hist:[]};
+function resetA(){const r=Math.PI/180;A.P=[A.th*r,A.th*r,0,0];A.Q=[A.th*r,(A.th+A.dd)*r,0,0];A.t=0;A.trail=[];A.split=null;A.hist=[];updA();draw()}
+function stepA(dt){const h=1/600;for(let k=0;k<Math.round(dt/h);k++){A.P=rk4(fp,A.P,h);A.Q=rk4(fp,A.Q,h);A.t+=h;
+    const p=pos(A.P),q=pos(A.Q),d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(A.split===null&&d>.5){A.split=A.t;onSplit()}}
+  const p=pos(A.P),q=pos(A.Q);A.trail.push([p,q]);if(A.trail.length>240)A.trail.shift();A.hist.push([A.t,Math.hypot(p[0]-q[0],p[1]-q[1])])}
+function loopA(){if(!A.run)return;stepA(1/60);if(A.t>=20){A.run=false;onEnd()}updA();draw();if(A.run)raf=requestAnimationFrame(loopA)}
+function goA(){resetA();if(reduce){/* fast-forward */while(A.t<20&&A.split===null)stepA(1/60);onEnd();updA();draw();return}A.run=true;raf=requestAnimationFrame(loopA)}
+function stopA(){A.run=false;cancelAnimationFrame(raf)}
+$('#goA').onclick=goA;$('#stopA').onclick=stopA;
+$$('[data-th]').forEach(b=>b.onclick=()=>{stopA();A.th=+b.dataset.th;$$('[data-th]').forEach(x=>x.classList.toggle('sel',x===b));resetA()});
+$$('[data-dd]').forEach(b=>b.onclick=()=>{stopA();A.dd=+b.dataset.dd;$$('[data-dd]').forEach(x=>x.classList.toggle('sel',x===b));resetA()});
+A.rec={};
+function onSplit(){A.rec[A.th+'|'+A.dd]=A.split;msg(`分家了！第 ${A.split.toFixed(1)} 秒，兩個分身走上完全不同的路`,'',3500);checkA()}
+function onEnd(){if(A.split===null){A.rec[A.th+'|'+A.dd]=-1;msg('20 秒過去，兩個分身還是幾乎同步','ok',3500);checkA()}}
+const TA=[
+ {t:'小角度 10°、差 0.1°：放手 20 秒，兩個分身會分家嗎？',ok:()=>A.rec['10|0.1']===-1,win:'小角度時，兩個分身一直同步，可以準確預測。'},
+ {t:'大角度 120°、差 0.1°：放手，記下分家時間。',ok:()=>A.rec['120|0.1']>0,win:'大角度時進入混沌，很快就分家了。'},
+ {t:'大角度 120°、差 0.001°（小 100 倍）：分家時間變多久？',ok:()=>A.rec['120|0.001']>0,win:'差距小了 100 倍，分家時間卻只晚了一點點。'},
+];
+function checkA(){TA.forEach((t,i)=>{if(!stars.A[i]&&t.ok()){stars.A[i]=1;saveStars();setTimeout(()=>msg(t.win,'ok',4500),1200)}});updA()}
+function updA(){const p=pos(A.P),q=pos(A.Q),d=Math.hypot(p[0]-q[0],p[1]-q[1]);
+  $('#statA').innerHTML=`時間 <b>${A.t.toFixed(1)}</b> 秒　兩擺錘距離 <b>${d.toFixed(3)}</b> 節擺長　${A.split!==null?`<b style="color:var(--bad)">第 ${A.split.toFixed(1)} 秒分家</b>`:''}`;
+  $('#tasksA').innerHTML=TA.map((t,i)=>{const r=A.rec[['10|0.1','120|0.1','120|0.001'][i]];return `<div class="${stars.A[i]?'done':''}">任務 ${i+1}：${t.t}${r!==undefined?`（${r<0?'20 秒沒分家':'第 '+r.toFixed(1)+' 秒分家'}）`:''}</div>`}).join('');
+  $('#qA').hidden=!(stars.A[0]&&stars.A[1]&&stars.A[2]);if(!$('#qA').hidden&&mode==='A'&&!$('#qA').innerHTML)renderQ()}
+const QA=[{t:'差距縮小 100 倍（0.1° → 0.001°），分家時間怎麼變？',ch:['也延長 100 倍','只晚了幾秒','完全不會分家'],ans:1,ok:'只晚了幾秒！在混沌系統裡，起點的誤差會像滾雪球一樣變大，量得再準也只能多撐一下下。'}];
+function drawA(){const L=Math.min(W*.2,H*.22),ox=W>620?W*.36:W/2,oy=H*.42;
+  ctx.fillStyle='#5d6678';ctx.fillRect(ox-40,oy-4,80,6);
+  // trails
+  [[1,'rgba(224,69,123,'],[0,'rgba(31,143,214,']].forEach(([k,col])=>{ctx.lineWidth=1.5;for(let i=1;i<A.trail.length;i++){const a=A.trail[i-1][k?0:1],b=A.trail[i][k?0:1];ctx.strokeStyle=col+(i/A.trail.length*.6)+')';ctx.beginPath();ctx.moveTo(ox+a[0]*L,oy-a[1]*L);ctx.lineTo(ox+b[0]*L,oy-b[1]*L);ctx.stroke()}});
+  [[A.Q,'#1f8fd6'],[A.P,'#e0457b']].forEach(([s,col])=>{const x1=ox+Math.sin(s[0])*L,y1=oy+Math.cos(s[0])*L,x2=x1+Math.sin(s[1])*L,y2=y1+Math.cos(s[1])*L;
+    ctx.strokeStyle=col;ctx.lineWidth=3;ctx.globalAlpha=.85;ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.globalAlpha=1;
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x1,y1,7,0,7);ctx.fill();ctx.beginPath();ctx.arc(x2,y2,9,0,7);ctx.fill()});
+  // graph
+  if(W>620){const gx=W*.66,gy=H*.12,gw=W*.31,gh=H*.6;ctx.strokeStyle='#d3d9e4';ctx.strokeRect(gx,gy,gw,gh);
+    ctx.fillStyle='#5d6678';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('兩擺錘的距離（對數尺）',gx,gy-8);
+    const ly=v=>gy+gh-(Math.log10(Math.max(1e-6,v))+6)/(6.6)*gh;
+    [1e-6,1e-4,1e-2,1].forEach(v=>{ctx.strokeStyle='rgba(0,0,0,.06)';ctx.beginPath();ctx.moveTo(gx,ly(v));ctx.lineTo(gx+gw,ly(v));ctx.stroke();ctx.fillStyle='#8a92a3';ctx.font='500 10px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.fillText(v>=1?'1':v.toExponential(0),gx-3,ly(v)+3)});
+    ctx.strokeStyle='#d6453d';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(gx,ly(.5));ctx.lineTo(gx+gw,ly(.5));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#d6453d';ctx.textAlign='left';ctx.fillText('分家線',gx+4,ly(.5)-4);
+    ctx.strokeStyle='#6a4bd6';ctx.lineWidth=1.6;ctx.beginPath();A.hist.forEach(([t,d],i)=>{const x=gx+t/20*gw,y=ly(d);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+    ctx.fillStyle='#8a92a3';ctx.textAlign='center';ctx.fillText('0',gx,gy+gh+14);ctx.fillText('20 秒',gx+gw,gy+gh+14)}}
+
+/* ---------- B: Lorenz ---------- */
+function fl([x,y,z]){return[10*(y-x),x*(28-z)-y,x*y-8/3*z]}
+const B={e:1,run:false,P:null,Q:null,tp:[],tq:[],t:0,fail:null,rec:{}};
+function resetB(){B.P=[1,1,20];B.Q=[1+B.e,1,20];B.tp=[];B.tq=[];B.t=0;B.fail=null}
+$$('[data-e]').forEach(b=>b.onclick=()=>{B.e=+b.dataset.e;$$('[data-e]').forEach(x=>x.classList.toggle('sel',x===b));B.run=false;resetB();updB();draw()});
+function stepB(n){const h=.005;for(let k=0;k<n;k++){B.P=rk4(fl,B.P,h);B.Q=rk4(fl,B.Q,h);B.t+=h;if(B.fail===null&&Math.abs(B.P[0]-B.Q[0])>5){B.fail=B.t;onFailB()}}
+  B.tp.push(B.P.slice());B.tq.push(B.Q.slice());if(B.tp.length>1500){B.tp.shift();B.tq.shift()}}
+function loopB(){if(!B.run||mode!=='B'){B.run=false;return}stepB(4);if(B.t>=30){B.run=false;if(B.fail===null){B.rec[B.e]=30;updB()}}updB();draw();if(B.run)requestAnimationFrame(loopB)}
+$('#goB').onclick=()=>{resetB();if(reduce){while(B.t<30&&B.fail===null)stepB(4);updB();draw();return}B.run=true;requestAnimationFrame(loopB)};
+function onFailB(){B.rec[B.e]=B.fail;msg(`預報在時間 ${B.fail.toFixed(1)} 失效：真實和預報差太多了`,'',3200);
+  if(Object.keys(B.rec).length>=4&&!stars.B[0]){stars.B[0]=1;saveStars();setTimeout(()=>msg('四種誤差都測完了！看看表格，回答下面的問題','ok',4000),1500)}updB()}
+function updB(){$('#statB').innerHTML=`時間 <b>${B.t.toFixed(1)}</b>　真實 x ＝ <b style="color:var(--p1)">${B.P[0].toFixed(2)}</b>　預報 x ＝ <b style="color:var(--p2)">${B.Q[0].toFixed(2)}</b>　${B.fail!==null?`<b style="color:var(--bad)">預報在 ${B.fail.toFixed(1)} 失效</b>`:''}`;
+  const es=[1,0.01,0.0001,0.000001];$('#recB').innerHTML=`<table class="rec"><tr><th>測量誤差</th>${es.map(e=>`<td>${e}</td>`).join('')}</tr><tr><th>預報準到</th>${es.map(e=>`<td>${B.rec[e]!==undefined?B.rec[e].toFixed(1):'—'}</td>`).join('')}</tr></table>`;
+  $('#qB').hidden=!stars.B[0];if(!$('#qB').hidden&&mode==='B'&&!$('#qB').innerHTML)renderQ()}
+const QB=[
+ {t:'看表格：測量誤差每縮小 100 倍，預報能多準多久？',ch:['也多 100 倍的時間','大約多 4～5 個時間單位','完全一樣'],ans:1,ok:'每精準 100 倍，只多換來大約 4～5 個時間單位。要預報兩倍久，測量就要精準好幾萬倍。'},
+ {t:'所以，真實的天氣預報為什麼沒辦法準確預報一個月後的天氣？',ch:['電腦不夠快','大氣是混沌的，觀測的小誤差會不斷放大','氣象員不認真'],ans:1,ok:'大氣是混沌系統。就算有超級電腦，觀測誤差也會放大，所以可靠的逐日天氣預報大約只有一到兩週。'},
+];
+function drawB(){const s=Math.min(W/70,H/58),cx=W/2,cy=H-14;
+  const X=p=>cx+p[0]*s,Y=p=>cy-p[2]*s;
+  [[B.tp,'rgba(224,69,123,','#e0457b'],[B.tq,'rgba(31,143,214,','#1f8fd6']].forEach(([tr,col,solid])=>{ctx.lineWidth=1.2;for(let i=1;i<tr.length;i++){ctx.strokeStyle=col+(.15+i/tr.length*.75)+')';ctx.beginPath();ctx.moveTo(X(tr[i-1]),Y(tr[i-1]));ctx.lineTo(X(tr[i]),Y(tr[i]));ctx.stroke()}
+    const p=tr[tr.length-1]||(solid==='#e0457b'?B.P:B.Q);ctx.fillStyle=solid;ctx.beginPath();ctx.arc(X(p),Y(p),6,0,7);ctx.fill()});
+  ctx.fillStyle='#5d6678';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('● 真實天氣',10,18);ctx.fillStyle='#1f8fd6';ctx.fillText('● 預報',90,18);ctx.fillStyle='#e0457b';ctx.fillText('●',10,18)}
+
+/* ---------- C: pinball ---------- */
+const TW=16,TH=10;
+const BUMP=[];[[4.5,2],[4.5,5],[4.5,8],[7,3.5],[7,6.5],[9.5,2],[9.5,5],[9.5,8],[12,3.5],[12,6.5]].forEach(([x,y])=>BUMP.push({x,y,r:.75}));
+const LV=[
+ {goal:'第 1 關：把彈珠直接打進洞（中間沒有擋路）。',tx:14.8,ty:0.9,minHits:0,start:[.6,5],bump:false,maxLen:18},
+ {goal:'第 2 關：洞躲在圓柱後面，要彈過去。提示：試試 ±24° 附近，再用 0.1° 微調。',tx:14.6,ty:5,minHits:0,start:[.6,5],bump:true,maxLen:30},
+ {goal:'第 3 關：彈珠至少撞圓柱 4 次以後才進洞。容許誤差只有幾百分之一度，多用 ±0.01° 慢慢找。',tx:14.6,ty:5,minHits:4,start:[.6,5],bump:true,maxLen:45},
+];
+const C={lv:0,ang:0,ghost:true,path:null,gh:[],res:null,shown:1};
+function trace(deg,lv){const L=LV[lv],bs=L.bump?BUMP:[];let p=[L.start[0],L.start[1]],a=deg*Math.PI/180,d=[Math.cos(a),-Math.sin(a)];const pts=[p.slice()];let hits=0,len=0,win=false;
+  for(let k=0;k<60&&len<L.maxLen;k++){let tmin=1e9,hit=null;
+    // walls
+    if(d[0]>0){const t=(TW-p[0])/d[0];if(t<tmin){tmin=t;hit={n:[-1,0]}}}if(d[0]<0){const t=-p[0]/d[0];if(t<tmin){tmin=t;hit={n:[1,0]}}}
+    if(d[1]>0){const t=(TH-p[1])/d[1];if(t<tmin){tmin=t;hit={n:[0,-1]}}}if(d[1]<0){const t=-p[1]/d[1];if(t<tmin){tmin=t;hit={n:[0,1]}}}
+    bs.forEach(b=>{const fx=p[0]-b.x,fy=p[1]-b.y,B2=fx*d[0]+fy*d[1],C2=fx*fx+fy*fy-b.r*b.r,disc=B2*B2-C2;if(disc<0)return;const t=-B2-Math.sqrt(disc);if(t>1e-6&&t<tmin){tmin=t;const q=[p[0]+d[0]*t,p[1]+d[1]*t];hit={n:[(q[0]-b.x)/b.r,(q[1]-b.y)/b.r],b:true}}});
+    // target crossing before hit
+    {const fx=p[0]-L.tx,fy=p[1]-L.ty,B2=fx*d[0]+fy*d[1],C2=fx*fx+fy*fy-.45*.45,disc=B2*B2-C2;if(disc>=0){const t=-B2-Math.sqrt(disc);if(t>0&&t<tmin&&hits>=L.minHits){pts.push([p[0]+d[0]*t,p[1]+d[1]*t]);win=true;len+=t;break}}}
+    p=[p[0]+d[0]*tmin,p[1]+d[1]*tmin];len+=tmin;pts.push(p.slice());if(hit.b)hits++;const dn=d[0]*hit.n[0]+d[1]*hit.n[1];d=[d[0]-2*dn*hit.n[0],d[1]-2*dn*hit.n[1]]}
+  return{pts,hits,win}}
+function goalC(){$('#goalC').textContent=LV[C.lv].goal}
+function setAng(v){C.ang=Math.round(Math.max(-60,Math.min(60,v))*100)/100;$('#angC').value=C.ang;$('#angCV').textContent=C.ang.toFixed(2)+'°';C.path=null;C.res=null;draw()}
+$('#angC').oninput=e=>setAng(+e.target.value);
+$$('[data-da]').forEach(b=>b.onclick=()=>setAng(C.ang+ +b.dataset.da));
+$('#ghostC').onclick=e=>{C.ghost=!C.ghost;e.target.textContent='分身：'+(C.ghost?'顯示':'隱藏');e.target.setAttribute('aria-pressed',C.ghost);draw()};
+$$('[data-lv]').forEach(b=>b.onclick=()=>{C.lv=+b.dataset.lv;$$('[data-lv]').forEach(x=>x.classList.toggle('sel',x===b));C.path=null;goalC();$('#statC').textContent='';draw()});
+$('#goC').onclick=()=>{const r=trace(C.ang,C.lv);C.path=r;C.gh=[trace(C.ang-.05,C.lv),trace(C.ang+.05,C.lv)];C.shown=reduce?1:0;C.t0=performance.now();
+  $('#statC').innerHTML=`撞到圓柱 <b>${r.hits}</b> 次　${r.win?'<b style="color:var(--ok)">進洞！</b>':'沒進'}　分身：${C.gh.map(g=>g.win?'進':'沒進').join('、')}`;
+  if(r.win){if(!stars.C[C.lv]){stars.C[C.lv]=1;saveStars();$$('[data-lv]').forEach(x=>x.classList.toggle('done',!!stars.C[x.dataset.lv]))}
+    const both=C.gh.every(g=>g.win);setTimeout(()=>msg(both?'進洞！而且差 0.05° 的分身也進了：撞得少，容許誤差大':'進洞！可是差 0.05° 的分身就沒進：撞越多次，容許誤差越小','ok',4500),reduce?0:900);
+    if(C.lv===2){$('#qC').hidden=false;renderQ()}}
+  else if(LV[C.lv].minHits&&r.hits<LV[C.lv].minHits)msg('還要多撞幾次圓柱才算數','bad');
+  if(!reduce)animC();else draw()};
+function animC(){const f=Math.min(1,(performance.now()-C.t0)/900);C.shown=f;draw();if(f<1)requestAnimationFrame(animC)}
+const QC=[{t:'第 3 關的角度只要差 0.05°，分身通常就不會進洞。為什麼彈珠台很難靠「完美瞄準」連續得分？',ch:['彈珠太小','每撞一次圓柱，角度誤差就被放大，撞越多次越難預測','圓柱會移動'],ans:1,ok:'沒錯！圓柱是凸的，每次碰撞都會把小小的角度差放大好幾倍。這就是混沌，撞球、骰子、天氣都有類似的現象。'}];
+function drawC(){const s=Math.min((W-20)/TW,(H-20)/TH),ox=(W-TW*s)/2,oy=(H-TH*s)/2,X=x=>ox+x*s,Y=y=>oy+y*s,L=LV[C.lv];
+  ctx.fillStyle='#e9f1e6';ctx.strokeStyle='#5d6678';ctx.lineWidth=3;ctx.fillRect(X(0),Y(0),TW*s,TH*s);ctx.strokeRect(X(0),Y(0),TW*s,TH*s);
+  if(L.bump)BUMP.forEach(b=>{ctx.fillStyle='#6a4bd6';ctx.beginPath();ctx.arc(X(b.x),Y(b.y),b.r*s,0,7);ctx.fill();ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.arc(X(b.x)-b.r*s*.3,Y(b.y)-b.r*s*.3,b.r*s*.3,0,7);ctx.fill()});
+  ctx.fillStyle='#d99a00';ctx.beginPath();ctx.arc(X(L.tx),Y(L.ty),.45*s,0,7);ctx.fill();ctx.fillStyle='#5a3d00';ctx.beginPath();ctx.arc(X(L.tx),Y(L.ty),.25*s,0,7);ctx.fill();
+  // aim
+  const a=C.ang*Math.PI/180;ctx.strokeStyle='rgba(29,36,51,.35)';ctx.setLineDash([5,5]);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(L.start[0]),Y(L.start[1]));ctx.lineTo(X(L.start[0]+Math.cos(a)*2.2),Y(L.start[1]-Math.sin(a)*2.2));ctx.stroke();ctx.setLineDash([]);
+  const drawPath=(r,col,w)=>{const pts=r.pts;let tot=0;const seg=[];for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);tot+=l}
+    let lim=tot*C.shown;ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(X(pts[0][0]),Y(pts[0][1]));let end=pts[0];
+    for(let i=1;i<pts.length;i++){if(lim<=0)break;const f=Math.min(1,lim/seg[i-1]);end=[pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f];ctx.lineTo(X(end[0]),Y(end[1]));lim-=seg[i-1]}ctx.stroke();return end};
+  if(C.path){if(C.ghost)C.gh.forEach(g=>drawPath(g,'rgba(31,143,214,.45)',1.4));const e=drawPath(C.path,'#e0457b',2.4);ctx.fillStyle='#e0457b';ctx.beginPath();ctx.arc(X(e[0]),Y(e[1]),.22*s,0,7);ctx.fill()}
+  ctx.fillStyle='#1d2433';ctx.beginPath();ctx.arc(X(L.start[0]),Y(L.start[1]),.22*s,0,7);ctx.fill()}
+
+/* ---------- questions ---------- */
+const Q={A:{list:QA,i:0,key:()=>3},B:{list:QB,i:0,key:j=>j+1},C:{list:QC,i:0,key:()=>3}};
+function renderQ(){const m=mode,el=$('#q'+m);if(el.hidden)return;const S=Q[m],q=S.list[S.i];
+  el.innerHTML=`<div class="qh"><span>題目</span><span class="dots">${S.list.map((_,j)=>`<b class="${stars[m][S.key(j)]?'done':''} ${j===S.i?'cur':''}" data-q="${m},${j}" role="button" tabindex="0" aria-label="第 ${j+1} 題">${j+1}</b>`).join('')}</span></div>
+  <div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${m},${k}">${s}</button>`).join('')}</div>`;
+  $$('[data-q]').forEach(b=>b.onclick=b.onkeydown=e=>{if(e.type==='keydown'&&e.key!=='Enter')return;const[mm,j]=b.dataset.q.split(',');Q[mm].i=+j;renderQ()});
+  $$('[data-ans]').forEach(b=>b.onclick=()=>{const[mm,k]=b.dataset.ans.split(',');const S=Q[mm],q=S.list[S.i];
+    if(+k===q.ans){b.classList.add('ok');msg(q.ok,'ok',6000);stars[mm][S.key(S.i)]=1;saveStars();setTimeout(()=>{const nx=S.list.findIndex((_,j)=>!stars[mm][S.key(j)]);if(nx>=0)S.i=nx;renderQ()},1500)}
+    else{b.classList.add('no');msg('再想想，回去看看實驗結果','bad',3500)}})}
+
+function draw(){if(!W)return;ctx.clearRect(0,0,W,H);if(mode==='A')drawA();else if(mode==='B')drawB();else drawC()}
+window.__chaos={trace,LV};
+saveStars();resetA();resetB();updB();goalC();setAng(0);setMode('A');
+})();
+</script>
+
+<script src="../qa.js" defer></script>

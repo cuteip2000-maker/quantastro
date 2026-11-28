@@ -137,6 +137,12 @@ window.ISLAND_ZONES=[
   "z": -1.6,
   "games": [
    {
+    "title": "蝴蝶效應實驗室",
+    "desc": "雙擺分身、勞倫茲的天氣、彈珠瞄準：差一點點，結果天差地遠",
+    "url": "games/butterfly-effect.html",
+    "isNew": true
+   },
+   {
     "title": "達文西的樹",
     "desc": "樹枝總面積等於樹幹？查證黃金比率分枝的說法，再找出 137.5° 黃金角",
     "url": "games/davinci-tree.html",
@@ -186,7 +192,7 @@ window.ISLAND_ZONES=[
     "title": "量子糾纏實驗室",
     "desc": "成對光子的神奇配合、挑戰愛因斯坦的答案卡、用糾纏抓竊聽者",
     "url": "games/quantum-entanglement.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "雙狹縫實驗",
