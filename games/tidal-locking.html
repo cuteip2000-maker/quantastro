@@ -1,0 +1,345 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>月球的同一面</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: night observatory. Space view on the left (top-down orbit + "seen from Earth" inset), control strip under it, notes rail on the right; stacks on phones. Single dark look. */
+:root{
+  --bg:#0c1020;
+  --sky:#070a16;
+  --panel:#141a30;
+  --panel2:#1c2340;
+  --rule:#2f3966;
+  --ink:#eef1ff;
+  --dim:#9ea6c8;
+  --accent:#ffd166;
+  --flag:#ff5a6e;
+  --ok:#5be39a;
+  --bad:#ff6b7a;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;height:100%}
+.stage{display:flex;flex-direction:column;min-width:0;min-height:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--panel);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel2);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--accent);margin-left:4px;letter-spacing:-1px}
+.cv{position:relative;flex:1;min-height:320px;background:var(--sky);border-top:1px solid var(--rule)}
+.cv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.msg{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:700;line-height:1.5;max-width:min(560px,calc(100% - 24px));width:max-content;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--ink);color:#0c1020;z-index:4}
+.msg.on{opacity:1}
+.msg.ok{background:var(--ok)}
+.msg.bad{background:var(--bad);color:#fff}
+.dock{background:var(--panel);border-top:1px solid var(--rule);padding-block:10px 12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#231a00;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.done::after{content:" ✓";color:var(--ok);font-weight:900}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.sl{display:inline-flex;align-items:center;gap:8px;font-size:14px}
+.sl input{width:180px;accent-color:var(--accent)}
+.sl b{font-family:var(--f-num);min-width:5ch;color:var(--accent)}
+.stat{font-family:var(--f-num);font-size:13.5px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.goal{font-weight:700}
+.tasks{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.tasks div::before{content:"○ ";color:var(--dim)}
+.tasks div.done{color:var(--ok)}
+.tasks div.done::before{content:"● "}
+.q{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.q .dots{display:flex;gap:4px;margin-bottom:4px}
+.q .dots b{width:20px;height:20px;border-radius:50%;border:1px solid var(--rule);font:700 11px/18px var(--f-num);text-align:center;color:var(--dim);cursor:pointer;background:var(--panel)}
+.q .dots b.done{background:var(--ok);border-color:var(--ok);color:#0c1020}
+.q .dots b.cur{border-color:var(--accent);color:var(--accent)}
+.note{font-size:12.5px;color:var(--dim)}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#2a2614;border-color:#6b5a22}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;height:auto}
+  .cv{flex:none;height:min(110vw,62vh);min-height:340px}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .sl input{width:130px}
+}
+@media (prefers-reduced-motion:reduce){.msg{transition:none}}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 轉一圈、繞一圈<span class="st" id="stA"></span><small>月球有沒有自轉？</small></button>
+      <button data-tab="B" aria-pressed="false">② 潮汐煞車<span class="st" id="stB"></span><small>為什麼剛好一樣快</small></button>
+      <button data-tab="C" aria-pressed="false">③ 偷看邊邊<span class="st" id="stC"></span><small>其實看得到 59%</small></button>
+    </nav>
+    <div class="cv" id="cv">
+      <canvas id="c" aria-label="上方是從北極往下看的地球和月球軌道，角落是從地球看到的月球"></canvas>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- A -->
+    <div class="dock" id="dockA">
+      <div class="row"><span class="lab">月球自轉的速度</span>
+        <button class="btn" data-k="0">不自轉</button><button class="btn sel" data-k="1">繞一圈轉一圈</button><button class="btn" data-k="2">繞一圈轉兩圈</button>
+        <button class="btn pri" id="playA">▶ 公轉一圈</button>
+      </div>
+      <div class="row" id="handA">
+        <span class="goal">親手試試：</span>
+        <label class="sl">公轉到<input id="orbA" type="range" min="0" max="360" step="90" value="0"><b id="orbAV"></b></label>
+        <label class="sl">月球轉了<input id="spinA" type="range" min="0" max="360" step="15" value="0"><b id="spinAV"></b></label>
+      </div>
+      <div class="stat" id="statA"></div>
+      <div class="tasks" id="tasksA"></div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="dock" id="dockB" hidden>
+      <div class="row"><span class="lab">剛形成的月球自轉一圈要</span>
+        <button class="btn sel" data-p0="0.5">半天（很快）</button><button class="btn" data-p0="5">5 天</button><button class="btn" data-p0="80">80 天（很慢）</button>
+        <button class="btn pri" id="playB">▶ 開始（時間加速）</button>
+      </div>
+      <div class="stat" id="statB"></div>
+      <div class="tasks" id="tasksB"></div>
+      <div class="q" id="qB" hidden></div>
+    </div>
+
+    <!-- C -->
+    <div class="dock" id="dockC" hidden>
+      <div class="row">
+        <label class="sl">日期<input id="dayC" type="range" min="0" max="60" step="0.5" value="0"><b id="dayCV"></b></label>
+        <button class="btn pri" id="playC">▶ 播放兩個月</button>
+      </div>
+      <div class="stat" id="statC"></div>
+      <div class="tasks" id="tasksC"></div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>月球的同一面</h1>
+    <p class="lede">月球不是不會轉，它是轉得「剛剛好」：繞地球一圈，自己也轉一圈，所以永遠用同一面對著我們。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>同步自轉</h2>
+      <p>月球繞地球一圈大約 27.3 天，自轉一圈也是 27.3 天。兩個速度一樣，叫作「同步自轉」，也叫「潮汐鎖定」。</p>
+      <p>如果月球完全不自轉，繞地球一圈時，我們反而會看到它的每一面。</p>
+    </div>
+    <div class="card">
+      <h2>為什麼會剛好一樣快？</h2>
+      <p>地球的引力把月球拉得稍微變長，鼓起一個「潮汐隆起」。如果月球轉得太快或太慢，隆起就會歪掉，地球的引力把它拉回來，像煞車一樣，直到兩個速度一樣才停。</p>
+      <p>月球的潮汐鎖定在很久以前就完成了。</p>
+    </div>
+    <div class="card">
+      <h2>地球也在被煞車</h2>
+      <p>月球也在拉地球的海水，讓地球的自轉慢慢變慢，一天大約每一百年長 2 毫秒左右。同時月球每年離地球遠大約 3.8 公分，這是用雷射打到月球上的反射鏡量出來的。</p>
+    </div>
+    <div class="card">
+      <h2>不只月球</h2>
+      <p>太陽系裡很多衛星都被潮汐鎖定，例如木星的四顆大衛星。冥王星和它的衛星凱倫更是互相鎖定：兩邊都永遠用同一面看著對方。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('tidal-stars',{A:{},B:{},C:{}});
+const TOT={A:4,B:4,C:3};
+function saveStars(){store.set('tidal-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+let msgT=0;function msg(s,cls='',ms=3600){const m=$('#msg');m.textContent=s;m.className='msg on '+cls;clearTimeout(msgT);msgT=setTimeout(()=>m.className='msg',ms)}
+const RAD=Math.PI/180;
+let timer=0;function stopAnim(){clearInterval(timer);timer=0}
+
+/* ---------- moon map (lat, lon, radius in degrees; lon east +) ---------- */
+const MARIA=[
+ {n:'雨海',la:33,lo:-16,r:19},{n:'澄海',la:28,lo:17,r:11},{n:'靜海',la:8.5,lo:31,r:13},{n:'危海',la:17,lo:59,r:8.5,lab:1},
+ {n:'風暴洋',la:18,lo:-57,r:26},{n:'雲海',la:-21,lo:-17,r:11},{n:'豐富海',la:-8,lo:51,r:12},{n:'酒海',la:-15,lo:35,r:6},
+ {n:'東方海',la:-19,lo:-95,r:9,lab:1,ring:1},{n:'界海',la:13,lo:86,r:5,lab:1},
+ {n:'莫斯科海',la:27,lo:147,r:4.5,lab:1},{n:'齊奧爾科夫斯基',la:-20,lo:129,r:3},{n:'南極艾肯盆地',la:-53,lo:-169,r:35,faint:1}];
+const CRATERS=[{la:-43,lo:-11,r:2.4,ray:1,n:'第谷'},{la:9.6,lo:-20,r:1.6,ray:1},{la:8,lo:-38,r:1.2,ray:1}];
+// orthographic globe: center (cx,cy), radius R, sub-observer lat0/lon0, sun direction (for phase, optional)
+function globe(ctx,cx,cy,R,lat0,lon0,{flag=false,labels=false,limb=false}={}){
+  const sl0=Math.sin(lat0*RAD),cl0=Math.cos(lat0*RAD);
+  const proj=(la,lo)=>{const a=la*RAD,b=(lo-lon0)*RAD;const cosc=sl0*Math.sin(a)+cl0*Math.cos(a)*Math.cos(b);return[cx+R*Math.cos(a)*Math.sin(b),cy-R*(cl0*Math.sin(a)-sl0*Math.cos(a)*Math.cos(b)),cosc]};
+  const g=ctx.createRadialGradient(cx-R*.3,cy-R*.3,R*.1,cx,cy,R);g.addColorStop(0,'#e9e6dc');g.addColorStop(1,'#b9b4a6');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+  const patch=(m,col)=>{const pts=[];for(let k=0;k<=36;k++){const t=k/36*Math.PI*2;const la=m.la+m.r*Math.sin(t),lo=m.lo+m.r*Math.cos(t)/Math.max(.25,Math.cos(m.la*RAD));pts.push(proj(la,lo))}
+    if(pts.every(p=>p[2]<0))return null;ctx.fillStyle=col;ctx.beginPath();pts.forEach((p,i)=>{let[x,y,z]=p;if(z<0){const d=Math.hypot(x-cx,y-cy)||1;x=cx+(x-cx)/d*R;y=cy+(y-cy)/d*R}i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();ctx.fill();return pts};
+  MARIA.forEach(m=>{patch(m,m.faint?'rgba(120,115,105,.28)':'rgba(92,90,84,.78)');if(m.ring){const p=proj(m.la,m.lo);if(p[2]>0){ctx.strokeStyle='rgba(80,78,72,.7)';ctx.lineWidth=Math.max(1,R*.012);ctx.beginPath();ctx.ellipse(p[0],p[1],R*.2*Math.max(.15,p[2])*1.2,R*.2,Math.atan2(p[1]-cy,p[0]-cx),0,7);ctx.stroke()}}});
+  CRATERS.forEach(cr=>{const p=proj(cr.la,cr.lo);if(p[2]<=0)return;ctx.fillStyle='rgba(255,255,250,.85)';ctx.beginPath();ctx.arc(p[0],p[1],R*.025,0,7);ctx.fill();
+    if(cr.ray){ctx.strokeStyle='rgba(255,255,250,.25)';ctx.lineWidth=1;for(let k=0;k<10;k++){const t=k/10*Math.PI*2;ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(p[0]+Math.cos(t)*R*.16*p[2],p[1]+Math.sin(t)*R*.16);ctx.stroke()}}});
+  if(flag){const p=proj(0,0);if(p[2]>0){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(p[0],p[1]-R*.22);ctx.stroke();ctx.fillStyle='#ff5a6e';ctx.fillRect(p[0],p[1]-R*.22,R*.16,R*.1)}}
+  if(labels){ctx.font=`700 ${Math.max(10,R*.075)}px "Noto Sans TC",sans-serif`;ctx.textAlign='center';MARIA.filter(m=>m.lab).forEach(m=>{const p=proj(m.la,m.lo);if(p[2]>0.02){ctx.fillStyle='#1d2240';ctx.fillText(m.n,p[0],p[1]+4)}})}
+  ctx.restore();
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+  return proj}
+
+/* ---------- canvas ---------- */
+const cv=$('#cv'),c=$('#c'),ctx=c.getContext('2d');let W=0,H=0;
+function resize(){const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);W=r.width;H=r.height;c.width=W*d;c.height=H*d;ctx.setTransform(d,0,0,d,0,0);draw()}
+new ResizeObserver(resize).observe(cv);
+const stars0=Array.from({length:120},()=>[Math.random(),Math.random(),Math.random()*1.2+.3]);
+function sky(){ctx.fillStyle='#070a16';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(255,255,255,.6)';stars0.forEach(([x,y,r])=>{ctx.fillRect(x*W,y*H,r,r)})}
+function earth(x,y,r){const g=ctx.createRadialGradient(x-r*.3,y-r*.3,r*.1,x,y,r);g.addColorStop(0,'#7cc4ff');g.addColorStop(1,'#1f5fa8');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  ctx.fillStyle='rgba(90,170,90,.85)';[[-.3,-.2,.35],[.35,.25,.28],[.1,-.45,.2]].forEach(([a,b,s])=>{ctx.beginPath();ctx.arc(x+a*r,y+b*r,s*r,0,7);ctx.fill()})}
+// top-down moon disc with a "flag" mark showing body orientation; phi = rotation angle (deg, CCW)
+function topMoon(x,y,r,phi,highlight){ctx.save();ctx.translate(x,y);ctx.rotate(-phi*RAD);
+  ctx.fillStyle='#cfcbbd';ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fill();
+  ctx.fillStyle='rgba(90,88,80,.8)';ctx.beginPath();ctx.arc(-r*.45,0,r*.35,0,7);ctx.fill(); // near-side maria face toward -x at phi=0
+  ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-r,0);ctx.lineTo(-r*1.7,0);ctx.stroke();ctx.fillStyle='#ff5a6e';ctx.fillRect(-r*1.7,-r*.5,r*.45,r*.5);
+  ctx.restore();if(highlight){ctx.strokeStyle=highlight;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r+4,0,7);ctx.stroke()}}
+
+let mode='A';
+const KEY={
+ A:'<h2>① 轉一圈、繞一圈</h2><p>上面是從北極往下看：中間是地球，月球在外圈公轉。月球上的<b style="color:var(--flag)">紅旗</b>插在面向地球的那一側。右下角是「從地球看到的月球」。</p><p>先比較三種自轉速度，再親手轉轉看。</p>',
+ B:'<h2>② 潮汐煞車</h2><p>地球的引力把月球拉成橄欖球形（誇張畫出）。月球轉太快或太慢，隆起就會歪掉，被地球拉回來。看看自轉速度最後會變成多少。</p><p class="note" style="margin:0">時間被大大加速，形狀也誇張很多倍。</p>',
+ C:'<h2>③ 偷看邊邊</h2><p>月球的軌道是橢圓，公轉忽快忽慢，但自轉速度固定；月球的軸也有一點傾斜。所以從地球看，月球會輕輕左右、上下晃動，叫作「天平動」。</p><p>拉日期滑桿，找找平常躲在邊緣的海。</p>'};
+function setMode(m){mode=m;stopAnim();$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#dock'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];renderQ();resize()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+
+/* ---------- A ---------- */
+const A={k:1,theta:0,phi:0,hand:false,seen:new Set(),ran:{}};
+function subLon(){return ((A.theta-A.phi)%360+540)%360-180} // longitude facing Earth
+$$('[data-k]').forEach(b=>b.onclick=()=>{stopAnim();A.k=+b.dataset.k;A.hand=false;$$('[data-k]').forEach(x=>x.classList.toggle('sel',x===b));A.theta=0;A.phi=0;A.seen=new Set();updA();draw()});
+$('#playA').onclick=()=>{stopAnim();A.hand=false;A.theta=0;A.phi=0;A.seen=new Set();
+  const step=()=>{A.theta+=4;A.phi=A.k*A.theta;A.seen.add(Math.round(subLon()/30));if(A.theta>=360){A.theta=360;A.phi=A.k*360;stopAnim();finA()}updA();draw()};
+  if(reduce){while(A.theta<360)A.theta+=4,A.phi=A.k*A.theta,A.seen.add(Math.round(subLon()/30));finA();updA();draw();return}timer=setInterval(step,30)};
+function finA(){A.ran[A.k]=A.seen.size;const msgs={0:`不自轉的話，地球上會看到月球的每一面！（看到 ${Math.min(12,A.seen.size)} 個不同方向）`,1:'繞一圈也剛好轉一圈：紅旗一直朝著地球，我們永遠看到同一面。',2:'轉太快了：我們會看到月球的背面。'};msg(msgs[A.k],A.k===1?'ok':'',4500);checkA()}
+$('#orbA').oninput=e=>{stopAnim();A.hand=true;A.theta=+e.target.value;updA();draw();checkHand()};
+$('#spinA').oninput=e=>{stopAnim();A.hand=true;A.phi=+e.target.value;updA();draw();checkHand()};
+A.hits=new Set();
+function checkHand(){if(Math.abs(subLon())<1e-6||Math.abs(Math.abs(subLon())-360)<1e-6){if(!A.hits.has(A.theta)){A.hits.add(A.theta);msg(`對準了！公轉 ${A.theta}° 時，月球要轉 ${A.phi}°`,'ok',2200)}}
+  if([0,90,180,270].every(t=>A.hits.has(t))||[90,180,270,360].every(t=>A.hits.has(t))){if(!stars.A[2]){stars.A[2]=1;saveStars();msg('四個位置都對準了：公轉幾度，月球就要自轉幾度。繞一整圈 ＝ 自轉一整圈！','ok',5000);checkA()}}}
+const TA=[
+ {t:'選「不自轉」，按公轉一圈：從地球看，月球會怎樣？',ok:()=>A.ran[0]!==undefined},
+ {t:'選「繞一圈轉一圈」，按公轉一圈：紅旗一直朝哪裡？',ok:()=>A.ran[1]!==undefined},
+ {t:'親手試：公轉到 90°、180°、270°、360°，各要讓月球轉幾度，紅旗才會對準地球？',ok:()=>!!stars.A[2]},
+];
+function checkA(){TA.forEach((t,i)=>{if(i<2&&!stars.A[i]&&t.ok()){stars.A[i]=1;saveStars()}});updA();if(stars.A[0]&&stars.A[1]&&stars.A[2]&&$('#qA').hidden){$('#qA').hidden=false;renderQ()}}
+function updA(){$('#orbA').value=A.theta%361;$('#spinA').value=A.phi%361;$('#orbAV').textContent=Math.round(A.theta)+'°';$('#spinAV').textContent=Math.round(A.phi)+'°';
+  const sl=subLon();$('#statA').innerHTML=`公轉 <b>${Math.round(A.theta)}°</b>　自轉 <b>${Math.round(A.phi)}°</b>　地球看到的是：<b style="color:${Math.abs(sl)<20?'var(--ok)':'var(--bad)'}">${Math.abs(sl)<20?'正面（紅旗那面）':Math.abs(sl)>160?'背面':'側面'}</b>`;
+  $('#tasksA').innerHTML=TA.map((t,i)=>`<div class="${stars.A[i]?'done':''}">任務 ${i+1}：${t.t}</div>`).join('')}
+function drawA(){sky();const big=W>640,ins=big?Math.min(W,H)*.2:Math.min(W*.24,H*.17),cx=big?W*.42:W/2,R=big?Math.min(W*.34,H*.36):Math.min(W*.32,H*.24),cy=big?H/2:R+34;
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();ctx.setLineDash([]);
+  earth(cx,cy,R*.16);
+  // ghost positions
+  [0,90,180,270].forEach(t=>{const x=cx+R*Math.cos(t*RAD),y=cy-R*Math.sin(t*RAD);ctx.fillStyle='rgba(255,255,255,.06)';ctx.beginPath();ctx.arc(x,y,R*.09,0,7);ctx.fill()});
+  const mx=cx+R*Math.cos(A.theta*RAD),my=cy-R*Math.sin(A.theta*RAD);
+  // phi=0 flag points to -x (toward Earth at theta=0); body angle = phi + 0
+  topMoon(mx,my,R*.09,A.phi,Math.abs(subLon())<20?'#5be39a':null);
+  ctx.strokeStyle='rgba(255,209,102,.35)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mx,my);ctx.stroke();
+  ctx.fillStyle='#9ea6c8';ctx.font='500 12px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('從北極往下看',cx,cy-R-14);
+  // inset: seen from Earth
+  const ix=big?W-ins-16:W/2,iy=H-ins-26;ctx.fillStyle='rgba(20,26,48,.85)';ctx.strokeStyle='#2f3966';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(ix-ins-10,iy-ins-26,ins*2+20,ins*2+40,10);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#ffd166';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.fillText('從地球看到的月球',ix,iy-ins-10);
+  globe(ctx,ix,iy,ins*.9,0,subLon(),{flag:true})}
+
+/* ---------- B: tidal braking ---------- */
+const NORB=27.3; // days
+const B={p0:.5,w:0,ang:0,orb:0,t:0,run:false,hist:[],locked:false,done:{}};
+function resetB(){B.w=360/B.p0;B.ang=0;B.orb=0;B.t=0;B.hist=[];B.locked=false;updB()}
+$$('[data-p0]').forEach(b=>b.onclick=()=>{stopAnim();B.p0=+b.dataset.p0;$$('[data-p0]').forEach(x=>x.classList.toggle('sel',x===b));resetB();draw()});
+$('#playB').onclick=()=>{stopAnim();resetB();const n=360/NORB;
+  const step=()=>{for(let k=0;k<3;k++){const dt=.05;const d=B.w-n;B.w-=d*.012;B.ang+=B.w*dt;B.orb+=n*dt;B.t+=1}
+    B.hist.push(360/B.w);if(B.hist.length>400)B.hist.shift();
+    if(!B.locked&&Math.abs(360/B.w-NORB)<.3){B.locked=true;B.w=n;B.ang=B.orb+180;stopAnim();B.done[B.p0>NORB?'slow':'fast']=1;
+      msg(B.p0>NORB?'轉太慢的月球被「拉快」了，最後也變成 27.3 天轉一圈！':'被煞車到 27.3 天轉一圈：和公轉一樣快，鎖定了！','ok',5000);checkB()}
+    updB();draw()};
+  if(reduce){let g=0;while(!B.locked&&g++<20000)step();return}timer=setInterval(step,30)};
+const TB=[
+ {t:'從「半天轉一圈」開始，看它最後變成幾天轉一圈',ok:()=>!!B.done.fast},
+ {t:'從「80 天轉一圈」（比公轉還慢）開始，看看會怎樣',ok:()=>!!B.done.slow},
+];
+function checkB(){TB.forEach((t,i)=>{if(!stars.B[i]&&t.ok()){stars.B[i]=1;saveStars()}});updB();if(stars.B[0]&&stars.B[1]&&$('#qB').hidden){$('#qB').hidden=false;renderQ()}}
+function updB(){const P=360/B.w;$('#statB').innerHTML=`自轉一圈：<b style="color:${Math.abs(P-NORB)<.3?'var(--ok)':'var(--accent)'}">${P.toFixed(P<2?2:1)} 天</b>　公轉一圈：<b>${NORB} 天</b>　${B.locked?'<b style="color:var(--ok)">已鎖定</b>':''}`;
+  $('#tasksB').innerHTML=TB.map((t,i)=>`<div class="${stars.B[i]?'done':''}">任務 ${i+1}：${t.t}</div>`).join('')}
+function drawB(){sky();const big=W>640,cx=big?W*.36:W/2,cy=big?H/2:H*.38,R=Math.min(big?W*.28:W*.38,H*.32);
+  earth(cx,cy,R*.22);ctx.strokeStyle='rgba(255,255,255,.15)';ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();ctx.setLineDash([]);
+  const mx=cx+R*Math.cos(B.orb*RAD),my=cy-R*Math.sin(B.orb*RAD),toE=B.orb+180;const n=360/NORB,d=B.w-n;
+  const lag=Math.max(-14,Math.min(14,d*4)); // bulge leads when spinning faster
+  const bul=toE+lag;
+  ctx.save();ctx.translate(mx,my);ctx.rotate(-bul*RAD);ctx.fillStyle='#cfcbbd';ctx.beginPath();ctx.ellipse(0,0,R*.16,R*.11,0,0,7);ctx.fill();ctx.restore();
+  // surface marker rotating with body
+  const mk=B.ang;ctx.fillStyle='#ff5a6e';ctx.beginPath();ctx.arc(mx+Math.cos(mk*RAD)*R*.09,my-Math.sin(mk*RAD)*R*.09,4,0,7);ctx.fill();
+  // force arrows when lag
+  if(Math.abs(lag)>1){ctx.strokeStyle='#ffd166';ctx.lineWidth=2;const tip=(a,len)=>[mx+Math.cos(a*RAD)*len,my-Math.sin(a*RAD)*len];const[bx,by]=tip(bul,R*.16);const[ex,ey]=[bx+(cx-bx)*.12,by+(cy-by)*.12];
+    ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ex,ey);ctx.stroke();ctx.fillStyle='#ffd166';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText(d>0?'拉回來 → 變慢':'拉過去 → 變快',ex,ey-8)}
+  ctx.strokeStyle='rgba(255,209,102,.25)';ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mx,my);ctx.stroke();ctx.setLineDash([]);
+  // graph
+  const gx=big?W*.68:16,gy=big?H*.14:H*.74,gw=big?W*.29:W-32,gh=big?H*.6:H*.2;ctx.strokeStyle='#2f3966';ctx.strokeRect(gx,gy,gw,gh);
+  ctx.fillStyle='#9ea6c8';ctx.font='700 12px "Noto Sans TC",sans-serif';ctx.textAlign='left';ctx.fillText('自轉一圈要幾天（對數尺）',gx,gy-6);
+  const ly=v=>gy+gh-(Math.log10(v)+.5)/(2.5)*gh;[1,10,100].forEach(v=>{ctx.fillStyle='#6e77a0';ctx.font='500 10px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.fillText(v,gx-3,ly(v)+3)});
+  ctx.strokeStyle='#5be39a';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(gx,ly(NORB));ctx.lineTo(gx+gw,ly(NORB));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#5be39a';ctx.textAlign='right';ctx.fillText('27.3 天',gx+gw-4,ly(NORB)-4);
+  ctx.strokeStyle='#ffd166';ctx.lineWidth=1.8;ctx.beginPath();B.hist.forEach((v,i)=>{const x=gx+i/400*gw,y=ly(Math.max(.32,Math.min(300,v)));i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}
+
+/* ---------- C: libration ---------- */
+const C={day:0,maxLon:0,minLon:0,maxLat:0,minLat:0,seenO:false,seenM:false};
+const libLon=d=>7.9*Math.sin(2*Math.PI*d/27.55),libLat=d=>6.7*Math.sin(2*Math.PI*d/27.21+1.1);
+$('#dayC').oninput=e=>{stopAnim();C.day=+e.target.value;updC()};
+$('#playC').onclick=()=>{stopAnim();C.day=0;if(reduce){for(let d=0;d<=60;d+=.5){C.day=d;track()}updC();return}timer=setInterval(()=>{C.day+=.25;if(C.day>=60){C.day=60;stopAnim()}updC()},40)};
+function track(){const lo=libLon(C.day),la=libLat(C.day);C.maxLon=Math.max(C.maxLon,lo);C.minLon=Math.min(C.minLon,lo);C.maxLat=Math.max(C.maxLat,la);C.minLat=Math.min(C.minLat,la);
+  // Orientale (lon -95) visible enough when sub-lon < -6; Moscoviense never
+  if(lo<-6.5&&!C.seenO){C.seenO=true;msg('看到東方海的同心圓了！它在月球西邊的邊緣，平常幾乎看不到','ok',4000)}
+  if(lo>6.5&&!C.seenM){C.seenM=true;msg('危海往中間移，界海露出來了！','ok',3500)}}
+function updC(){track();$('#dayC').value=C.day;$('#dayCV').textContent='第 '+C.day.toFixed(1)+' 天';
+  $('#statC').innerHTML=`左右晃 <b>${libLon(C.day)>=0?'+':''}${libLon(C.day).toFixed(1)}°</b>　上下晃 <b>${libLat(C.day)>=0?'+':''}${libLat(C.day).toFixed(1)}°</b>`;
+  const T=[{t:'找到東方海（月球西邊緣的靶心狀盆地）露出來的日子',ok:C.seenO},{t:'找到界海（危海東邊）露出來的日子',ok:C.seenM}];
+  T.forEach((t,i)=>{if(t.ok&&!stars.C[i]){stars.C[i]=1;saveStars()}});$('#tasksC').innerHTML=T.map((t,i)=>`<div class="${stars.C[i]?'done':''}">任務 ${i+1}：${t.t}</div>`).join('');
+  if(stars.C[0]&&stars.C[1]&&$('#qC').hidden){$('#qC').hidden=false;renderQ()}draw()}
+function drawC(){sky();const big=W>640,R=Math.min(big?W*.24:W*.4,H*.38),cx=big?W*.33:W/2,cy=big?H/2:H*.42;
+  globe(ctx,cx,cy,R,libLat(C.day),libLon(C.day),{labels:true});
+  // reference: day 0 outline of center
+  ctx.fillStyle='#9ea6c8';ctx.font='500 12px "Noto Sans TC",sans-serif';ctx.textAlign='center';ctx.fillText('從地球看到的月球（不畫月相）',cx,cy+R+20);
+  // libration track plot
+  const px=big?W*.72:W*.5,py=big?H/2:H*.85,ps=big?Math.min(W*.18,H*.3):Math.min(W*.3,H*.1);
+  ctx.strokeStyle='#2f3966';ctx.strokeRect(px-ps,py-ps,ps*2,ps*2);ctx.beginPath();ctx.moveTo(px-ps,py);ctx.lineTo(px+ps,py);ctx.moveTo(px,py-ps);ctx.lineTo(px,py+ps);ctx.stroke();
+  ctx.strokeStyle='rgba(255,209,102,.6)';ctx.lineWidth=1.4;ctx.beginPath();for(let d=0;d<=C.day;d+=.25){const x=px+libLon(d)/9*ps,y=py-libLat(d)/9*ps;d?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();
+  ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(px+libLon(C.day)/9*ps,py-libLat(C.day)/9*ps,5,0,7);ctx.fill();
+  if(big){ctx.fillStyle='#9ea6c8';ctx.font='500 11px "Noto Sans TC",sans-serif';ctx.fillText('晃動軌跡（左右、上下）',px,py-ps-8)}}
+
+/* ---------- questions ---------- */
+const QS={
+ A:{list:[{t:'有人說「月球不會自轉，所以永遠同一面對著我們」。這句話對嗎？',ch:['對，月球不自轉','不對，月球會自轉，而且自轉一圈的時間剛好等於公轉一圈','不對，月球一天自轉一圈'],ans:1,ok:'沒錯！如果月球不自轉，我們反而會看到它的每一面。它是「剛好轉一圈」才一直同一面朝向我們。'}],off:3,i:0},
+ B:{list:[{t:'為什麼月球的自轉最後會剛好等於公轉？',ch:['巧合','地球的引力拉住潮汐隆起，轉太快就煞車、太慢就加速，直到一樣快','太陽把它推慢了'],ans:1,ok:'對！只要兩個速度不一樣，隆起就會歪掉，被地球拉回去。一樣快時隆起正對地球，就不再被拉，這就是潮汐鎖定。'},
+   {t:'月球也在對地球做一樣的事。所以地球的一天會怎麼變？',ch:['越來越短','越來越長','永遠不變'],ans:1,ok:'越來越長！大約每一百年長 2 毫秒左右。很久很久以前，地球的一天比現在短很多。'}],off:2,i:0},
+ C:{list:[{t:'因為天平動，從地球上總共可以看到月球表面大約多少？',ch:['剛好 50%','大約 59%','100%'],ans:1,ok:'大約 59%！不同時間看到的邊緣不一樣，加起來比一半多。剩下的 41% 要靠太空船才看得到。'}],off:2,i:0}};
+function renderQ(){const m=mode,el=$('#q'+m);if(!el||el.hidden)return;const S=QS[m],q=S.list[S.i];
+  el.innerHTML=(S.list.length>1?`<div class="dots">${S.list.map((_,j)=>`<b class="${stars[m][j+S.off]?'done':''} ${j===S.i?'cur':''}" data-qi="${j}" role="button" tabindex="0">${j+1}</b>`).join('')}</div>`:'')+`<div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-ans="${k}">${s}</button>`).join('')}</div>`;
+  el.querySelectorAll('[data-qi]').forEach(b=>b.onclick=()=>{S.i=+b.dataset.qi;renderQ()});
+  el.querySelectorAll('[data-ans]').forEach(b=>b.onclick=()=>{if(+b.dataset.ans===q.ans){b.classList.add('ok');msg(q.ok,'ok',6000);stars[m][S.i+S.off]=1;saveStars();setTimeout(()=>{const nx=S.list.findIndex((_,j)=>!stars[m][j+S.off]);if(nx>=0){S.i=nx;renderQ()}},1600)}else{b.classList.add('no');msg('再想想，回去看看模擬','bad',3000)}})}
+
+function draw(){if(!W)return;ctx.clearRect(0,0,W,H);if(mode==='A')drawA();else if(mode==='B')drawB();else drawC()}
+saveStars();updA();resetB();updC();setMode('A');
+})();
+</script>
+
+<script src="../qa.js" defer></script>

@@ -67,6 +67,12 @@ window.ISLAND_ZONES=[
   "z": -4.6,
   "games": [
    {
+    "title": "月球的同一面",
+    "desc": "月球會自轉！繞一圈轉一圈、潮汐煞車，還能偷看 59% 的月面",
+    "url": "games/tidal-locking.html",
+    "isNew": true
+   },
+   {
     "title": "白矮星的最後一爆",
     "desc": "Ia 超新星 SN 2026ahvu：吸積、光變曲線、標準燭光",
     "url": "games/supernova-ia.html",
@@ -260,7 +266,7 @@ window.ISLAND_ZONES=[
     "title": "博弈論對決場",
     "desc": "囚徒困境找納許均衡、策略錦標賽、猜平均的 2/3",
     "url": "games/game-theory.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "皮克定理釘板",
