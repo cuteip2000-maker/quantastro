@@ -9,6 +9,12 @@ window.ISLAND_ZONES=[
   "z": 0.6,
   "games": [
    {
+    "title": "三種陀螺儀",
+    "desc": "轉子、雷射、會唱歌的碗：飛機和衛星怎麼知道自己轉了多少",
+    "url": "games/gyroscopes.html",
+    "isNew": true
+   },
+   {
     "title": "猛禽引擎的鑽石",
     "desc": "看引擎 8 毫秒點火，火焰裡的震波鑽石怎麼長出來",
     "url": "games/raptor-diamonds.html",
@@ -146,7 +152,7 @@ window.ISLAND_ZONES=[
     "title": "尖端放電實驗室",
     "desc": "電荷擠到尖端、空氣被擊穿發出藍光，再當避雷針工程師",
     "url": "games/point-discharge.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "跨步電壓逃生",
