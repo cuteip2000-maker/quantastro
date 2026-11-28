@@ -299,10 +299,16 @@ window.ISLAND_ZONES=[
   "z": 3.4,
   "games": [
    {
+    "title": "傅立葉畫畢氏樹",
+    "desc": "用上千個旋轉的圓圈，重建一棵畢達哥拉斯碎形樹",
+    "url": "games/fourier-tree.html",
+    "isNew": true
+   },
+   {
     "title": "螞蟻爬盒子",
     "desc": "把盒子攤平拉直線，用畢氏定理找最短路線，再解蜘蛛和蒼蠅謎題",
     "url": "games/ant-box.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "聖彼得堡悖論",
