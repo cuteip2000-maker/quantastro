@@ -1,0 +1,315 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>博弈論對決場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: strategy table. Main play area on the left, notes rail on the right; stacks on phones. Single light look. */
+:root{
+  --paper:#f1f0ea;
+  --sheet:#fbfaf6;
+  --panel:#ffffff;
+  --rule:#d9d6c8;
+  --ink:#22231f;
+  --dim:#66675c;
+  --accent:#2a5bd7;
+  --coop:#22915e;
+  --def:#d6453d;
+  --gold:#d99a00;
+  --ok:#22915e;
+  --bad:#d6453d;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 340px;min-height:100%}
+.stage{display:flex;flex-direction:column;min-width:0}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding-block:12px 0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs button{background:var(--sheet);border:1px solid var(--rule);border-bottom:0;border-radius:10px 10px 0 0;padding:7px 15px;color:var(--dim);font-weight:700;font-size:14px}
+.tabs button small{display:block;font-weight:500;font-size:11px}
+.tabs button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+.tabs .st{color:var(--gold);margin-left:4px;letter-spacing:-1px}
+.pane{background:var(--panel);border-top:1px solid var(--rule);padding-block:16px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px;flex:1}
+.sec{border:1px solid var(--rule);border-radius:12px;padding:12px 14px;background:var(--sheet)}
+.sec h3{margin:0 0 6px;font-size:17px;font-weight:900}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lab{font-size:13px;color:var(--dim);margin-right:2px}
+.btn{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:5px 11px;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.btn.sel{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);font-weight:700}
+.btn.ok{border-color:var(--ok);color:var(--ok)}
+.btn.no{border-color:var(--bad);color:var(--bad)}
+.btn.c{border-color:var(--coop);color:var(--coop);font-weight:900;font-size:16px;padding:8px 18px}
+.btn.d{border-color:var(--def);color:var(--def);font-weight:900;font-size:16px;padding:8px 18px}
+.stat{font-family:var(--f-num);font-size:13.5px;color:var(--dim)}
+.stat b{color:var(--ink)}
+.note{font-size:12.5px;color:var(--dim)}
+.msgline{min-height:1.6em;font-weight:700}
+.msgline.ok{color:var(--ok)}.msgline.bad{color:var(--bad)}
+/* payoff matrix */
+.mx{border-collapse:separate;border-spacing:4px;margin:4px 0}
+.mx th{font-size:13px;color:var(--dim);font-weight:700;padding:2px 6px}
+.mx td.cell{width:150px;height:70px;border:2px solid var(--rule);border-radius:10px;background:var(--panel);text-align:center;cursor:pointer;font-family:var(--f-num);font-size:14px;line-height:1.5;position:relative}
+.mx td.cell:hover{border-color:var(--ink)}
+.mx td.cell .y{color:var(--accent);font-weight:700}
+.mx td.cell .o{color:#8a5a00;font-weight:700}
+.mx td.cell.best{background:#e6f1ff;border-color:var(--accent)}
+.mx td.cell.nash{background:#fff2c7;border-color:var(--gold)}
+.mx td.cell.wrong{border-color:var(--bad)}
+.hist{display:flex;gap:3px;flex-wrap:wrap;font-family:var(--f-num);font-size:12px}
+.hist span{width:22px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.hist .C{background:var(--coop)}.hist .D{background:var(--def)}
+.histrow{display:flex;align-items:center;gap:8px}
+.histrow b{width:4.5em;font-size:13px}
+table.rank{border-collapse:collapse;font-size:14px;width:100%;max-width:520px}
+table.rank td,table.rank th{border-bottom:1px solid var(--rule);padding:5px 8px;text-align:left}
+table.rank td.n{font-family:var(--f-num);text-align:right}
+table.rank tr.me td{background:#e6f1ff;font-weight:700}
+.bar{height:10px;background:var(--accent);border-radius:5px}
+.q{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:9px 12px}
+.q .qt{font-weight:700;margin-bottom:6px}
+.dots{display:flex;gap:4px;margin-bottom:4px}
+.dots b{width:20px;height:20px;border-radius:50%;border:1px solid var(--rule);font:700 11px/18px var(--f-num);text-align:center;color:var(--dim);cursor:pointer;background:var(--panel)}
+.dots b.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.dots b.cur{border-color:var(--accent);color:var(--accent)}
+.guess{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.guess input[type=range]{width:min(320px,70vw);accent-color:var(--accent)}
+.guess b{font:700 26px var(--f-num);color:var(--accent);min-width:2.5ch}
+canvas#dist{width:100%;height:150px;display:block;background:var(--panel);border:1px solid var(--rule);border-radius:10px}
+.rail{background:var(--panel);border-left:1px solid var(--rule);overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rail h1{font-size:24px;font-weight:900;line-height:1.3;margin:0 0 4px;text-wrap:balance}
+.rail .lede{color:var(--dim);margin:0 0 14px;font-size:14px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card.key{background:#e9efff;border-color:#b5c7f2}
+.card h2{font-size:16px;margin:0 0 6px;font-weight:900}
+.card p{margin:0 0 8px;font-size:14px}
+.card p:last-child{margin-bottom:0}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr) 290px}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{border-left:0;border-top:1px solid var(--rule)}
+  .mx td.cell{width:auto;min-width:96px;height:64px;font-size:13px}
+}
+</style>
+
+<div class="app">
+  <section class="stage">
+    <nav class="tabs" aria-label="模式">
+      <button data-tab="A" aria-pressed="true">① 囚徒困境<span class="st" id="stA"></span><small>找出納許均衡</small></button>
+      <button data-tab="B" aria-pressed="false">② 重複賽局錦標賽<span class="st" id="stB"></span><small>以牙還牙會贏嗎</small></button>
+      <button data-tab="C" aria-pressed="false">③ 猜平均的 2/3<span class="st" id="stC"></span><small>猜猜別人怎麼猜</small></button>
+    </nav>
+
+    <!-- A -->
+    <div class="pane" id="paneA">
+      <div class="sec">
+        <h3>故事：兩個嫌犯</h3>
+        <p style="margin:0 0 6px">你和同夥被分開審問，不能商量。每個人可以選「沉默」或「招供」。表格裡是兩人各要坐幾年牢（<span style="color:var(--accent);font-weight:700">藍色是你</span>，<span style="color:#8a5a00;font-weight:700">棕色是同夥</span>），年數越少越好。</p>
+        <div id="mxA"></div>
+        <div class="msgline" id="lineA"></div>
+        <div class="row"><button class="btn" id="resetA">重來這一題</button><span class="note" id="stepA"></span></div>
+      </div>
+      <div class="sec" id="secA2" hidden>
+        <h3>第二題：週末約會</h3>
+        <p style="margin:0 0 6px">你想看電影、朋友想去球場，但兩人最在乎的是「一起去」。數字是開心指數，越大越好。這次可能不只一個均衡！</p>
+        <div id="mxA2"></div>
+        <div class="msgline" id="lineA2"></div>
+      </div>
+      <div class="q" id="qA" hidden></div>
+    </div>
+
+    <!-- B -->
+    <div class="pane" id="paneB" hidden>
+      <div class="sec">
+        <h3>對戰神秘對手</h3>
+        <p style="margin:0 0 6px">這次同一個對手要玩 8 回合。每回合：都合作各得 3 分；都背叛各得 1 分；一個背叛一個合作，背叛的得 5 分、合作的 0 分。玩完後猜猜看它用什麼策略。</p>
+        <div class="row"><button class="btn c" id="pC">合作</button><button class="btn d" id="pD">背叛</button><button class="btn" id="newOpp">換一個新對手</button></div>
+        <div class="histrow"><b>你</b><div class="hist" id="hMe"></div></div>
+        <div class="histrow"><b>對手</b><div class="hist" id="hOp"></div></div>
+        <div class="stat" id="scoreB"></div>
+        <div id="guessB" hidden><div class="row" style="margin-top:6px"><span class="lab">它是哪一種？</span><span id="guessBtns" class="row"></span></div></div>
+        <div class="msgline" id="lineB"></div>
+      </div>
+      <div class="sec">
+        <h3>電腦錦標賽</h3>
+        <p style="margin:0 0 6px">1980 年，政治學家艾克賽羅德邀請大家寄策略程式來比賽：每兩個策略對打 200 回合，加總分數。你也設計一個策略參賽吧！</p>
+        <div class="row"><span class="lab">第一回合</span><button class="btn sel" data-f="C">合作</button><button class="btn" data-f="D">背叛</button></div>
+        <div class="row"><span class="lab">對手上回合合作，我就</span><button class="btn sel" data-rc="C">合作</button><button class="btn" data-rc="D">背叛</button></div>
+        <div class="row"><span class="lab">對手上回合背叛，我就</span><button class="btn" data-rd="C">合作</button><button class="btn sel" data-rd="D">背叛</button></div>
+        <div class="row"><button class="btn pri" id="runT">開始錦標賽</button></div>
+        <div id="rankT"></div>
+        <div class="msgline" id="lineT"></div>
+      </div>
+      <div class="q" id="qB" hidden></div>
+    </div>
+
+    <!-- C -->
+    <div class="pane" id="paneC" hidden>
+      <div class="sec">
+        <h3>全班一起猜</h3>
+        <p style="margin:0 0 6px">你和 19 位同學各寫一個 0～100 的整數。算出全班平均，再乘以 2/3。誰最接近這個數，誰就贏。同學也會從上一輪學習喔！</p>
+        <div class="guess"><input type="range" id="gC" min="0" max="100" step="1" value="50" aria-label="你的數字"><b id="gCV">50</b><button class="btn pri" id="goC">交出答案</button><button class="btn" id="resetC">重新開始</button></div>
+        <div class="stat" id="roundC"></div>
+        <canvas id="dist" aria-label="全班猜的數字分布"></canvas>
+        <div class="msgline" id="lineC"></div>
+      </div>
+      <div class="q" id="qC" hidden></div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <h1>博弈論對決場</h1>
+    <p class="lede">博弈論研究「我的結果，要看別人怎麼選」的情況。下棋、比價、談判、排隊，甚至生物演化都用得到。</p>
+    <div class="card key" id="modeCard"></div>
+    <div class="card">
+      <h2>納許均衡</h2>
+      <p>每個人都已經針對別人的選擇，選了對自己最好的；誰單獨改變都只會更糟。這種「沒人想偷改」的狀態，叫作納許均衡。</p>
+      <p>數學家約翰・納許在 1950 年提出這個想法，1994 年獲得諾貝爾經濟學獎。電影《美麗境界》講的就是他的故事。</p>
+    </div>
+    <div class="card">
+      <h2>博弈論的起點</h2>
+      <p>1944 年，數學家馮紐曼和經濟學家摩根斯坦出版《賽局理論與經濟行為》，讓博弈論成為一門學問。</p>
+    </div>
+    <div class="card">
+      <h2>以牙還牙</h2>
+      <p>在艾克賽羅德 1980 年的錦標賽裡，冠軍是心理學家拉波波特寫的「以牙還牙」：第一回合合作，之後模仿對手上一回合。程式只有短短幾行。</p>
+      <p>它好在：先釋出善意、被背叛就反擊、對方回頭就原諒，而且規則簡單，對手一看就懂。</p>
+    </div>
+    <div class="card">
+      <h2>生活中的例子</h2>
+      <p>兩家店要不要降價搶客人、要不要在考試前偷偷多讀、大家要不要減少排碳：個人最有利的選擇，加起來常常讓大家都變糟。這就是困境。</p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const stars=store.get('gt-stars',{A:{},B:{},C:{}});
+const TOT={A:3,B:3,C:3};
+function saveStars(){store.set('gt-stars',stars);['A','B','C'].forEach(m=>{const n=Object.keys(stars[m]).length;$('#st'+m).textContent=n?(n>=TOT[m]?'★':'')+n+'/'+TOT[m]:''})}
+const line=(id,t,cls='')=>{const e=$(id);e.textContent=t;e.className='msgline '+cls};
+let mode='A';
+const KEY={
+ A:'<h2>① 囚徒困境</h2><p>照提示點表格：先找出同夥每一種選擇下，你最好的回應；再找出兩人都「已經最好」的那一格，就是納許均衡。</p>',
+ B:'<h2>② 重複賽局錦標賽</h2><p>只玩一次時，背叛最划算；但如果要和同一個人玩很多次呢？先和神秘對手對戰，猜出它的策略；再設計自己的策略參加錦標賽。</p>',
+ C:'<h2>③ 猜平均的 2/3</h2><p>這個遊戲考的不是數學，是「猜別人會怎麼想」。想得太少會輸，想得太多也可能輸！</p>'};
+function setMode(m){mode=m;$$('.tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===m));['A','B','C'].forEach(k=>$('#pane'+k).hidden=k!==m);$('#modeCard').innerHTML=KEY[m];if(m==='C')drawDist()}
+$$('.tabs button').forEach(b=>b.onclick=()=>setMode(b.dataset.tab));
+function mcq(el,list,state,key,done){const i=state.i,q=list[i];
+  el.innerHTML=`<div class="dots">${list.map((_,j)=>`<b class="${stars[key][j+state.off]?'done':''} ${j===i?'cur':''}" data-qi="${j}" role="button" tabindex="0">${j+1}</b>`).join('')}</div><div class="qt">${q.t}</div><div class="row">${q.ch.map((s,k)=>`<button class="btn" data-k="${k}">${s}</button>`).join('')}</div><div class="msgline"></div>`;
+  el.querySelectorAll('[data-qi]').forEach(b=>b.onclick=()=>{state.i=+b.dataset.qi;mcq(el,list,state,key)});
+  el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const ml=el.querySelector('.msgline');if(+b.dataset.k===q.ans){b.classList.add('ok');ml.textContent=q.ok;ml.className='msgline ok';stars[key][i+state.off]=1;saveStars();
+      setTimeout(()=>{const nx=list.findIndex((_,j)=>!stars[key][j+state.off]);if(nx>=0){state.i=nx;mcq(el,list,state,key)}},2200)}else{b.classList.add('no');ml.textContent=q.no||'再想想';ml.className='msgline bad'}})}
+
+/* ---------- A: matrices ---------- */
+// rows: your choice, cols: partner choice; values [you, partner]; lower better for PD
+const PD={rows:['沉默','招供'],cols:['同夥沉默','同夥招供'],v:[[[1,1],[10,0]],[[0,10],[5,5]]],better:'low',unit:'年'};
+const BS={rows:['看電影','去球場'],cols:['朋友看電影','朋友去球場'],v:[[[3,2],[0,0]],[[0,0],[2,3]]],better:'high',unit:''};
+function bestRows(G,col){const vals=G.v.map(r=>r[col][0]);const t=G.better==='low'?Math.min(...vals):Math.max(...vals);return vals.map((v,i)=>v===t?i:-1).filter(i=>i>=0)}
+function bestCols(G,row){const vals=G.v[row].map(c=>c[1]);const t=G.better==='low'?Math.min(...vals):Math.max(...vals);return vals.map((v,i)=>v===t?i:-1).filter(i=>i>=0)}
+function nashCells(G){const out=[];for(let r=0;r<2;r++)for(let c=0;c<2;c++)if(bestRows(G,c).includes(r)&&bestCols(G,r).includes(c))out.push(r+','+c);return out}
+function renderMx(el,G,st){el.innerHTML=`<table class="mx"><tr><th></th>${G.cols.map(c=>`<th>${c}</th>`).join('')}</tr>${G.rows.map((r,ri)=>`<tr><th>你${r}</th>${G.cols.map((_,ci)=>{const[y,o]=G.v[ri][ci],k=ri+','+ci;
+    return `<td class="cell ${st.best.has(k)?'best':''} ${st.nash.has(k)?'nash':''} ${st.wrong===k?'wrong':''}" data-cell="${k}"><span class="y">你 ${y}${G.unit}</span><br><span class="o">同夥 ${o}${G.unit}</span></td>`}).join('')}</tr>`).join('')}</table>`;
+  if(G===BS)el.innerHTML=el.innerHTML.replaceAll('同夥','朋友')}
+const SA={step:0,best:new Set(),nash:new Set(),wrong:null};
+const STEPS=['步驟 1：如果同夥「沉默」，你選哪個比較好？點那一格。','步驟 2：如果同夥「招供」，你選哪個比較好？點那一格。','步驟 3：同夥也是這樣想的。點出兩人都已經「最好」的那一格（納許均衡）。'];
+function drawA(){renderMx($('#mxA'),PD,SA);$('#stepA').textContent=SA.step<3?STEPS[SA.step]:'完成！';
+  $$('#mxA [data-cell]').forEach(td=>td.onclick=()=>clickA(td.dataset.cell))}
+function clickA(k){const[r,c]=k.split(',').map(Number);SA.wrong=null;
+  if(SA.step<2){if(c!==SA.step){line('#lineA',`先看「${PD.cols[SA.step]}」那一欄`,'bad');return}
+    if(bestRows(PD,c).includes(r)){SA.best.add(k);line('#lineA',c===0?'對！同夥沉默時，你招供 0 年，比沉默的 1 年少。':'對！同夥招供時，你招供 5 年，比沉默的 10 年少。','ok');SA.step++}
+    else{SA.wrong=k;line('#lineA','比比看同一欄裡，你的年數哪一個比較少','bad')}}
+  else if(SA.step===2){if(nashCells(PD).includes(k)){SA.nash.add(k);SA.step=3;stars.A[0]=1;saveStars();line('#lineA','對！兩人都招供、各關 5 年。可是如果都沉默，只要各關 1 年。各自最聰明的選擇，加起來反而更糟，這就是「困境」。','ok');$('#secA2').hidden=false;drawA2()}
+    else{SA.wrong=k;line('#lineA','在這一格，有人單獨改選會更好。再找找看','bad')}}
+  drawA()}
+$('#resetA').onclick=()=>{SA.step=0;SA.best=new Set();SA.nash=new Set();SA.wrong=null;line('#lineA','');drawA()};
+const SA2={best:new Set(),nash:new Set(),wrong:null};
+function drawA2(){renderMx($('#mxA2'),BS,SA2);$$('#mxA2 [data-cell]').forEach(td=>td.onclick=()=>{const k=td.dataset.cell;SA2.wrong=null;
+    if(nashCells(BS).includes(k)){if(!SA2.nash.has(k)){SA2.nash.add(k);line('#lineA2',SA2.nash.size===1?'找到一個均衡！還有一個。':'兩個都找到了！一起看電影、一起去球場都是均衡，只是不知道會落在哪一個。這時候「先講好」就很重要。','ok')}
+      if(SA2.nash.size===2&&!stars.A[1]){stars.A[1]=1;saveStars();$('#qA').hidden=false;mcq($('#qA'),QA,QAs,'A')}}
+    else{SA2.wrong=k;line('#lineA2','在這一格，有人換個選擇會更開心','bad')}drawA2()})}
+const QA=[{t:'囚徒困境裡，為什麼兩個人都會招供？',ch:['因為他們想害對方','因為不管同夥怎麼選，招供對自己都比較好','因為招供的年數最少'],ans:1,ok:'沒錯！招供是「優勢策略」：不管對方怎麼做，它都比較好。結果兩人都招供，比都沉默更糟。'}];const QAs={i:0,off:2};
+
+/* ---------- B: repeated PD ---------- */
+const PAY={CC:[3,3],CD:[0,5],DC:[5,0],DD:[1,1]};
+const STRAT={
+ allc:{n:'永遠合作',f:(m,o)=>'C'},
+ alld:{n:'永遠背叛',f:(m,o)=>'D'},
+ tft:{n:'以牙還牙',f:(m,o)=>o.length?o[o.length-1]:'C'},
+ grim:{n:'記仇（被背叛一次就永遠背叛）',f:(m,o)=>o.includes('D')?'D':'C'},
+ tf2t:{n:'寬容以牙還牙（連被背叛兩次才反擊）',f:(m,o)=>o.length>=2&&o[o.length-1]==='D'&&o[o.length-2]==='D'?'D':'C'},
+ alt:{n:'輪流（合作、背叛、合作…）',f:(m,o)=>m.length%2?'D':'C'},
+};
+const MYST=['allc','alld','tft','grim','tf2t'];
+const B={opp:null,me:[],op:[],sm:0,so:0,done:false,ids:new Set()};
+function newOpp(){let k;do{k=MYST[Math.floor(Math.random()*MYST.length)]}while(MYST.length>1&&k===B.opp);B.opp=k;B.me=[];B.op=[];B.sm=B.so=0;B.done=false;$('#guessB').hidden=true;line('#lineB','新對手來了！先出招吧。');drawB()}
+function playB(x){if(B.done)return;const y=STRAT[B.opp].f(B.op,B.me);B.me.push(x);B.op.push(y);const p=PAY[x+y];B.sm+=p[0];B.so+=p[1];
+  if(B.me.length>=8){B.done=true;$('#guessB').hidden=false;line('#lineB','8 回合結束！它是哪一種策略？')}drawB()}
+function drawB(){$('#hMe').innerHTML=B.me.map(v=>`<span class="${v}">${v==='C'?'合':'背'}</span>`).join('');$('#hOp').innerHTML=B.op.map(v=>`<span class="${v}">${v==='C'?'合':'背'}</span>`).join('');
+  $('#scoreB').innerHTML=`第 <b>${B.me.length}</b> / 8 回合　你 <b>${B.sm}</b> 分　對手 <b>${B.so}</b> 分　已猜對 <b>${B.ids.size}</b> 種（目標 2 種）`;
+  $('#pC').disabled=$('#pD').disabled=B.done}
+$('#pC').onclick=()=>playB('C');$('#pD').onclick=()=>playB('D');$('#newOpp').onclick=newOpp;
+$('#guessBtns').innerHTML=MYST.map(k=>`<button class="btn" data-g="${k}">${STRAT[k].n.replace(/（.*/,'')}</button>`).join('');
+$$('[data-g]').forEach(b=>b.onclick=()=>{const k=b.dataset.g;
+  // indistinguishable check: if guessed strategy would have produced the same moves, accept
+  const sim=s=>{const o=[];const m=B.me;for(let i=0;i<m.length;i++)o.push(STRAT[s].f(o.slice(),m.slice(0,i)));return o.join('')};
+  if(k===B.opp||sim(k)===B.op.join('')){B.ids.add(B.opp);line('#lineB',k===B.opp?`答對！它是「${STRAT[B.opp].n}」。`:`它其實是「${STRAT[B.opp].n}」，不過依你這 8 回合的出招，「${STRAT[k].n.replace(/（.*/,'')}」的反應也一模一樣，算你對！想分辨它們，要試著連續背叛看看。`,'ok');
+    if(B.ids.size>=2&&!stars.B[0]){stars.B[0]=1;saveStars();showQB()}setTimeout(newOpp,2600)}
+  else line('#lineB',`不是喔。如果它是「${STRAT[k].n.replace(/（.*/,'')}」，它的出招會不一樣。比對一下你的出招和它的反應`,'bad');drawB()});
+const MY={f:'C',rc:'C',rd:'D'};
+['f','rc','rd'].forEach(key=>$$(`[data-${key}]`).forEach(b=>b.onclick=()=>{MY[key]=b.dataset[key];$$(`[data-${key}]`).forEach(x=>x.classList.toggle('sel',x===b))}));
+function myF(m,o){if(!o.length)return MY.f;return o[o.length-1]==='C'?MY.rc:MY.rd}
+function match(fa,fb,n=200){const ha=[],hb=[];let sa=0,sb=0;for(let i=0;i<n;i++){const x=fa(ha,hb),y=fb(hb,ha);ha.push(x);hb.push(y);const p=PAY[x+y];sa+=p[0];sb+=p[1]}return[sa,sb]}
+$('#runT').onclick=()=>{const ent=Object.entries(STRAT).map(([k,s])=>({k,n:s.n.replace(/（.*/,''),f:s.f,t:0,w:0,l:0}));ent.push({k:'me',n:'我的策略',f:myF,t:0,w:0,l:0});
+  for(let i=0;i<ent.length;i++)for(let j=i;j<ent.length;j++){const[a,b]=match(ent[i].f,ent[j].f);ent[i].t+=a;if(i!==j){ent[j].t+=b;if(a>b){ent[i].w++;ent[j].l++}else if(b>a){ent[j].w++;ent[i].l++}}}
+  ent.sort((a,b)=>b.t-a.t);const mx=ent[0].t;
+  $('#rankT').innerHTML=`<table class="rank"><tr><th>名次</th><th>策略</th><th>總分</th><th style="width:30%"></th><th>單場贏/輸</th></tr>${ent.map((e,i)=>`<tr class="${e.k==='me'?'me':''}"><td>${i+1}</td><td>${e.n}</td><td class="n">${e.t}</td><td><div class="bar" style="width:${e.t/mx*100}%"></div></td><td class="n">${e.w}/${e.l}</td></tr>`).join('')}</table>`;
+  const r=ent.findIndex(e=>e.k==='me')+1;
+  if(r<=3){line('#lineT',`你的策略排第 ${r} 名！`,'ok');if(!stars.B[1]){stars.B[1]=1;saveStars();showQB()}}else line('#lineT',`你的策略排第 ${r} 名。試著調整規則，擠進前 3 名！`,'bad')};
+const QB=[{t:'看錦標賽的「單場贏/輸」：永遠背叛幾乎每一場都不輸給對手，為什麼總分卻是最後一名？',ch:['它運氣不好','它讓每個對手都跟著背叛，大家只能各拿 1 分','它算錯分數'],ans:1,ok:'沒錯！只顧著不輸給眼前的對手，就失去了互相合作每回合 3 分的機會。以牙還牙從來不會在單場贏對手，總分卻名列前茅。'}];const QBs={i:0,off:2};
+function showQB(){if(stars.B[0]&&stars.B[1]){$('#qB').hidden=false;mcq($('#qB'),QB,QBs,'B')}}
+
+/* ---------- C: 2/3 average ---------- */
+const C={round:0,prev:null,wins:0,hist:[],last:null};
+function bots(){const out=[];const R=Math.random,cl=v=>Math.max(0,Math.min(100,Math.round(v)));
+  if(C.prev===null){for(let i=0;i<4;i++)out.push(cl(20+R()*70));for(let i=0;i<6;i++)out.push(cl(33+(R()-.5)*10));for(let i=0;i<6;i++)out.push(cl(22+(R()-.5)*8));for(let i=0;i<3;i++)out.push(cl(15+(R()-.5)*6))}
+  else{const t=C.prev*2/3;for(let i=0;i<19;i++){const k=R();out.push(cl(k<.6?t*(1+(R()-.5)*.3):k<.85?t*2/3*(1+(R()-.5)*.3):C.prev*(1+(R()-.5)*.2)))}}
+  return out}
+$('#gC').oninput=e=>$('#gCV').textContent=e.target.value;
+$('#goC').onclick=()=>{const me=+$('#gC').value,bs=bots(),all=bs.concat([me]),avg=all.reduce((s,v)=>s+v,0)/all.length,target=avg*2/3;
+  const dists=all.map(v=>Math.abs(v-target)),best=Math.min(...dists),meWin=Math.abs(me-target)===best;C.round++;C.prev=avg;C.last={all,me,avg,target};
+  if(meWin){C.wins++;stars.C[0]=1;if(C.wins>=3)stars.C[1]=1;saveStars()}
+  C.hist.push({r:C.round,avg,target,me,win:meWin});
+  line('#lineC',`全班平均 ${avg.toFixed(1)}，乘以 2/3 ＝ ${target.toFixed(1)}。${meWin?'你最接近，贏了！':'最接近的是 '+all[dists.indexOf(best)]+'，這輪沒贏。'}`,meWin?'ok':'bad');
+  $('#roundC').innerHTML=`第 <b>${C.round}</b> 輪　你贏了 <b>${C.wins}</b> 輪（目標 3 輪）`+C.hist.map(h=>`<br>第 ${h.r} 輪：平均 ${h.avg.toFixed(1)} → 目標 ${h.target.toFixed(1)}　你猜 ${h.me}${h.win?' ✔':''}`).join('');
+  drawDist();if(C.round>=3&&$('#qC').hidden){$('#qC').hidden=false;mcq($('#qC'),QC,QCs,'C')}};
+$('#resetC').onclick=()=>{C.round=0;C.prev=null;C.wins=0;C.hist=[];C.last=null;$('#roundC').textContent='';line('#lineC','');drawDist()};
+const QC=[{t:'如果全班每個人都非常聰明，也都知道別人很聰明，最後大家會猜多少？',ch:['33','22','0','50'],ans:2,ok:'0！大家都猜 x 時，目標是 2x/3，比 x 小，所以每個人都想再往下猜，一路降到 0。0 就是這個遊戲的納許均衡。可是第一輪就猜 0 的人通常會輸，因為真實的人沒有想那麼多步。'}];const QCs={i:0,off:2};
+function drawDist(){const cv=$('#dist'),r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);if(!r.width)return;cv.width=r.width*d;cv.height=r.height*d;const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);const W=r.width,H=r.height;
+  x.clearRect(0,0,W,H);const px=v=>14+v/100*(W-28),by=H-24;x.strokeStyle='#d9d6c8';x.beginPath();x.moveTo(px(0),by);x.lineTo(px(100),by);x.stroke();
+  x.fillStyle='#66675c';x.font='500 11px "JetBrains Mono",monospace';x.textAlign='center';[0,25,50,75,100].forEach(v=>{x.fillText(v,px(v),by+15)});
+  if(!C.last){x.fillText('交出答案後，這裡會顯示全班的數字',W/2,H/2);return}
+  const cnt={};C.last.all.forEach((v,i)=>{const k=v;cnt[k]=(cnt[k]||0)+1;const isMe=i===C.last.all.length-1;x.fillStyle=isMe?'#2a5bd7':'#9a9b8f';x.beginPath();x.arc(px(v),by-8-(cnt[k]-1)*13,isMe?6.5:5,0,7);x.fill()});
+  [[C.last.avg,'#66675c','平均'],[C.last.target,'#d99a00','目標']].forEach(([v,col,t])=>{x.strokeStyle=col;x.setLineDash([4,3]);x.beginPath();x.moveTo(px(v),12);x.lineTo(px(v),by);x.stroke();x.setLineDash([]);x.fillStyle=col;x.font='700 12px "Noto Sans TC",sans-serif';x.fillText(t+' '+v.toFixed(1),px(v),11)})}
+addEventListener('resize',()=>{if(mode==='C')drawDist()});
+
+saveStars();drawA();newOpp();setMode('A');
+if(stars.A[0]){SA.step=3;SA.nash.add('1,1');$('#secA2').hidden=false;drawA();drawA2()}
+})();
+</script>
+
+<script src="../qa.js" defer></script>

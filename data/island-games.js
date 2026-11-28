@@ -257,10 +257,16 @@ window.ISLAND_ZONES=[
   "z": 3.4,
   "games": [
    {
+    "title": "博弈論對決場",
+    "desc": "囚徒困境找納許均衡、策略錦標賽、猜平均的 2/3",
+    "url": "games/game-theory.html",
+    "isNew": true
+   },
+   {
     "title": "皮克定理釘板",
     "desc": "在釘板上圍圖形，只數釘子就算出面積：自己找出 I ＋ B÷2 − 1",
     "url": "games/pick-theorem.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "電腦鼠迷宮賽",
