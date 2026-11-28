@@ -70,7 +70,7 @@ window.ISLAND_ZONES=[
     "title": "月球的同一面",
     "desc": "月球會自轉！繞一圈轉一圈、潮汐煞車，還能偷看 59% 的月面",
     "url": "games/tidal-locking.html",
-    "isNew": true
+    "isNew": false
    },
    {
     "title": "白矮星的最後一爆",
@@ -262,6 +262,12 @@ window.ISLAND_ZONES=[
   "x": 2.6,
   "z": 3.4,
   "games": [
+   {
+    "title": "傅立葉魔法",
+    "desc": "正弦波疊出方波、圓圈接圓圈畫圖，再從頻譜聽出音符",
+    "url": "games/fourier.html",
+    "isNew": true
+   },
    {
     "title": "博弈論對決場",
     "desc": "囚徒困境找納許均衡、策略錦標賽、猜平均的 2/3",
